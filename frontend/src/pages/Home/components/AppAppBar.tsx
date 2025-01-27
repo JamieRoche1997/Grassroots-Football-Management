@@ -41,6 +41,21 @@ export default function AppAppBar() {
     setOpen(newOpen);
   };
 
+  const handleScroll = (id: string) => {
+    const element = document.getElementById(id);
+    const offset = 64; // Height of the app bar in pixels
+    if (element) {
+      const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+      const offsetPosition = elementPosition - offset;
+  
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth',
+      });
+    }
+  };
+  
+
   return (
     <AppBar
       position="fixed"
@@ -54,26 +69,23 @@ export default function AppAppBar() {
     >
       <Container maxWidth="lg">
         <StyledToolbar variant="dense" disableGutters>
-          <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', px: 0 }}>
+          <Box sx={{ flexGrow: 2, display: 'flex', alignItems: 'center', px: 0 }}>
             <Sitemark />
             <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-              <Button variant="text" color="info" size="small">
-                Dashboard
+              <Button variant="text" color="info" size="small" onClick={() => handleScroll('features')}>
+                Features
               </Button>
-              <Button variant="text" color="info" size="small">
-                Schedule
+              <Button variant="text" color="info" size="small" onClick={() => handleScroll('pricing')}>
+                Pricing
               </Button>
-              <Button variant="text" color="info" size="small">
-                Statistics
+              <Button variant="text" color="info" size="small" onClick={() => handleScroll('reviews')}>
+                Reviews
               </Button>
-              <Button variant="text" color="info" size="small">
-                Payments
+              <Button variant="text" color="info" size="small" onClick={() => handleScroll('faq')}>
+                FAQ
               </Button>
-              <Button variant="text" color="info" size="small" sx={{ minWidth: 0 }}>
-                Carpool
-              </Button>
-              <Button variant="text" color="info" size="small" sx={{ minWidth: 0 }}>
-                Blog
+              <Button variant="text" color="info" size="small" onClick={() => handleScroll('contact')} sx={{ minWidth: 0 }}>
+                Contact
               </Button>
             </Box>
           </Box>
@@ -130,11 +142,10 @@ export default function AppAppBar() {
                   </IconButton>
                 </Box>
                 <MenuItem>Features</MenuItem>
-                <MenuItem>Testimonials</MenuItem>
-                <MenuItem>Highlights</MenuItem>
                 <MenuItem>Pricing</MenuItem>
+                <MenuItem>Reviews</MenuItem>
                 <MenuItem>FAQ</MenuItem>
-                <MenuItem>Blog</MenuItem>
+                <MenuItem>Contact</MenuItem>
                 <Divider sx={{ my: 3 }} />
                 <MenuItem>
                   <Button color="primary" variant="contained" fullWidth>

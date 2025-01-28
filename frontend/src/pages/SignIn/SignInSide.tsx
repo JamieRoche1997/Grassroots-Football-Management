@@ -1,7 +1,7 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import Stack from '@mui/material/Stack';
-import AppTheme from '../shared-theme/AppTheme';
-import ColorModeSelect from '../shared-theme/ColorModeSelect';
+import AppTheme from '../../components/shared-theme/AppTheme';
+import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
 import SignInCard from './components/SignInCard';
 import Content from './components/Content';
 

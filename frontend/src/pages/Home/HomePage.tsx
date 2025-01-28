@@ -1,7 +1,6 @@
-import * as React from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import Container from '@mui/material/Container';
-import AppTheme from '../shared-theme/AppTheme';
+import AppTheme from '../../components/shared-theme/AppTheme';
 import AppAppBar from './components/AppAppBar';
 import Footer from './components/Footer';
 import Features from './components/Features';

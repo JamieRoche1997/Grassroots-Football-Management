@@ -14,6 +14,8 @@ import AddressForm from './components/AddressForm';
 import PaymentForm from './components/PaymentForm';
 import Review from './components/Review';
 import Info from './components/Info';
+import Header from '../../components/Header';
+
 
 const steps = ['Shipping address', 'Payment details', 'Review your order'];
 
@@ -38,6 +40,7 @@ export default function PaymentsPage() {
 
   return (
     <Layout>
+      <Header />
       <Box
         sx={{
           display: 'flex',

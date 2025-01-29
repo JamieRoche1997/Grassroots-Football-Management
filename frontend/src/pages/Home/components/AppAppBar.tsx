@@ -9,13 +9,12 @@ import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
 import Drawer from '@mui/material/Drawer';
+import Menu from '@mui/material/Menu';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ColorModeIconDropdown from '../../../components/shared-theme/ColorModeIconDropdown';
 import Sitemark from './SitemarkIcon';
-import type {} from '@mui/material/themeCssVarsAugmentation';
 import { useNavigate } from 'react-router-dom';
-
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   display: 'flex',
@@ -25,16 +24,15 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   borderRadius: `calc(${theme.shape.borderRadius}px + 8px)`,
   backdropFilter: 'blur(24px)',
   border: '1px solid',
-  borderColor: (theme.vars || theme).palette.divider,
-  backgroundColor: theme.vars
-    ? `rgba(${theme.vars.palette.background.defaultChannel} / 0.4)`
-    : alpha(theme.palette.background.default, 0.4),
-  boxShadow: (theme.vars || theme).shadows[1],
+  borderColor: theme.palette.divider,
+  backgroundColor: alpha(theme.palette.background.default, 0.4),
+  boxShadow: theme.shadows[1],
   padding: '8px 12px',
 }));
 
 export default function AppAppBar() {
   const [open, setOpen] = React.useState(false);
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const navigate = useNavigate();
 
   const toggleDrawer = (newOpen: boolean) => () => {
@@ -54,7 +52,20 @@ export default function AppAppBar() {
       });
     }
   };
-  
+
+  // Handle dropdown menu
+  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleSignUp = (role: string) => {
+    navigate(`/signup?role=${role}`);
+    handleMenuClose();
+  };
 
   return (
     <AppBar
@@ -89,32 +100,44 @@ export default function AppAppBar() {
               </Button>
             </Box>
           </Box>
-          <Box
-            sx={{
-              display: { xs: 'none', md: 'flex' },
-              gap: 1,
-              alignItems: 'center',
-            }}
-          >
-            <Button
-              color="primary"
-              variant="text"
-              size="small"
-              onClick={() => navigate('/signin')}
-            >
+
+          {/* Sign In & Sign Up with Dropdown */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1, alignItems: 'center' }}>
+            <Button color="primary" variant="text" size="small" onClick={() => navigate('/signin')}>
               Sign in
             </Button>
+
+            {/* Sign Up Button (Triggers Dropdown) */}
             <Button
               color="primary"
               variant="contained"
               size="small"
-              onClick={() => navigate('/signup')}
+              onClick={handleMenuOpen}
             >
-              Sign up
+              Sign Up
             </Button>
+
+            {/* Dropdown Menu for Sign Up */}
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+            >
+              <MenuItem onClick={() => { handleSignUp('coach'); handleMenuClose(); }}>
+                Coach
+              </MenuItem>
+              <MenuItem onClick={() => { handleSignUp('player'); handleMenuClose(); }}>
+                Player
+              </MenuItem>
+              <MenuItem onClick={() => { handleSignUp('parent'); handleMenuClose(); }}>
+                Parent
+              </MenuItem>
+            </Menu>
 
             <ColorModeIconDropdown />
           </Box>
+
+          {/* Mobile Menu */}
           <Box sx={{ display: { xs: 'flex', md: 'none' }, gap: 1 }}>
             <ColorModeIconDropdown size="medium" />
             <IconButton aria-label="Menu button" onClick={toggleDrawer(true)}>
@@ -148,12 +171,27 @@ export default function AppAppBar() {
                 <MenuItem>Contact</MenuItem>
                 <Divider sx={{ my: 3 }} />
                 <MenuItem>
-                  <Button color="primary" variant="contained" fullWidth>
+                  <Button color="primary" variant="contained" fullWidth onClick={handleMenuOpen}>
                     Sign up
                   </Button>
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                  >
+                    <MenuItem onClick={() => { navigate('/signup/coach'); handleMenuClose(); }}>
+                      Coach Sign Up
+                    </MenuItem>
+                    <MenuItem onClick={() => { navigate('/signup/player'); handleMenuClose(); }}>
+                      Player Sign Up
+                    </MenuItem>
+                    <MenuItem onClick={() => { navigate('/signup/parent'); handleMenuClose(); }}>
+                      Parent Sign Up
+                    </MenuItem>
+                  </Menu>
                 </MenuItem>
                 <MenuItem>
-                  <Button color="primary" variant="outlined" fullWidth>
+                  <Button color="primary" variant="outlined" fullWidth onClick={() => navigate('/signin')}>
                     Sign in
                   </Button>
                 </MenuItem>

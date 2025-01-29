@@ -4,7 +4,9 @@ import SignInSide from "./pages/SignIn/SignInSide";
 import SignUp from "./pages/SignUp/SignUp";
 import HomePage from "./pages/Home/HomePage";
 import Dashboard from "./pages/Dashboard/Dashboard";
-import AdditionalInfo from "./pages/SignUp/AdditionalInfo";
+import Coach from "./pages/SignUp/Coach";
+import Player from "./pages/SignUp/Player";
+import Parent from "./pages/SignUp/Parent";
 import TeamStats from "./pages/Team Stats/TeamStats";
 import Payments from "./pages/Payments/Payments";
 import Carpool from "./pages/Carpool/Carpool";
@@ -19,7 +21,9 @@ const App: React.FC = () => {
       <Route path="/"  element={<HomePage />} />
       <Route path="/signin" element={<SignInSide />} />
       <Route path="/signup" element={<SignUp />} />
-      <Route path="/additional-info" element={<AdditionalInfo/> } />
+      <Route path="/signup/coach" element={<Coach/> } />
+      <Route path="/signup/player" element={<Player/> } />
+      <Route path="/signup/parent" element={<Parent/> } />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/team" element={<TeamStats />} />
       <Route path="/payments" element={<Payments />} />

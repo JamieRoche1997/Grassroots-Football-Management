@@ -89,10 +89,11 @@ export default function PaymentForm() {
   const [expirationDate, setExpirationDate] = React.useState('');
 
   const handlePaymentTypeChange = (event: {
-    target: { value: React.SetStateAction<string> };
+    target: { value: string };
   }) => {
-    setPaymentType(event.target.value);
+    setPaymentType(event.target.value as string); 
   };
+  
 
   const handleCardNumberChange = (event: { target: { value: string } }) => {
     const value = event.target.value.replace(/\D/g, '');

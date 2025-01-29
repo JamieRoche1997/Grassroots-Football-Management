@@ -1,6 +1,6 @@
 import { alpha, Theme } from '@mui/material/styles';
 import type { TreeViewComponents } from '@mui/x-tree-view/themeAugmentation';
-import { gray, brand } from '../../../../components/shared-theme/themePrimitives';
+import { gray, brand } from '../../../components/shared-theme/themePrimitives';
 
 export const treeViewCustomizations: TreeViewComponents<Theme> = {
   MuiTreeItem2: {
@@ -13,7 +13,7 @@ export const treeViewCustomizations: TreeViewComponents<Theme> = {
           marginLeft: theme.spacing(2),
           padding: theme.spacing(0),
           borderLeft: '1px solid',
-          borderColor: (theme.vars || theme).palette.divider,
+          borderColor: theme.palette.divider,
         },
         '&:focus-visible .focused': {
           outline: `3px solid ${alpha(brand[500], 0.5)}`,

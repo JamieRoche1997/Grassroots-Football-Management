@@ -40,7 +40,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
   textAlign: 'center',
   padding: theme.spacing(4),
   height: '100%',
-  backgroundColor: (theme.vars || theme).palette.background.paper,
+  backgroundColor: theme.palette.background.paper,
   boxShadow: theme.shadows[1],
   '&:hover': {
     boxShadow: theme.shadows[4],

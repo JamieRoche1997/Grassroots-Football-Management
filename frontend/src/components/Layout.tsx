@@ -10,7 +10,7 @@ import {
   dataGridCustomizations,
   datePickersCustomizations,
   treeViewCustomizations,
-} from '../pages/Dashboard/theme/customizations'; 
+} from '../components/theme/customizations'; 
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -36,9 +36,7 @@ export default function Layout({ children }: LayoutProps) {
           component="main"
           sx={(theme) => ({
             flexGrow: 1,
-            backgroundColor: theme.vars
-              ? `rgba(${theme.vars.palette.background.defaultChannel} / 1)`
-              : alpha(theme.palette.background.default, 1),
+            backgroundColor: alpha(theme.palette.background.default, 1),
             overflow: 'auto',
           })}
         >

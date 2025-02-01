@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import SignInSide from "./pages/SignIn/SignInSide"; 
 import SignUp from "./pages/SignUp/SignUp";
 import HomePage from "./pages/Home/HomePage";
-import Dashboard from "./pages/Dashboard/Dashboard";
+import Dashboard from "./pages/Dashboard/CoachDashboard";
 import Coach from "./pages/SignUp/Coach";
 import Player from "./pages/SignUp/Player";
 import Parent from "./pages/SignUp/Parent";

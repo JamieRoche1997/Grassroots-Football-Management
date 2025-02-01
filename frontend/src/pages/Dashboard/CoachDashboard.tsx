@@ -1,9 +1,9 @@
 import Stack from '@mui/material/Stack';
 import Header from '../../components/Header';
+import Layout from '../../components/Layout';
 import MainGrid from './components/MainGrid';
-import Layout from '../../components/Layout'; 
 
-export default function Dashboard() {
+export default function CoachDashboard() {
   return (
     <Layout>
       <Stack

@@ -17,6 +17,7 @@ import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons';
+import { signUp } from './api/authService';
 
 const useQuery = (): URLSearchParams => {
   return new URLSearchParams(useLocation().search);
@@ -77,11 +78,27 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
 
   if (!role) {
     navigate('/'); 
+    return null;
   }
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const displayRole = role[0].toUpperCase() + role.slice(1);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    navigate(`/signup/${role}`); 
+
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const name = formData.get('name') as string;
+
+    try {
+      await signUp(email, password, name, role || 'player');
+
+      // Redirect based on role
+      navigate(`/signup/${role}`, { state: { email } }); 
+    } catch (error) {
+      console.error('Error during sign-up:', error);
+    }
   };
 
   const validateInputs = () => {
@@ -133,7 +150,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
             variant="h4"
             sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
           >
-          {role?.toUpperCase()} Sign Up
+          {displayRole} Sign Up
           </Typography>
           <Box
             component="form"

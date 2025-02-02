@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import ForgotPassword from './ForgotPassword';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from './CustomIcons';
+import { signIn, verifyIdToken } from '../api/authService'; 
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -47,18 +48,6 @@ export default function SignInCard() {
     setOpen(false);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    if (emailError || passwordError) {
-      event.preventDefault();
-      return;
-    }
-    const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
-  };
-
   const validateInputs = () => {
     const email = document.getElementById('email') as HTMLInputElement;
     const password = document.getElementById('password') as HTMLInputElement;
@@ -86,6 +75,38 @@ export default function SignInCard() {
     return isValid;
   };
 
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); // Prevent default form submission
+
+    if (!validateInputs()) {
+      return; // Stop if validation fails
+    }
+
+    const data = new FormData(event.currentTarget);
+    const email = data.get('email') as string;
+    const password = data.get('password') as string;
+
+    try {
+      // Step 1: Sign in the user and get the ID token
+      const idToken = await signIn(email, password);
+
+      // Step 2: Verify the ID token with the backend
+      const result = await verifyIdToken(idToken);
+      console.log('Sign-in successful:', result);
+
+      // Step 3: Redirect the user to the dashboard or home page
+      window.location.href = '/dashboard';
+    } catch (error) {
+      console.error('Sign-in error:', error);
+      const firebaseError = error as { code: string };
+      if (firebaseError.code === 'auth/user-not-found' || firebaseError.code === 'auth/wrong-password') {
+        alert('Invalid email or password.');
+      } else {
+        alert('Sign-in failed. Please try again.');
+      }
+    }
+  };
+
   return (
     <Card variant="outlined">
       <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
@@ -100,7 +121,7 @@ export default function SignInCard() {
       </Typography>
       <Box
         component="form"
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmit} // Attach handleSubmit to form onSubmit
         noValidate
         sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 2 }}
       >
@@ -154,7 +175,7 @@ export default function SignInCard() {
           label="Remember me"
         />
         <ForgotPassword open={open} handleClose={handleClose} />
-        <Button type="submit" fullWidth variant="contained" onClick={validateInputs}>
+        <Button type="submit" fullWidth variant="contained">
           Sign in
         </Button>
         <Typography sx={{ textAlign: 'center' }}>

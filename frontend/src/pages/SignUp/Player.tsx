@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -13,6 +13,7 @@ import Stack from '@mui/material/Stack';
 import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
+import { updateUserProfile } from './api/updateUser';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -41,10 +42,28 @@ const positions = ["Goalkeeper", "Defender", "Midfielder", "Forward"];
 export default function PlayerRegistration() {
   const navigate = useNavigate();
   const [position, setPosition] = React.useState('');
+  const location = useLocation();
+  const email = location.state?.email;
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    navigate('/dashboard');
+    const formData = new FormData(event.currentTarget);
+
+    const userData = {
+      email,
+      dob: formData.get('dob') as string,
+      phone: formData.get('phone') as string,
+      position,
+      emergencyContactName: formData.get('emergencyContactName') as string,
+      emergencyContactPhone: formData.get('emergencyContactPhone') as string,
+    };
+
+    try {
+      await updateUserProfile(userData);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+    }
   };
 
   return (

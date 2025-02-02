@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -13,6 +13,7 @@ import Stack from '@mui/material/Stack';
 import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
+import { updateUserProfile } from './api/updateUser';
 
 const Card = styled(MuiCard)(({ theme }) => ({
     display: 'flex',
@@ -51,15 +52,38 @@ const ageGroups = [
 
 const divisions = Array.from({ length: 16 }, (_, i) => `Division ${i === 0 ? 'Premier' : i}`);
 
-export default function AdditionalInfo() {
+export default function Coach() {
     const navigate = useNavigate();
     const [county, setCounty] = React.useState('');
     const [ageGroup, setAgeGroup] = React.useState('');
     const [division, setDivision] = React.useState('');
+    const location = useLocation();
+    const email = location.state?.email;
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        navigate('/dashboard');
+        const formData = new FormData(event.currentTarget);
+
+        const userData = {
+            email: email || '', 
+            dob: formData.get('dob') as string,
+            phone: formData.get('phone') as string,
+            county,
+            ageGroup,
+            division,
+        };
+
+        if (!userData.email) {
+            console.error('User email not found in localStorage.');
+            return;
+        }
+
+        try {
+            await updateUserProfile(userData);
+            navigate('/dashboard');
+        } catch (error) {
+            console.error('Error during profile update:', error);
+        }
     };
 
     return (
@@ -74,49 +98,20 @@ export default function AdditionalInfo() {
                     >
                         Coach Registration
                     </Typography>
-                    <Box
-                        component="form"
-                        onSubmit={handleSubmit}
-                        sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
-                    >
-                        {/* Role - Fixed to Coach */}
+                    <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <FormControl required fullWidth>
-                            <FormLabel>Role</FormLabel>
-                            <TextField
-                                id="role"
-                                name="role"
-                                value="Coach"
-                                slotProps={{
-                                    input: {
-                                      readOnly: true, 
-                                    },
-                                  }}
-                                fullWidth
-                            />
-                        </FormControl>
-
-                        {/* Date of Birth */}
-                        <FormControl required fullWidth>
-                            <FormLabel htmlFor="dob">Date of Birth</FormLabel>
+                            <FormLabel>Date of Birth</FormLabel>
                             <TextField required fullWidth id="dob" name="dob" type="date" />
                         </FormControl>
 
-                        {/* Phone Number */}
                         <FormControl required fullWidth>
-                            <FormLabel htmlFor="phone">Phone Number</FormLabel>
+                            <FormLabel>Phone Number</FormLabel>
                             <TextField required fullWidth id="phone" name="phone" placeholder="+353 86 220 8215" />
                         </FormControl>
 
-                        {/* County Dropdown */}
                         <FormControl required fullWidth>
                             <FormLabel>County</FormLabel>
-                            <Select
-                                id="county"
-                                name="county"
-                                value={county}
-                                onChange={(event: SelectChangeEvent) => setCounty(event.target.value)}
-                                displayEmpty
-                            >
+                            <Select value={county} onChange={(e: SelectChangeEvent) => setCounty(e.target.value)} displayEmpty>
                                 <MenuItem value="" disabled>Select County</MenuItem>
                                 {counties.map((county) => (
                                     <MenuItem key={county} value={county}>{county}</MenuItem>
@@ -124,16 +119,9 @@ export default function AdditionalInfo() {
                             </Select>
                         </FormControl>
 
-                        {/* Age Group Dropdown */}
                         <FormControl required fullWidth>
                             <FormLabel>Age Group</FormLabel>
-                            <Select
-                                id="ageGroup"
-                                name="ageGroup"
-                                value={ageGroup}
-                                onChange={(event: SelectChangeEvent) => setAgeGroup(event.target.value)}
-                                displayEmpty
-                            >
+                            <Select value={ageGroup} onChange={(e: SelectChangeEvent) => setAgeGroup(e.target.value)} displayEmpty>
                                 <MenuItem value="" disabled>Select Age Group</MenuItem>
                                 {ageGroups.map((group) => (
                                     <MenuItem key={group} value={group}>{group}</MenuItem>
@@ -141,16 +129,9 @@ export default function AdditionalInfo() {
                             </Select>
                         </FormControl>
 
-                        {/* Division Dropdown */}
                         <FormControl required fullWidth>
                             <FormLabel>Division</FormLabel>
-                            <Select
-                                id="division"
-                                name="division"
-                                value={division}
-                                onChange={(event: SelectChangeEvent) => setDivision(event.target.value)}
-                                displayEmpty
-                            >
+                            <Select value={division} onChange={(e: SelectChangeEvent) => setDivision(e.target.value)} displayEmpty>
                                 <MenuItem value="" disabled>Select Division</MenuItem>
                                 {divisions.map((div) => (
                                     <MenuItem key={div} value={div}>{div}</MenuItem>
@@ -158,9 +139,7 @@ export default function AdditionalInfo() {
                             </Select>
                         </FormControl>
 
-                        <Button type="submit" fullWidth variant="contained">
-                            Complete Registration
-                        </Button>
+                        <Button type="submit" fullWidth variant="contained">Complete Registration</Button>
                     </Box>
                 </Card>
             </SignUpContainer>

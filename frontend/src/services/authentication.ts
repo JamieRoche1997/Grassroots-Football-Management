@@ -79,7 +79,8 @@ export const signUpWithGoogle = async (
       await createUserInFirestore(user.uid, user.email, user.displayName || 'Google User', role);
     }
 
-    console.log('Google Sign-In successful:', user);
+    localStorage.setItem('email', user.email);
+
   } catch (error) {
     console.error('Google Sign-Up error:', error);
     if (error instanceof Error) {
@@ -98,11 +99,9 @@ export const signUpWithGoogle = async (
 export const signInWithGoogle = async (): Promise<void> => {
   try {
     // Step 1: Sign in with Google using Firebase client SDK
-    const result = await signInWithPopup(auth, googleProvider);
-    const user = result.user;
+    await signInWithPopup(auth, googleProvider);
 
     // Step 2: Log the user in after successful sign-up or sign-in
-    console.log('Google Sign-In successful:', user);
   } catch (error) {
     console.error('Google Sign-In error:', error);
     if (error instanceof Error) {

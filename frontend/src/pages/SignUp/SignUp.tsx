@@ -110,11 +110,20 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
   const handleGoogleSignIn = async () => {
     try {
       await signUpWithGoogle(role);
-      navigate(`/signup/${role}`);
+
+      // Get the email from localStorage for navigation purposes
+      const email = localStorage.getItem('email');
+
+      if (email) {
+        navigate(`/signup/${role}`, { state: { email } });
+      } else {
+        console.error('User email not found after Google Sign-Up.');
+      }
     } catch (error) {
       console.error('Error during Google Sign-In:', error);
     }
   };
+
 
   const validateInputs = () => {
     const email = document.getElementById('email') as HTMLInputElement;

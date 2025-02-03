@@ -17,7 +17,7 @@ import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons';
-import { signUp } from './api/authService';
+import { signUp } from '../../services/authentication';
 
 const useQuery = (): URLSearchParams => {
   return new URLSearchParams(useLocation().search);

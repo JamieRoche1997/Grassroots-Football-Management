@@ -1,5 +1,7 @@
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
+const url = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev'
+
 export interface UserProfileData {
   [key: string]: string | number | string[];
 }
@@ -11,7 +13,7 @@ export const updateUserProfile = async (data: UserProfileData): Promise<void> =>
     if (user) {
       try {
         const token = await user.getIdToken();
-        const response = await fetch('http://localhost:8081/user/update', {
+        const response = await fetch(`${url}/user/update`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

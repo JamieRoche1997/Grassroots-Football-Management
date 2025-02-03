@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import MuiCard from '@mui/material/Card';
@@ -13,7 +14,7 @@ import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import ForgotPassword from './ForgotPassword';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from './CustomIcons';
-import { signIn, verifyIdToken } from '../api/authService'; 
+import { signIn, verifyIdToken } from '../../../services/authentication'; 
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -34,6 +35,7 @@ const Card = styled(MuiCard)(({ theme }) => ({
 }));
 
 export default function SignInCard() {
+  const navigate = useNavigate();
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
   const [passwordError, setPasswordError] = React.useState(false);
@@ -91,11 +93,10 @@ export default function SignInCard() {
       const idToken = await signIn(email, password);
 
       // Step 2: Verify the ID token with the backend
-      const result = await verifyIdToken(idToken);
-      console.log('Sign-in successful:', result);
+      await verifyIdToken(idToken);
 
       // Step 3: Redirect the user to the dashboard or home page
-      window.location.href = '/dashboard';
+      navigate('/dashboard');
     } catch (error) {
       console.error('Sign-in error:', error);
       const firebaseError = error as { code: string };
@@ -134,7 +135,6 @@ export default function SignInCard() {
             type="email"
             name="email"
             placeholder="your@email.com"
-            autoComplete="email"
             autoFocus
             required
             fullWidth
@@ -162,8 +162,6 @@ export default function SignInCard() {
             placeholder="••••••"
             type="password"
             id="password"
-            autoComplete="current-password"
-            autoFocus
             required
             fullWidth
             variant="outlined"

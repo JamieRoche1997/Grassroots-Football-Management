@@ -16,8 +16,8 @@ import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
-import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons';
-import { signUp } from '../../services/authentication';
+import { GoogleIcon, SitemarkIcon } from './components/CustomIcons';
+import { signUp, signUpWithGoogle } from '../../services/authentication';
 
 const useQuery = (): URLSearchParams => {
   return new URLSearchParams(useLocation().search);
@@ -74,10 +74,10 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
   const [nameError, setNameError] = React.useState(false);
   const [nameErrorMessage, setNameErrorMessage] = React.useState('');
   const query = useQuery();
-  const role = query.get('role'); 
+  const role = query.get('role');
 
   if (!role) {
-    navigate('/'); 
+    navigate('/');
     return null;
   }
 
@@ -85,6 +85,9 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setEmailErrorMessage('');
+    setPasswordErrorMessage('');
+    setNameErrorMessage('');
 
     const formData = new FormData(event.currentTarget);
     const email = formData.get('email') as string;
@@ -92,14 +95,35 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
     const name = formData.get('name') as string;
 
     try {
-      await signUp(email, password, name, role || 'player');
-
-      // Redirect based on role
-      navigate(`/signup/${role}`, { state: { email } }); 
+      await signUp(email, password, name, role);
+      navigate(`/signup/${role}`, { state: { email } });
     } catch (error) {
       console.error('Error during sign-up:', error);
+      if (error instanceof Error) {
+        setEmailErrorMessage(error.message);
+      } else {
+        setEmailErrorMessage('An unknown error occurred.');
+      }
     }
   };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signUpWithGoogle(role);
+
+      // Get the email from localStorage for navigation purposes
+      const email = localStorage.getItem('email');
+
+      if (email) {
+        navigate(`/signup/${role}`, { state: { email } });
+      } else {
+        console.error('User email not found after Google Sign-Up.');
+      }
+    } catch (error) {
+      console.error('Error during Google Sign-In:', error);
+    }
+  };
+
 
   const validateInputs = () => {
     const email = document.getElementById('email') as HTMLInputElement;
@@ -150,7 +174,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
             variant="h4"
             sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
           >
-          {displayRole} Sign Up
+            {displayRole} Sign Up
           </Typography>
           <Box
             component="form"
@@ -183,7 +207,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
                 variant="outlined"
                 error={emailError}
                 helperText={emailErrorMessage}
-                color={passwordError ? 'error' : 'primary'}
+                color={emailErrorMessage ? 'error' : 'primary'}
               />
             </FormControl>
             <FormControl>
@@ -222,18 +246,10 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => alert('Sign up with Google')}
+              onClick={handleGoogleSignIn}
               startIcon={<GoogleIcon />}
             >
               Sign up with Google
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert('Sign up with Facebook')}
-              startIcon={<FacebookIcon />}
-            >
-              Sign up with Facebook
             </Button>
             <Typography sx={{ textAlign: 'center' }}>
               Already have an account?{' '}

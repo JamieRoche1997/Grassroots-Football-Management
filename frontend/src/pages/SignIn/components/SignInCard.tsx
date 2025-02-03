@@ -13,8 +13,8 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import ForgotPassword from './ForgotPassword';
-import { GoogleIcon, FacebookIcon, SitemarkIcon } from './CustomIcons';
-import { signIn, verifyIdToken } from '../../../services/authentication'; 
+import { GoogleIcon, SitemarkIcon } from './CustomIcons';
+import { signIn, verifyIdToken, signInWithGoogle } from '../../../services/authentication';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -108,6 +108,15 @@ export default function SignInCard() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      navigate(`/dashboard`);
+    } catch (error) {
+      console.error('Error during Google Sign-In:', error);
+    }
+  };
+
   return (
     <Card variant="outlined">
       <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
@@ -194,18 +203,10 @@ export default function SignInCard() {
         <Button
           fullWidth
           variant="outlined"
-          onClick={() => alert('Sign in with Google')}
+          onClick={handleGoogleSignIn}
           startIcon={<GoogleIcon />}
         >
           Sign in with Google
-        </Button>
-        <Button
-          fullWidth
-          variant="outlined"
-          onClick={() => alert('Sign in with Facebook')}
-          startIcon={<FacebookIcon />}
-        >
-          Sign in with Facebook
         </Button>
       </Box>
     </Card>

@@ -188,7 +188,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
                 name="email"
                 autoComplete="email"
                 variant="outlined"
-                error={!!emailErrorMessage}
+                error={emailError}
                 helperText={emailErrorMessage}
                 color={emailErrorMessage ? 'error' : 'primary'}
               />

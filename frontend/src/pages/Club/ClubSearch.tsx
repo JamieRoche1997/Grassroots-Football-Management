@@ -15,6 +15,7 @@ import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
 import { fetchClubs, applyToJoinClub } from '../../services/team_management';
+import { auth } from '../../services/firebaseConfig';
 
 const Card = styled(MuiCard)(({ theme }) => ({
     display: 'flex',
@@ -58,6 +59,14 @@ const SearchContainer = styled(Stack)(({ theme }) => ({
     },
 }));
 
+const ScrollableBox = styled(Box)(({ theme }) => ({
+    height: 'calc((1 - var(--template-frame-height, 0)) * 100dvh)', // Adjust the height as needed
+    overflowY: 'auto',
+    padding: theme.spacing(1),
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: theme.shape.borderRadius,
+}));
+
 const counties = [
     "Antrim", "Armagh", "Carlow", "Cavan", "Clare", "Cork", "Derry", "Donegal",
     "Down", "Dublin", "Fermanagh", "Galway", "Kerry", "Kildare", "Kilkenny",
@@ -83,6 +92,7 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
 
     const handleSearch = async () => {
         try {
+            setClubs([]);
             const results = await fetchClubs({ clubName, county, ageGroup, division });
             setClubs(results);
         } catch (error) {
@@ -90,14 +100,23 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
         }
     };
 
+    const handleReset = () => {
+        setClubName('');
+        setCounty('');
+        setAgeGroup('');
+        setDivision('');
+        setClubs([]);
+    };
+
     const handleApply = async (club: any) => {
         try {
-            const userEmail = localStorage.getItem('email');
-            if (!userEmail) {
-                console.error('No user email found');
+            const user = auth.currentUser;
+            if (!user || !user.email) {
+                console.error('No authenticated user found');
                 return;
             }
-            await applyToJoinClub(userEmail, club.clubName);
+            await applyToJoinClub(user.email, club.clubName);
+            alert(`Join request sent to ${club.clubName}`);
             navigate('/dashboard');
         } catch (error) {
             console.error('Error applying to join club:', error);
@@ -119,7 +138,7 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
                     </Typography>
 
                     {/* Search Form */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <ScrollableBox sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <FormControl>
                             <FormLabel>Club Name</FormLabel>
                             <TextField
@@ -172,11 +191,12 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
                             </Select>
                         </FormControl>
 
-                        <Button onClick={handleSearch} fullWidth variant="contained">Search</Button>
-                    </Box>
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Button onClick={handleSearch} fullWidth variant="contained">Search</Button>
+                            <Button onClick={handleReset} fullWidth variant="outlined">Reset</Button>
+                        </Box>
 
                     {/* Club List */}
-                    <Box sx={{ mt: 4 }}>
                         {clubs.length > 0 ? (
                             clubs.map((club) => (
                                 <Box key={club.clubName} sx={{ mb: 2, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
@@ -196,7 +216,7 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
                         ) : (
                             <Typography>No clubs found. Try adjusting your search.</Typography>
                         )}
-                    </Box>
+                    </ScrollableBox>
                 </Card>
             </SearchContainer>
         </AppTheme>

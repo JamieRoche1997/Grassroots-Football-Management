@@ -91,10 +91,10 @@ export default function Coach(props: { disableCustomTheme?: boolean }) {
             email: email || '',
             dob: formData.get('dob') as string,
             phone: formData.get('phone') as string,
-            county,
-            clubName,
-            ageGroup,
-            division,
+            county: county,
+            clubName: clubName,
+            ageGroup: ageGroup,
+            division: division,
         };
 
         if (!userData.email) {
@@ -110,6 +110,9 @@ export default function Coach(props: { disableCustomTheme?: boolean }) {
             await createOrJoinClub({
                 clubName: clubName,
                 coachEmail: email || '',
+                county: county,
+                ageGroups: ageGroup,
+                divisions: division
             });
 
             navigate('/dashboard');

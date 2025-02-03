@@ -3,11 +3,14 @@ const url = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev';
 export interface ClubData {
     clubName: string;
     coachEmail: string;
+    county: string;
+    ageGroups: string;
+    divisions: string;
 }
 
 export const createOrJoinClub = async (data: ClubData): Promise<void> => {
     try {
-        const response = await fetch(`${url}/club/createOrJoin`, {
+        const response = await fetch(`${url}/club/create-join`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),

@@ -74,10 +74,10 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
   const [nameError, setNameError] = React.useState(false);
   const [nameErrorMessage, setNameErrorMessage] = React.useState('');
   const query = useQuery();
-  const role = query.get('role'); 
+  const role = query.get('role');
 
   if (!role) {
-    navigate('/'); 
+    navigate('/');
     return null;
   }
 
@@ -85,6 +85,9 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setEmailErrorMessage('');
+    setPasswordErrorMessage('');
+    setNameErrorMessage('');
 
     const formData = new FormData(event.currentTarget);
     const email = formData.get('email') as string;
@@ -93,13 +96,17 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
 
     try {
       await signUp(email, password, name, role || 'player');
-
-      // Redirect based on role
-      navigate(`/signup/${role}`, { state: { email } }); 
+      navigate(`/signup/${role}`, { state: { email } });
     } catch (error) {
       console.error('Error during sign-up:', error);
+      if (error instanceof Error) {
+        setEmailErrorMessage(error.message);
+      } else {
+        setEmailErrorMessage('An unknown error occurred.');
+      }
     }
   };
+
 
   const validateInputs = () => {
     const email = document.getElementById('email') as HTMLInputElement;
@@ -150,7 +157,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
             variant="h4"
             sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
           >
-          {displayRole} Sign Up
+            {displayRole} Sign Up
           </Typography>
           <Box
             component="form"
@@ -181,9 +188,9 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
                 name="email"
                 autoComplete="email"
                 variant="outlined"
-                error={emailError}
+                error={!!emailErrorMessage}
                 helperText={emailErrorMessage}
-                color={passwordError ? 'error' : 'primary'}
+                color={emailErrorMessage ? 'error' : 'primary'}
               />
             </FormControl>
             <FormControl>

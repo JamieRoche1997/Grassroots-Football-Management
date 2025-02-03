@@ -1,6 +1,6 @@
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { signOut } from 'firebase/auth';
-import { auth } from './firebaseConfig'; 
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { auth } from './firebaseConfig';
+import { checkUserExists } from './user_management';
 
 const url = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev'
 
@@ -66,7 +66,13 @@ export const signUp = async (
   role: string
 ): Promise<void> => {
   try {
-    // Step 1: Send user details to the backend
+    // Step 1: Check if the user already exists
+    const userExists = await checkUserExists(email);
+    if (userExists) {
+      throw new Error('A user with this email already exists. Please sign in.');
+    }
+
+    // Step 2: Proceed with sign-up if the user does not exist
     const response = await fetch(`${url}/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -77,13 +83,18 @@ export const signUp = async (
       throw new Error('Failed to register user');
     }
 
-    // Step 2: Log the user in after successful sign-up
+    // Step 3: Log the user in after successful sign-up
     await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
     console.error('Sign-up error:', error);
-    throw new Error('Sign-up failed. Please try again.');
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    } else {
+      throw new Error('Sign-up error');
+    }
   }
 };
+
 
 /**
  * Log out the user from Firebase.

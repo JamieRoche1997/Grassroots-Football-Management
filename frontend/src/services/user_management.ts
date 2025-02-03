@@ -35,3 +35,23 @@ export const updateUserProfile = async (data: UserProfileData): Promise<void> =>
     }
   });
 };
+
+/**
+ * Check if a user with the given email already exists.
+ * @param email - The user's email to check.
+ * @returns A promise resolving to a boolean indicating whether the user exists.
+ */
+export const checkUserExists = async (email: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`${url}/user/check?email=${encodeURIComponent(email)}`);
+    if (!response.ok) {
+      throw new Error('Error checking user existence');
+    }
+
+    const data = await response.json();
+    return data.exists;
+  } catch (error) {
+    console.error('Error checking user existence:', error);
+    throw new Error('Failed to check user existence');
+  }
+};

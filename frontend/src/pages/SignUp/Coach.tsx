@@ -13,7 +13,9 @@ import Stack from '@mui/material/Stack';
 import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
+import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
 import { updateUserProfile } from '../../services/user_management';
+import { createOrJoinClub } from '../../services/team_management';
 
 const Card = styled(MuiCard)(({ theme }) => ({
     display: 'flex',
@@ -23,17 +25,37 @@ const Card = styled(MuiCard)(({ theme }) => ({
     padding: theme.spacing(4),
     gap: theme.spacing(2),
     margin: 'auto',
-    boxShadow: theme.shadows[2],
+    boxShadow:
+        'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
     [theme.breakpoints.up('sm')]: {
         width: '450px',
     },
+    ...theme.applyStyles('dark', {
+        boxShadow:
+            'hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px',
+    }),
 }));
 
 const SignUpContainer = styled(Stack)(({ theme }) => ({
-    height: '100vh',
+    height: 'calc((1 - var(--template-frame-height, 0)) * 100dvh)',
+    minHeight: '100%',
     padding: theme.spacing(2),
     [theme.breakpoints.up('sm')]: {
         padding: theme.spacing(4),
+    },
+    '&::before': {
+        content: '""',
+        display: 'block',
+        position: 'absolute',
+        zIndex: -1,
+        inset: 0,
+        backgroundImage:
+            'radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))',
+        backgroundRepeat: 'no-repeat',
+        ...theme.applyStyles('dark', {
+            backgroundImage:
+                'radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.5), hsl(220, 30%, 5%))',
+        }),
     },
 }));
 
@@ -52,9 +74,10 @@ const ageGroups = [
 
 const divisions = Array.from({ length: 16 }, (_, i) => `Division ${i === 0 ? 'Premier' : i}`);
 
-export default function Coach() {
+export default function Coach(props: { disableCustomTheme?: boolean }) {
     const navigate = useNavigate();
     const [county, setCounty] = React.useState('');
+    const [clubName, setClubName] = React.useState('');
     const [ageGroup, setAgeGroup] = React.useState('');
     const [division, setDivision] = React.useState('');
     const location = useLocation();
@@ -65,12 +88,13 @@ export default function Coach() {
         const formData = new FormData(event.currentTarget);
 
         const userData = {
-            email: email || '', 
+            email: email || '',
             dob: formData.get('dob') as string,
             phone: formData.get('phone') as string,
-            county,
-            ageGroup,
-            division,
+            county: county,
+            clubName: clubName,
+            ageGroup: ageGroup,
+            division: division,
         };
 
         if (!userData.email) {
@@ -79,7 +103,18 @@ export default function Coach() {
         }
 
         try {
+            // Step 1: Update user profile
             await updateUserProfile(userData);
+
+            // Step 2: Create the club or join the existing one
+            await createOrJoinClub({
+                clubName: clubName,
+                coachEmail: email || '',
+                county: county,
+                ageGroups: ageGroup,
+                divisions: division
+            });
+
             navigate('/dashboard');
         } catch (error) {
             console.error('Error during profile update:', error);
@@ -87,9 +122,10 @@ export default function Coach() {
     };
 
     return (
-        <AppTheme>
+        <AppTheme {...props}>
             <CssBaseline enableColorScheme />
-            <SignUpContainer direction="column" justifyContent="center">
+            <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
+            <SignUpContainer direction="column" justifyContent="space-between">
                 <Card variant="outlined">
                     <Typography
                         component="h1"
@@ -117,6 +153,19 @@ export default function Coach() {
                                     <MenuItem key={county} value={county}>{county}</MenuItem>
                                 ))}
                             </Select>
+                        </FormControl>
+
+                        <FormControl required fullWidth>
+                            <FormLabel>Club Name</FormLabel>
+                            <TextField
+                                required
+                                fullWidth
+                                id="clubName"
+                                name="clubName"
+                                placeholder="Enter Club Name"
+                                value={clubName}
+                                onChange={(e) => setClubName(e.target.value)}
+                            />
                         </FormControl>
 
                         <FormControl required fullWidth>

@@ -86,7 +86,7 @@ export const signUp = async (
 };
 
 /**
- * Log out the user from Firebase and notify the backend.
+ * Log out the user from Firebase.
  * @returns A promise that resolves when the user is logged out.
  */
 export const logoutUser = async (): Promise<void> => {
@@ -94,21 +94,8 @@ export const logoutUser = async (): Promise<void> => {
     const user = auth.currentUser;
 
     if (user) {
-      // Get the current user's ID token
-      const idToken = await user.getIdToken();
-
       // Sign out from Firebase
       await signOut(auth);
-      // Send the ID token to the backend for revocation
-      const response = await fetch(`${url}/logout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to revoke session on backend');
-      }
     } else {
       console.warn('No user is currently signed in.');
     }

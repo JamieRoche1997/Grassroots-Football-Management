@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -14,8 +14,7 @@ import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
-import { updateUserProfile } from '../../services/user_management';
-import { createOrJoinClub } from '../../services/team_management';
+import { fetchClubs, applyToJoinClub } from '../../services/team_management';
 
 const Card = styled(MuiCard)(({ theme }) => ({
     display: 'flex',
@@ -36,7 +35,7 @@ const Card = styled(MuiCard)(({ theme }) => ({
     }),
 }));
 
-const SignUpContainer = styled(Stack)(({ theme }) => ({
+const SearchContainer = styled(Stack)(({ theme }) => ({
     height: 'calc((1 - var(--template-frame-height, 0)) * 100dvh)',
     minHeight: '100%',
     padding: theme.spacing(2),
@@ -74,47 +73,34 @@ const ageGroups = [
 
 const divisions = Array.from({ length: 16 }, (_, i) => `Division ${i === 0 ? 'Premier' : i}`);
 
-export default function Coach(props: { disableCustomTheme?: boolean }) {
-    const navigate = useNavigate();
-    const [county, setCounty] = React.useState('');
+export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
     const [clubName, setClubName] = React.useState('');
+    const [county, setCounty] = React.useState('');
     const [ageGroup, setAgeGroup] = React.useState('');
     const [division, setDivision] = React.useState('');
-    const location = useLocation();
-    const email = location.state?.email;
+    const [clubs, setClubs] = React.useState<any[]>([]);
+    const navigate = useNavigate();
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const formData = new FormData(event.currentTarget);
-
-        const userData = {
-            email: email || '',
-            dob: formData.get('dob') as string,
-            phone: formData.get('phone') as string,
-            county,
-            clubName,
-            ageGroup,
-            division,
-        };
-
-        if (!userData.email) {
-            console.error('User email not found in localStorage.');
-            return;
-        }
-
+    const handleSearch = async () => {
         try {
-            // Step 1: Update user profile
-            await updateUserProfile(userData);
+            const results = await fetchClubs({ clubName, county, ageGroup, division });
+            setClubs(results);
+        } catch (error) {
+            console.error('Error during club search:', error);
+        }
+    };
 
-            // Step 2: Create the club or join the existing one
-            await createOrJoinClub({
-                clubName: clubName,
-                coachEmail: email || '',
-            });
-
+    const handleApply = async (club: any) => {
+        try {
+            const userEmail = localStorage.getItem('email');
+            if (!userEmail) {
+                console.error('No user email found');
+                return;
+            }
+            await applyToJoinClub(userEmail, club.clubName);
             navigate('/dashboard');
         } catch (error) {
-            console.error('Error during profile update:', error);
+            console.error('Error applying to join club:', error);
         }
     };
 
@@ -122,29 +108,35 @@ export default function Coach(props: { disableCustomTheme?: boolean }) {
         <AppTheme {...props}>
             <CssBaseline enableColorScheme />
             <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
-            <SignUpContainer direction="column" justifyContent="space-between">
+            <SearchContainer direction="column" justifyContent="space-between">
                 <Card variant="outlined">
                     <Typography
                         component="h1"
                         variant="h4"
                         sx={{ textAlign: 'center', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
                     >
-                        Coach Registration
+                        Find a Club
                     </Typography>
-                    <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <FormControl required fullWidth>
-                            <FormLabel>Date of Birth</FormLabel>
-                            <TextField required fullWidth id="dob" name="dob" type="date" />
+
+                    {/* Search Form */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <FormControl>
+                            <FormLabel>Club Name</FormLabel>
+                            <TextField
+                                id="clubName"
+                                placeholder="Enter Club Name"
+                                value={clubName}
+                                onChange={(e) => setClubName(e.target.value)}
+                            />
                         </FormControl>
 
-                        <FormControl required fullWidth>
-                            <FormLabel>Phone Number</FormLabel>
-                            <TextField required fullWidth id="phone" name="phone" placeholder="+353 86 220 8215" />
-                        </FormControl>
-
-                        <FormControl required fullWidth>
+                        <FormControl>
                             <FormLabel>County</FormLabel>
-                            <Select value={county} onChange={(e: SelectChangeEvent) => setCounty(e.target.value)} displayEmpty>
+                            <Select
+                                value={county}
+                                onChange={(e: SelectChangeEvent) => setCounty(e.target.value)}
+                                displayEmpty
+                            >
                                 <MenuItem value="" disabled>Select County</MenuItem>
                                 {counties.map((county) => (
                                     <MenuItem key={county} value={county}>{county}</MenuItem>
@@ -152,22 +144,13 @@ export default function Coach(props: { disableCustomTheme?: boolean }) {
                             </Select>
                         </FormControl>
 
-                        <FormControl required fullWidth>
-                            <FormLabel>Club Name</FormLabel>
-                            <TextField
-                                required
-                                fullWidth
-                                id="clubName"
-                                name="clubName"
-                                placeholder="Enter Club Name"
-                                value={clubName}
-                                onChange={(e) => setClubName(e.target.value)}
-                            />
-                        </FormControl>
-
-                        <FormControl required fullWidth>
+                        <FormControl>
                             <FormLabel>Age Group</FormLabel>
-                            <Select value={ageGroup} onChange={(e: SelectChangeEvent) => setAgeGroup(e.target.value)} displayEmpty>
+                            <Select
+                                value={ageGroup}
+                                onChange={(e: SelectChangeEvent) => setAgeGroup(e.target.value)}
+                                displayEmpty
+                            >
                                 <MenuItem value="" disabled>Select Age Group</MenuItem>
                                 {ageGroups.map((group) => (
                                     <MenuItem key={group} value={group}>{group}</MenuItem>
@@ -175,9 +158,13 @@ export default function Coach(props: { disableCustomTheme?: boolean }) {
                             </Select>
                         </FormControl>
 
-                        <FormControl required fullWidth>
+                        <FormControl>
                             <FormLabel>Division</FormLabel>
-                            <Select value={division} onChange={(e: SelectChangeEvent) => setDivision(e.target.value)} displayEmpty>
+                            <Select
+                                value={division}
+                                onChange={(e: SelectChangeEvent) => setDivision(e.target.value)}
+                                displayEmpty
+                            >
                                 <MenuItem value="" disabled>Select Division</MenuItem>
                                 {divisions.map((div) => (
                                     <MenuItem key={div} value={div}>{div}</MenuItem>
@@ -185,10 +172,33 @@ export default function Coach(props: { disableCustomTheme?: boolean }) {
                             </Select>
                         </FormControl>
 
-                        <Button type="submit" fullWidth variant="contained">Complete Registration</Button>
+                        <Button onClick={handleSearch} fullWidth variant="contained">Search</Button>
+                    </Box>
+
+                    {/* Club List */}
+                    <Box sx={{ mt: 4 }}>
+                        {clubs.length > 0 ? (
+                            clubs.map((club) => (
+                                <Box key={club.clubName} sx={{ mb: 2, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
+                                    <Typography variant="h6">{club.clubName}</Typography>
+                                    <Typography>Location: {club.county}</Typography>
+                                    <Typography>Age Groups: {club.ageGroups.join(', ')}</Typography>
+                                    <Typography>Divisions: {club.divisions.join(', ')}</Typography>
+                                    <Button
+                                        onClick={() => handleApply(club)}
+                                        variant="outlined"
+                                        sx={{ mt: 1 }}
+                                    >
+                                        Request to Join
+                                    </Button>
+                                </Box>
+                            ))
+                        ) : (
+                            <Typography>No clubs found. Try adjusting your search.</Typography>
+                        )}
                     </Box>
                 </Card>
-            </SignUpContainer>
+            </SearchContainer>
         </AppTheme>
     );
 }

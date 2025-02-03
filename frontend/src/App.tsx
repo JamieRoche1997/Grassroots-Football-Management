@@ -14,6 +14,7 @@ import Feedback from "./pages/Feedback/Feedback";
 import Players from "./pages/Players/Players";
 import Schedule from "./pages/Schedule/Schedule";
 import PlayerStats from "./pages/Player Stats/PlayerStats";
+import ClubSearch from "./pages/Club/ClubSearch";
 import { useAuth } from "./hooks/useAuth";
 import LoadingSpinner from "./components/LoadingSpinner";
 
@@ -107,6 +108,14 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute>
             <Schedule />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/club-search"
+        element={
+          <ProtectedRoute>
+            <ClubSearch />
           </ProtectedRoute>
         }
       />

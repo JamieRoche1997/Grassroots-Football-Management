@@ -2,6 +2,43 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 const url = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev'
 
+/**
+ * Create a new user in Firestore.
+ * @param uid - The Firebase UID of the user.
+ * @param email - The user's email.
+ * @param name - The user's name.
+ * @param role - The user's role.
+ * @returns A promise that resolves when the user is created.
+ */
+export const createUserInFirestore = async (
+  uid: string,
+  email: string,
+  name: string,
+  role: string
+): Promise<void> => {
+  try {
+    const response = await fetch(`${url}/user/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uid,
+        email,
+        name,
+        role,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create user in Firestore');
+    }
+  } catch (error) {
+    console.error('Error creating user in Firestore:', error);
+    throw error;
+  }
+};
+
+
 export interface UserProfileData {
   [key: string]: string | number | string[];
 }

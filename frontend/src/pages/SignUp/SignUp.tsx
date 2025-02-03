@@ -16,8 +16,8 @@ import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
-import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons';
-import { signUp } from '../../services/authentication';
+import { GoogleIcon, SitemarkIcon } from './components/CustomIcons';
+import { signUp, signUpWithGoogle } from '../../services/authentication';
 
 const useQuery = (): URLSearchParams => {
   return new URLSearchParams(useLocation().search);
@@ -95,7 +95,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
     const name = formData.get('name') as string;
 
     try {
-      await signUp(email, password, name, role || 'player');
+      await signUp(email, password, name, role);
       navigate(`/signup/${role}`, { state: { email } });
     } catch (error) {
       console.error('Error during sign-up:', error);
@@ -107,6 +107,14 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      await signUpWithGoogle(role);
+      navigate(`/signup/${role}`);
+    } catch (error) {
+      console.error('Error during Google Sign-In:', error);
+    }
+  };
 
   const validateInputs = () => {
     const email = document.getElementById('email') as HTMLInputElement;
@@ -229,18 +237,10 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => alert('Sign up with Google')}
+              onClick={handleGoogleSignIn}
               startIcon={<GoogleIcon />}
             >
               Sign up with Google
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert('Sign up with Facebook')}
-              startIcon={<FacebookIcon />}
-            >
-              Sign up with Facebook
             </Button>
             <Typography sx={{ textAlign: 'center' }}>
               Already have an account?{' '}

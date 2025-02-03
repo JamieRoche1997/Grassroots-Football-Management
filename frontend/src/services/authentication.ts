@@ -1,8 +1,117 @@
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from './firebaseConfig';
-import { checkUserExists } from './user_management';
+import { checkUserExists, createUserInFirestore } from './user_management';
 
 const url = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev'
+const googleProvider = new GoogleAuthProvider();
+
+/**
+ * Sign up a user with email, password, name, and role.
+ * @param email - The user's email.
+ * @param password - The user's password.
+ * @param name - The user's name.
+ * @param role - The user's role.
+ */
+export const signUp = async (
+  email: string,
+  password: string,
+  name: string,
+  role: string
+): Promise<void> => {
+  try {
+    // Step 1: Check if the user already exists
+    const userExists = await checkUserExists(email);
+    if (userExists) {
+      throw new Error('A user with this email already exists. Please sign in.');
+    }
+
+    // Step 2: Create the user in Firebase Authentication
+    const authResponse = await fetch(`${url}/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name }),
+    });
+
+    if (!authResponse.ok) {
+      const errorData = await authResponse.json();
+      throw new Error(errorData.error || 'Failed to register user in Firebase Authentication');
+    }
+
+    const authData = await authResponse.json();
+    const firebaseUid = authData.firebase_uid;
+
+    // Step 3: Create the user in Firestore
+    await createUserInFirestore(firebaseUid, email, name, role);
+
+    // Step 4: Log the user in after successful sign-up
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (error) {
+    console.error('Sign-up error:', error);
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    } else {
+      throw new Error('Sign-up error');
+    }
+  }
+};
+
+
+/**
+ * Sign up with Google.
+ * @param role - The user's role.
+ */
+export const signUpWithGoogle = async (
+  role: string
+): Promise<void> => {
+  try {
+    // Step 1: Sign up with Google using Firebase client SDK
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
+
+    if (!user.email || !user.uid) {
+      throw new Error('Google account did not provide necessary information.');
+    }
+
+    // Step 2: Check if the user already exists in Firestore
+    const userExists = await checkUserExists(user.email);
+    if (!userExists) {
+      // Step 3: Create a new user in Firestore
+      await createUserInFirestore(user.uid, user.email, user.displayName || 'Google User', role);
+    }
+
+    console.log('Google Sign-In successful:', user);
+  } catch (error) {
+    console.error('Google Sign-Up error:', error);
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    } else {
+      throw new Error('Google Sign-Up error');
+    }
+  }
+};
+
+
+/**
+ * Sign in with Google.
+ * @param role - The user's role.
+ */
+export const signInWithGoogle = async (): Promise<void> => {
+  try {
+    // Step 1: Sign in with Google using Firebase client SDK
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
+
+    // Step 2: Log the user in after successful sign-up or sign-in
+    console.log('Google Sign-In successful:', user);
+  } catch (error) {
+    console.error('Google Sign-In error:', error);
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    } else {
+      throw new Error('Google Sign-In error');
+    }
+  }
+};
 
 /**
  * Sign in a user with email and password.
@@ -51,50 +160,6 @@ export const verifyIdToken = async (idToken: string): Promise<VerifyIdTokenRespo
     throw error;
   }
 };
-
-/**
- * Sign up a user with email, password, name and role.
- * @param email - The user's email.
- * @param password - The user's password.
- * @param name - The user's name.
- * @param role - The user's role.
- */
-export const signUp = async (
-  email: string,
-  password: string,
-  name: string,
-  role: string
-): Promise<void> => {
-  try {
-    // Step 1: Check if the user already exists
-    const userExists = await checkUserExists(email);
-    if (userExists) {
-      throw new Error('A user with this email already exists. Please sign in.');
-    }
-
-    // Step 2: Proceed with sign-up if the user does not exist
-    const response = await fetch(`${url}/signup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name, role }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to register user');
-    }
-
-    // Step 3: Log the user in after successful sign-up
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (error) {
-    console.error('Sign-up error:', error);
-    if (error instanceof Error) {
-      throw new Error(error.message);
-    } else {
-      throw new Error('Sign-up error');
-    }
-  }
-};
-
 
 /**
  * Log out the user from Firebase.

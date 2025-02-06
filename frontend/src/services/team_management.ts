@@ -30,9 +30,16 @@ export const createOrJoinClub = async (data: ClubData): Promise<void> => {
  * @param filters - The search filters for clubs.
  * @returns A list of clubs matching the search criteria.
  */
-export const fetchClubs = async (filters: { clubName?: string; county?: string; ageGroup?: string; division?: string }): Promise<any[]> => {
+export interface Club {
+    clubName: string;
+    county: string;
+    ageGroups: string[];
+    divisions: string[];
+}
+
+export const fetchClubs = async (filters: { clubName?: string; county?: string; ageGroup?: string; division?: string }): Promise<Club[]> => {
     try {
-        const queryParams = new URLSearchParams(filters as any).toString();
+        const queryParams = new URLSearchParams(filters as Record<string, string>).toString();
         const response = await fetch(`${url}/club/search?${queryParams}`);
 
         if (!response.ok) {
@@ -51,12 +58,12 @@ export const fetchClubs = async (filters: { clubName?: string; county?: string; 
  * @param playerEmail - The player's email.
  * @param clubName - The name of the club the player wants to join.
  */
-export const applyToJoinClub = async (playerEmail: string, clubName: string): Promise<void> => {
+export const applyToJoinClub = async (name: string, playerEmail: string, clubName: string): Promise<void> => {
     try {
         const response = await fetch(`${url}/club/join-request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ playerEmail, clubName }),
+            body: JSON.stringify({ name, playerEmail, clubName }),
         });
 
         if (!response.ok) {
@@ -67,3 +74,51 @@ export const applyToJoinClub = async (playerEmail: string, clubName: string): Pr
         throw error;
     }
 };
+
+export interface JoinRequest {
+    name: string;
+    playerEmail: string;
+    clubName: string;
+    status: string;
+    requestedAt: string;
+}
+
+/**
+ * Retrieve join requests for a club.
+ * @param clubName - The name of the club.
+ * @returns A list of join requests for the club.
+ */
+export const getJoinRequests = async (clubName: string): Promise<JoinRequest[]> => {
+    const response = await fetch(`${url}/club/requests?clubName=${encodeURIComponent(clubName)}`);
+    if (!response.ok) throw new Error('Failed to fetch join requests');
+    return await response.json();
+};
+
+/**
+ * Approve a join request.
+ * @param playerEmail - The player's email.
+ * @param clubName - The name of the club.
+ */
+export const approveJoinRequest = async (playerEmail: string, clubName: string): Promise<void> => {
+    const response = await fetch(`${url}/club/requests/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerEmail, clubName }),
+    });
+    if (!response.ok) throw new Error('Failed to approve join request');
+};
+
+/**
+ * Reject a join request.
+ * @param playerEmail - The player's email.
+ * @param clubName - The name of the club.
+ */
+export const rejectJoinRequest = async (playerEmail: string, clubName: string): Promise<void> => {
+    const response = await fetch(`${url}/club/requests/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerEmail, clubName }),
+    });
+    if (!response.ok) throw new Error('Failed to reject join request');
+};
+

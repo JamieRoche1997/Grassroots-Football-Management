@@ -1,5 +1,5 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { leagueTableColumns, leagueTableRows } from '../internals/data/gridData';
+import { leagueTableColumns, leagueTableRows } from '../internals/data/TeamData';
 
 export default function CustomizedDataGrid() {
   return (

@@ -1,5 +1,5 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { playerStatsColumns, playerStatsRows } from '../internals/data/gridData';
+import { playerStatsColumns, playerStatsRows } from '../internals/data/PlayerData';
 
 export default function PlayerStatsGrid() {
   return (

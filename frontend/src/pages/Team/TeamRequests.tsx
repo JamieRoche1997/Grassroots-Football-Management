@@ -72,6 +72,7 @@ export default function TeamRequests() {
     }
   };
 
+
   const handleApprove = async (playerEmail: string) => {
     if (!clubName || !ageGroup || !division) return;
 

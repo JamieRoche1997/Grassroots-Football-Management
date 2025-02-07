@@ -1,6 +1,6 @@
 import Stack from '@mui/material/Stack';
 import Header from '../../components/Header';
-import MainGrid from '../Statistics/components/MainGrid';
+import MainGrid from './components/MainGrid';
 import Layout from '../../components/Layout'; 
 
 export default function TeamOverview() {

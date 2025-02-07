@@ -17,7 +17,7 @@ export default function PageViewsBarChart() {
     <Card variant="outlined" sx={{ width: '100%' }}>
       <CardContent>
         <Typography component="h2" variant="subtitle2" gutterBottom>
-          Page views and downloads
+          Wins
         </Typography>
         <Stack sx={{ justifyContent: 'space-between' }}>
           <Stack
@@ -29,12 +29,12 @@ export default function PageViewsBarChart() {
             }}
           >
             <Typography variant="h4" component="p">
-              1.3M
+              35
             </Typography>
-            <Chip size="small" color="error" label="-8%" />
+            <Chip size="small" color="default" label="-8%" />
           </Stack>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            Page views and downloads for the last 6 months
+            Results
           </Typography>
         </Stack>
         <BarChart
@@ -45,31 +45,17 @@ export default function PageViewsBarChart() {
               {
                 scaleType: 'band',
                 categoryGapRatio: 0.5,
-                data: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+                data: ['Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec', 'Jan'],
               },
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ] as any
           }
           series={[
-            {
-              id: 'page-views',
-              label: 'Page views',
-              data: [2234, 3872, 2998, 4125, 3357, 2789, 2998],
-              stack: 'A',
-            },
-            {
-              id: 'downloads',
-              label: 'Downloads',
-              data: [3098, 4215, 2384, 2101, 4752, 3593, 2384],
-              stack: 'A',
-            },
-            {
-              id: 'conversions',
-              label: 'Conversions',
-              data: [4051, 2275, 3129, 4693, 3904, 2038, 2275],
-              stack: 'A',
-            },
+            { id: 'wins', label: 'Wins', data: [5, 4, 6, 5, 7, 8, 4] },
+            { id: 'losses', label: 'Losses', data: [2, 3, 1, 2, 2, 1, 2] },
+            { id: 'draws', label: 'Draws', data: [1, 1, 0, 1, 0, 1, 0] },
           ]}
+          
           height={250}
           margin={{ left: 50, right: 0, top: 20, bottom: 20 }}
           grid={{ horizontal: true }}

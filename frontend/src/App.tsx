@@ -7,13 +7,12 @@ import Dashboard from "./pages/Dashboard/CoachDashboard";
 import Coach from "./pages/SignUp/Coach";
 import Player from "./pages/SignUp/Player";
 import Parent from "./pages/SignUp/Parent";
-import TeamStats from "./pages/Team Stats/TeamStats";
+import Statistics from "./pages/Statistics/Statistics";
 import Payments from "./pages/Payments/Payments";
 import Carpool from "./pages/Carpool/Carpool";
 import Feedback from "./pages/Feedback/Feedback";
-import Players from "./pages/Players/Players";
+import TeamRequests from "./pages/Team/TeamRequests";
 import Schedule from "./pages/Schedule/Schedule";
-import PlayerStats from "./pages/Player Stats/PlayerStats";
 import ClubSearch from "./pages/Club/ClubSearch";
 import { useAuth } from "./hooks/useAuth";
 import LoadingSpinner from "./components/LoadingSpinner";
@@ -42,11 +41,32 @@ const App: React.FC = () => {
       <Route path="/" element={<HomePage />} />
       <Route path="/signin" element={<SignInSide />} />
       <Route path="/signup" element={<SignUp />} />
-      <Route path="/signup/coach" element={<Coach />} />
-      <Route path="/signup/player" element={<Player />} />
-      <Route path="/signup/parent" element={<Parent />} />
 
       {/* Protected Routes */}
+      <Route
+        path="/signup/coach"
+        element={
+          <ProtectedRoute>
+            <Coach />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/signup/player"
+        element={
+          <ProtectedRoute>
+            <Player />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/signup/parent"
+        element={
+          <ProtectedRoute>
+            <Parent />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/dashboard"
         element={
@@ -56,10 +76,10 @@ const App: React.FC = () => {
         }
       />
       <Route
-        path="/team"
+        path="/statistics"
         element={
           <ProtectedRoute>
-            <TeamStats />
+            <Statistics />
           </ProtectedRoute>
         }
       />
@@ -88,18 +108,10 @@ const App: React.FC = () => {
         }
       />
       <Route
-        path="/player"
+        path="/team/requests"
         element={
           <ProtectedRoute>
-            <PlayerStats />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/players"
-        element={
-          <ProtectedRoute>
-            <Players />
+            <TeamRequests />
           </ProtectedRoute>
         }
       />

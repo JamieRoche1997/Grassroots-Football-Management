@@ -92,3 +92,23 @@ export const checkUserExists = async (email: string): Promise<boolean> => {
     throw new Error('Failed to check user existence');
   }
 };
+
+/**
+ * Get the club name for a user.
+ * @param email - The user's email.
+ * @returns A promise resolving to the club name.
+ */
+export const getClubName = async (email: string): Promise<string | null> => {
+  try {
+    const response = await fetch(`${url}/user/club-name?email=${encodeURIComponent(email)}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch club name');
+    }
+
+    const data = await response.json();
+    return data.clubName;
+  } catch (error) {
+    console.error('Error fetching club name:', error);
+    throw new Error('Failed to fetch club name');
+  }
+};

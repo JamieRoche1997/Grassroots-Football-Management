@@ -87,7 +87,14 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
     const [county, setCounty] = React.useState('');
     const [ageGroup, setAgeGroup] = React.useState('');
     const [division, setDivision] = React.useState('');
-    const [clubs, setClubs] = React.useState<any[]>([]);
+    interface Club {
+        clubName: string;
+        county: string;
+        ageGroups: string[];
+        divisions: string[];
+    }
+
+    const [clubs, setClubs] = React.useState<Club[]>([]);
     const navigate = useNavigate();
 
     const handleSearch = async () => {
@@ -108,14 +115,18 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
         setClubs([]);
     };
 
-    const handleApply = async (club: any) => {
+    const handleApply = async (club: { clubName: string; county: string; ageGroups: string[]; divisions: string[] }) => {
         try {
             const user = auth.currentUser;
             if (!user || !user.email) {
                 console.error('No authenticated user found');
                 return;
             }
-            await applyToJoinClub(user.email, club.clubName);
+            if (user.displayName && user.email) {
+                await applyToJoinClub(user.displayName, user.email, club.clubName);
+            } else {
+                console.error('User displayName or email is null');
+            }
             alert(`Join request sent to ${club.clubName}`);
             navigate('/dashboard');
         } catch (error) {
@@ -196,7 +207,7 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
                             <Button onClick={handleReset} fullWidth variant="outlined">Reset</Button>
                         </Box>
 
-                    {/* Club List */}
+                        {/* Club List */}
                         {clubs.length > 0 ? (
                             clubs.map((club) => (
                                 <Box key={club.clubName} sx={{ mb: 2, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}>

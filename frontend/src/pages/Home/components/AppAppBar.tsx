@@ -179,14 +179,14 @@ export default function AppAppBar() {
                     open={Boolean(anchorEl)}
                     onClose={handleMenuClose}
                   >
-                    <MenuItem onClick={() => { navigate('/signup/coach'); handleMenuClose(); }}>
-                      Coach Sign Up
+                    <MenuItem onClick={() => { handleSignUp('coach'); handleMenuClose(); }}>
+                    Coach
                     </MenuItem>
-                    <MenuItem onClick={() => { navigate('/signup/player'); handleMenuClose(); }}>
-                      Player Sign Up
+                    <MenuItem onClick={() => { handleSignUp('player'); handleMenuClose(); }}>
+                      Player
                     </MenuItem>
-                    <MenuItem onClick={() => { navigate('/signup/parent'); handleMenuClose(); }}>
-                      Parent Sign Up
+                    <MenuItem onClick={() => { handleSignUp('parent'); handleMenuClose(); }}>
+                      Parent
                     </MenuItem>
                   </Menu>
                 </MenuItem>

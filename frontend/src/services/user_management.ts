@@ -98,17 +98,21 @@ export const checkUserExists = async (email: string): Promise<boolean> => {
  * @param email - The user's email.
  * @returns A promise resolving to the club name.
  */
-export const getClubName = async (email: string): Promise<string | null> => {
+export const getClubInfo = async (email: string): Promise<{ clubName: string; ageGroup: string; division: string }> => {
   try {
-    const response = await fetch(`${url}/user/club-name?email=${encodeURIComponent(email)}`);
+    const response = await fetch(`${url}/user/club-info?email=${encodeURIComponent(email)}`);
     if (!response.ok) {
-      throw new Error('Failed to fetch club name');
+      throw new Error('Failed to fetch club info');
     }
 
     const data = await response.json();
-    return data.clubName;
+    return {
+      clubName: data.clubName || '',
+      ageGroup: data.ageGroup || '',
+      division: data.division || '',
+    };
   } catch (error) {
-    console.error('Error fetching club name:', error);
-    throw new Error('Failed to fetch club name');
+    console.error('Error fetching club info:', error);
+    throw new Error('Failed to fetch club info');
   }
 };

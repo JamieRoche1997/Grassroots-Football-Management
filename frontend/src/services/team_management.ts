@@ -4,16 +4,23 @@ export interface ClubData {
     clubName: string;
     coachEmail: string;
     county: string;
-    ageGroups: string;
-    divisions: string;
+    ageGroups: string | string[]; // Accept string or array during input
+    divisions: string | string[]; // Accept string or array during input
 }
 
 export const createOrJoinClub = async (data: ClubData): Promise<void> => {
     try {
+        // Convert to arrays if they are strings
+        const formattedData = {
+            ...data,
+            ageGroups: Array.isArray(data.ageGroups) ? data.ageGroups : data.ageGroups.split(',').map(age => age.trim()),
+            divisions: Array.isArray(data.divisions) ? data.divisions : data.divisions.split(',').map(div => div.trim()),
+        };
+
         const response = await fetch(`${url}/club/create-join`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
+            body: JSON.stringify(formattedData),
         });
 
         if (!response.ok) {
@@ -25,6 +32,7 @@ export const createOrJoinClub = async (data: ClubData): Promise<void> => {
     }
 };
 
+
 /**
  * Fetch clubs based on search filters.
  * @param filters - The search filters for clubs.
@@ -33,25 +41,25 @@ export const createOrJoinClub = async (data: ClubData): Promise<void> => {
 export interface Club {
     clubName: string;
     county: string;
-    ageGroups: string[];
-    divisions: string[];
-}
-
-export const fetchClubs = async (filters: { clubName?: string; county?: string; ageGroup?: string; division?: string }): Promise<Club[]> => {
+    teams: { ageGroup: string; division: string }[];
+  }
+  
+  export const fetchClubs = async (filters: { clubName?: string; county?: string; ageGroup?: string; division?: string }): Promise<Club[]> => {
     try {
-        const queryParams = new URLSearchParams(filters as Record<string, string>).toString();
-        const response = await fetch(`${url}/club/search?${queryParams}`);
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch clubs');
-        }
-
-        return await response.json();
+      const queryParams = new URLSearchParams(filters as Record<string, string>).toString();
+      const response = await fetch(`${url}/club/search?${queryParams}`);
+  
+      if (!response.ok) {
+        throw new Error('Failed to fetch clubs');
+      }
+  
+      return await response.json();
     } catch (error) {
-        console.error('Error fetching clubs:', error);
-        throw error;
+      console.error('Error fetching clubs:', error);
+      throw error;
     }
-};
+  };
+  
 
 /**
  * Apply to join a club.
@@ -98,7 +106,7 @@ export const getJoinRequests = async (clubName: string, ageGroup: string, divisi
     const response = await fetch(`${url}/club/requests?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`);
     if (!response.ok) throw new Error('Failed to fetch join requests');
     return await response.json();
-  };  
+};
 
 /**
  * Approve a join request.

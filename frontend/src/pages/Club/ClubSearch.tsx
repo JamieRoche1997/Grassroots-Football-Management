@@ -82,18 +82,17 @@ const ageGroups = [
 
 const divisions = Array.from({ length: 16 }, (_, i) => `Division ${i === 0 ? 'Premier' : i}`);
 
+interface Club {
+    clubName: string;
+    county: string;
+    teams: { ageGroup: string; division: string }[];
+}
+
 export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
     const [clubName, setClubName] = React.useState('');
     const [county, setCounty] = React.useState('');
     const [ageGroup, setAgeGroup] = React.useState('');
     const [division, setDivision] = React.useState('');
-    interface Club {
-        clubName: string;
-        county: string;
-        ageGroups: string[];
-        divisions: string[];
-    }
-
     const [clubs, setClubs] = React.useState<Club[]>([]);
     const navigate = useNavigate();
 
@@ -115,7 +114,7 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
         setClubs([]);
     };
 
-    const handleApply = async (club: { clubName: string; county: string; ageGroups: string[]; divisions: string[] }, ageGroup: string, division: string) => {
+    const handleApply = async (club: string, ageGroup: string, division: string) => {
         try {
             const user = auth.currentUser;
             if (!user || !user.email) {
@@ -123,17 +122,16 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
                 return;
             }
             if (user.displayName && user.email) {
-                await applyToJoinClub(user.displayName, user.email, club.clubName, ageGroup, division);
+                await applyToJoinClub(user.displayName, user.email, club, ageGroup, division);
             } else {
                 console.error('User displayName or email is null');
             }
-            alert(`Join request sent to ${club.clubName} for Age Group: ${ageGroup} and Division: ${division}`);
+            alert(`Join request sent to ${club} for Age Group: ${ageGroup} and Division: ${division}`);
             navigate('/dashboard');
         } catch (error) {
             console.error('Error applying to join club:', error);
         }
     };
-
 
     return (
         <AppTheme {...props}>
@@ -210,29 +208,26 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
 
                         {/* Club List */}
                         {clubs.length > 0 ? (
-                            clubs.flatMap((club) =>
-                                club.ageGroups.flatMap((ageGroup) =>
-                                    club.divisions.map((division) => (
-                                        <Box key={`${club.clubName}-${ageGroup}-${division}`} sx={{ mb: 2, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
-                                            <Typography variant="h6">{club.clubName}</Typography>
-                                            <Typography>Location: {club.county}</Typography>
-                                            <Typography>Age Group: {ageGroup}</Typography>
-                                            <Typography>Division: {division}</Typography>
-                                            <Button
-                                                onClick={() => handleApply(club, ageGroup, division)}
-                                                variant="outlined"
-                                                sx={{ mt: 1 }}
-                                            >
-                                                Request to Join
-                                            </Button>
-                                        </Box>
-                                    ))
-                                )
+                            clubs.map((club) =>
+                                club.teams.map((team, index) => (
+                                    <Box key={`${club.clubName}-${team.ageGroup}-${team.division}-${index}`} sx={{ mb: 2, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
+                                        <Typography variant="h6">{club.clubName}</Typography>
+                                        <Typography>County: {club.county}</Typography>
+                                        <Typography>Age Group: {team.ageGroup}</Typography>
+                                        <Typography>Division: {team.division}</Typography>
+                                        <Button
+                                            onClick={() => handleApply(club.clubName, team.ageGroup, team.division)}
+                                            variant="outlined"
+                                            sx={{ mt: 1 }}
+                                        >
+                                            Request to Join
+                                        </Button>
+                                    </Box>
+                                ))
                             )
                         ) : (
                             <Typography>No clubs found. Try adjusting your search.</Typography>
                         )}
-
                     </ScrollableBox>
                 </Card>
             </SearchContainer>

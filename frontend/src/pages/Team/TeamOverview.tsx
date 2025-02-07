@@ -3,7 +3,7 @@ import Header from '../../components/Header';
 import MainGrid from './components/MainGrid';
 import Layout from '../../components/Layout'; 
 
-export default function Statistics() {
+export default function TeamOverview() {
   return (
     <Layout>
       <Stack

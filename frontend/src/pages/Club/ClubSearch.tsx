@@ -115,7 +115,7 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
         setClubs([]);
     };
 
-    const handleApply = async (club: { clubName: string; county: string; ageGroups: string[]; divisions: string[] }) => {
+    const handleApply = async (club: { clubName: string; county: string; ageGroups: string[]; divisions: string[] }, ageGroup: string, division: string) => {
         try {
             const user = auth.currentUser;
             if (!user || !user.email) {
@@ -123,16 +123,17 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
                 return;
             }
             if (user.displayName && user.email) {
-                await applyToJoinClub(user.displayName, user.email, club.clubName);
+                await applyToJoinClub(user.displayName, user.email, club.clubName, ageGroup, division);
             } else {
                 console.error('User displayName or email is null');
             }
-            alert(`Join request sent to ${club.clubName}`);
+            alert(`Join request sent to ${club.clubName} for Age Group: ${ageGroup} and Division: ${division}`);
             navigate('/dashboard');
         } catch (error) {
             console.error('Error applying to join club:', error);
         }
     };
+
 
     return (
         <AppTheme {...props}>
@@ -209,24 +210,29 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
 
                         {/* Club List */}
                         {clubs.length > 0 ? (
-                            clubs.map((club) => (
-                                <Box key={club.clubName} sx={{ mb: 2, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
-                                    <Typography variant="h6">{club.clubName}</Typography>
-                                    <Typography>Location: {club.county}</Typography>
-                                    <Typography>Age Groups: {club.ageGroups.join(', ')}</Typography>
-                                    <Typography>Divisions: {club.divisions.join(', ')}</Typography>
-                                    <Button
-                                        onClick={() => handleApply(club)}
-                                        variant="outlined"
-                                        sx={{ mt: 1 }}
-                                    >
-                                        Request to Join
-                                    </Button>
-                                </Box>
-                            ))
+                            clubs.flatMap((club) =>
+                                club.ageGroups.flatMap((ageGroup) =>
+                                    club.divisions.map((division) => (
+                                        <Box key={`${club.clubName}-${ageGroup}-${division}`} sx={{ mb: 2, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
+                                            <Typography variant="h6">{club.clubName}</Typography>
+                                            <Typography>Location: {club.county}</Typography>
+                                            <Typography>Age Group: {ageGroup}</Typography>
+                                            <Typography>Division: {division}</Typography>
+                                            <Button
+                                                onClick={() => handleApply(club, ageGroup, division)}
+                                                variant="outlined"
+                                                sx={{ mt: 1 }}
+                                            >
+                                                Request to Join
+                                            </Button>
+                                        </Box>
+                                    ))
+                                )
+                            )
                         ) : (
                             <Typography>No clubs found. Try adjusting your search.</Typography>
                         )}
+
                     </ScrollableBox>
                 </Card>
             </SearchContainer>

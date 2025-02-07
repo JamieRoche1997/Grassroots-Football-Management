@@ -15,7 +15,6 @@ import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import LocalTaxiIcon from '@mui/icons-material/LocalTaxi';
-import AnalyticsRoundedIcon from '@mui/icons-material/AnalyticsRounded';
 import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded';
 import PaymentIcon from '@mui/icons-material/Payment';
 import GroupIcon from '@mui/icons-material/Group';
@@ -73,15 +72,6 @@ const menuItems = [
       { text: 'Overview', icon: <HomeRoundedIcon />, path: '/payments' },
       { text: 'Invoices', icon: <AssignmentIndIcon />, path: '/payments/invoices' },
       { text: 'Transactions', icon: <GroupIcon />, path: '/payments/transactions' },
-    ],
-  },
-  {
-    text: 'Statistics',
-    icon: <AnalyticsRoundedIcon />,
-    subItems: [
-      { text: 'Overview', icon: <HomeRoundedIcon />, path: '/statistics' },
-      { text: 'Player Stats', icon: <AssignmentIndIcon />, path: '/statistics/player-stats' },
-      { text: 'Match Stats', icon: <GroupIcon />, path: '/statistics/match-stats' },
     ],
   },
 ];

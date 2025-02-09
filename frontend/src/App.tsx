@@ -16,6 +16,11 @@ import Schedule from "./pages/Schedule/Schedule";
 import ClubSearch from "./pages/Club/ClubSearch";
 import { useAuth } from "./hooks/useAuth";
 import LoadingSpinner from "./components/LoadingSpinner";
+import TeamPlayers from "./pages/Team/TeamPlayers";
+import PlayerProfile from "./pages/Team/PlayerProfile";
+import TeamTactics from "./pages/Team/TeamTactics";
+import MatchesCalendar from "./pages/Schedule/MatchesCalendar";
+import TrainingCalendar from "./pages/Schedule/TrainingCalendar";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -52,7 +57,12 @@ const App: React.FC = () => {
       <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
       <Route path="/team" element={<ProtectedRoute> <TeamOverview /></ProtectedRoute>} />
       <Route path="/team/requests" element={<ProtectedRoute><TeamRequests /></ProtectedRoute>} />
+      <Route path="/team/players" element={<ProtectedRoute><TeamPlayers /></ProtectedRoute>} />
+      <Route path="/team/players/:playerUid" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
+      <Route path="/team/tactics" element={<ProtectedRoute><TeamTactics /></ProtectedRoute>} />
       <Route path="/schedule" element={<ProtectedRoute><Schedule /></ProtectedRoute>} />
+      <Route path="/schedule/matches" element={<ProtectedRoute><MatchesCalendar /></ProtectedRoute>} />
+      <Route path="/schedule/training" element={<ProtectedRoute><TrainingCalendar /></ProtectedRoute>} />
       <Route path="/club-search" element={<ProtectedRoute><ClubSearch /></ProtectedRoute>} />
     </Routes>
   );

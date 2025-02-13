@@ -37,10 +37,10 @@ export interface MatchData {
     awayScore?: number;
 }
 
-export const fetchMatches = async (month: string, ageGroup: string, division: string): Promise<MatchData[]> => {
+export const fetchMatches = async (month: string, clubName: string, ageGroup: string, division: string): Promise<MatchData[]> => {
     try {
       const response = await fetch(
-        `${url}/schedule/matches?month=${encodeURIComponent(month)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`
+        `${url}/schedule/matches?month=${encodeURIComponent(month)}&clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`
       );
       if (!response.ok) {
         throw new Error('Failed to fetch matches');
@@ -82,10 +82,10 @@ export interface TrainingData {
   createdBy: string;
 }
 
-export const fetchTrainings = async (month: string, ageGroup: string, division: string): Promise<TrainingData[]> => {
+export const fetchTrainings = async (month: string, clubName: string, ageGroup: string, division: string): Promise<TrainingData[]> => {
   try {
     const response = await fetch(
-      `${url}/schedule/trainings?month=${encodeURIComponent(month)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`
+      `${url}/schedule/trainings?month=${encodeURIComponent(month)}&clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`
     );
     if (!response.ok) {
       throw new Error('Failed to fetch trainings');
@@ -112,3 +112,28 @@ export const addTraining = async (training: TrainingData): Promise<void> => {
     throw error;
   }
 };
+
+export interface TacticsData {
+  matchId: string;
+  formation: string;
+  assignedPlayers: { [position: string]: string };
+  strategyNotes?: string;
+}
+
+export const saveTactics = async (tactics: TacticsData): Promise<void> => {
+  try {
+      const response = await fetch(`${url}/schedule/save-tactics`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tactics),
+      });
+
+      if (!response.ok) {
+          throw new Error('Failed to save tactics');
+      }
+  } catch (error) {
+      console.error('Error saving tactics:', error);
+      throw error;
+  }
+};
+

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -17,48 +17,47 @@ import {
 } from '@mui/lab';
 import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import TodayIcon from '@mui/icons-material/Today';
 import Layout from '../../components/Layout';
 import Header from '../../components/Header';
 import { fetchMatches, fetchTrainings } from '../../services/schedule_management';
-import { format } from 'date-fns';
-import { auth } from '../../services/firebaseConfig';
-import { getClubInfo } from '../../services/user_management';
+import { format, isToday, isBefore } from 'date-fns';
+import { useAuth } from '../../hooks/useAuth';
 
 interface Event {
   title: string;
   date: string;
-  type: 'match' | 'training';
+  type: 'match' | 'training' | 'today';
   details: string;
 }
 
 export default function ScheduleOverview() {
+  const { clubName, ageGroup, division, loading: authLoading } = useAuth(); // ✅ Ensure auth context is ready
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const todayRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const fetchScheduleData = async () => {
+      if (authLoading) return; // ✅ Prevents running before auth is ready
+
+      if (!clubName || !ageGroup || !division) {
+        setError('Age group or division is missing.');
+        setLoading(false);
+        return;
+      }
+
       try {
-        const user = auth.currentUser;
-        if (!user || !user.email) {
-          console.error('No authenticated user found');
-          return;
-        }
-
-        const { ageGroup, division } = await getClubInfo(user.email);
-        if ( !ageGroup || !division) {
-          console.error('Club information is incomplete');
-          return;
-        }
-
         const currentMonth = format(new Date(), 'yyyy-MM');
         const nextMonth = format(new Date().setMonth(new Date().getMonth() + 1), 'yyyy-MM');
 
         // Fetch matches and trainings for the current and next month
         const [matchesCurrent, matchesNext, trainingsCurrent, trainingsNext] = await Promise.all([
-          fetchMatches(currentMonth, ageGroup, division),
-          fetchMatches(nextMonth, ageGroup, division),
-          fetchTrainings(currentMonth, ageGroup, division),
-          fetchTrainings(nextMonth, ageGroup, division),
+          fetchMatches(currentMonth, clubName, ageGroup, division),
+          fetchMatches(nextMonth, clubName, ageGroup, division),
+          fetchTrainings(currentMonth, clubName, ageGroup, division),
+          fetchTrainings(nextMonth, clubName, ageGroup, division),
         ]);
 
         // Format and merge events
@@ -81,16 +80,68 @@ export default function ScheduleOverview() {
           new Date(a.date).getTime() - new Date(b.date).getTime()
         );
 
+        // Add "Today" event at the correct position
+        const todayDate = format(new Date(), 'yyyy-MM-dd');
+        const todayEvent: Event = {
+          title: "Today",
+          date: todayDate,
+          type: 'today',
+          details: 'You are here!',
+        };
+
+        // Find the correct index to insert "Today"
+        let todayIndex = combinedEvents.findIndex(event => isBefore(new Date(todayDate), new Date(event.date)));
+        if (todayIndex === -1) {
+          // If no future events exist, push "Today" at the end
+          todayIndex = combinedEvents.length;
+        }
+
+        // Insert the "Today" event at the correct position
+        combinedEvents.splice(todayIndex, 0, todayEvent);
+
         setEvents(combinedEvents);
+        setError(null);
       } catch (error) {
         console.error('Error fetching schedule data:', error);
+        setError('Failed to load schedule data. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchScheduleData();
-  }, []);
+    if (!authLoading) {
+      fetchScheduleData();
+    }
+  }, [authLoading, clubName, ageGroup, division]);
+
+  useEffect(() => {
+    // Auto-scroll to today's event
+    if (todayRef.current) {
+      todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [events]);
+
+  if (authLoading || loading) {
+    return (
+      <Layout>
+        <Header />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+          <CircularProgress />
+        </Box>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <Header />
+        <Box sx={{ p: 3 }}>
+          <Typography color="error" variant="h6">{error}</Typography>
+        </Box>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -100,36 +151,38 @@ export default function ScheduleOverview() {
           Schedule Overview
         </Typography>
 
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-            <CircularProgress />
-          </Box>
-        ) : events.length > 0 ? (
+        {events.length > 0 ? (
           <Timeline position="alternate">
-            {events.map((event, index) => (
-              <TimelineItem key={index}>
-                <TimelineSeparator>
-                  <TimelineDot color={event.type === 'match' ? 'primary' : 'success'}>
-                    {event.type === 'match' ? <SportsSoccerIcon /> : <FitnessCenterIcon />}
-                  </TimelineDot>
-                  {index !== events.length - 1 && <TimelineConnector />}
-                </TimelineSeparator>
-                <TimelineContent>
-                  <Card sx={{ mb: 2, borderRadius: 2, boxShadow: 2 }}>
-                    <CardContent>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                        {event.title}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                        {format(new Date(event.date), 'MMMM d, yyyy hh:mm a')}
-                      </Typography>
-                      <Divider sx={{ mb: 1 }} />
-                      <Typography variant="body1">{event.details}</Typography>
-                    </CardContent>
-                  </Card>
-                </TimelineContent>
-              </TimelineItem>
-            ))}
+            {events.map((event, index) => {
+              const eventDate = new Date(event.date);
+              const isTodayEvent = event.type === 'today' || isToday(eventDate);
+              
+              return (
+                <TimelineItem key={index} ref={isTodayEvent ? todayRef : null}>
+                  <TimelineSeparator>
+                    <TimelineDot color={event.type === 'match' ? 'primary' : event.type === 'training' ? 'success' : 'warning'}>
+                      {event.type === 'today' ? <TodayIcon sx={{ color: 'white' }} /> :
+                        event.type === 'match' ? <SportsSoccerIcon /> : <FitnessCenterIcon />}
+                    </TimelineDot>
+                    {index !== events.length - 1 && <TimelineConnector />}
+                  </TimelineSeparator>
+                  <TimelineContent>
+                    <Card sx={{ mb: 2, borderRadius: 2, boxShadow: 2 }}>
+                      <CardContent>
+                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                          {event.title}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
+                          {format(eventDate, 'MMMM d, yyyy')}
+                        </Typography>
+                        <Divider sx={{ mb: 1 }} />
+                        <Typography variant="body1">{event.details}</Typography>
+                      </CardContent>
+                    </Card>
+                  </TimelineContent>
+                </TimelineItem>
+              );
+            })}
           </Timeline>
         ) : (
           <Typography>No upcoming events found.</Typography>

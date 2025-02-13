@@ -98,7 +98,7 @@ export const checkUserExists = async (email: string): Promise<boolean> => {
  * @param email - The user's email.
  * @returns A promise resolving to the club name.
  */
-export const getClubInfo = async (email: string): Promise<{ clubName: string; ageGroup: string; division: string }> => {
+export const getClubInfo = async (email: string): Promise<{ clubName: string; ageGroup: string; division: string; role: string }> => {
   try {
     const response = await fetch(`${url}/user/club-info?email=${encodeURIComponent(email)}`);
     if (!response.ok) {
@@ -110,6 +110,7 @@ export const getClubInfo = async (email: string): Promise<{ clubName: string; ag
       clubName: data.clubName || '',
       ageGroup: data.ageGroup || '',
       division: data.division || '',
+      role: data.role || '',
     };
   } catch (error) {
     console.error('Error fetching club info:', error);

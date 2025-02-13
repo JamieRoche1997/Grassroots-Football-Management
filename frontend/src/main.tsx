@@ -4,7 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { CacheProvider } from '@emotion/react';
 import createCache from '@emotion/cache';
 import App from "./App";
-import { AuthProvider } from './contexts/AuthContext'; // Import the AuthProvider
+import { AuthProvider } from './contexts/AuthProvider'; // Import the AuthProvider
 
 const cache = createCache({ key: 'mui', prepend: true });
 

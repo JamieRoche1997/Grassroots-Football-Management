@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Button, Typography, Box } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { getClubInfo } from '../../services/user_management';
 import { getJoinRequests, approveJoinRequest, rejectJoinRequest } from '../../services/team_management';
-import { auth } from '../../services/firebaseConfig';
 import Layout from '../../components/Layout';
 import Header from '../../components/Header';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useAuth } from '../../hooks/useAuth';
 
 interface JoinRequest {
   id: string;
@@ -19,59 +18,45 @@ interface JoinRequest {
 }
 
 export default function TeamRequests() {
-  const [clubName, setClubName] = useState<string | null>(null);
-  const [ageGroup, setAgeGroup] = useState<string | null>(null);
-  const [division, setDivision] = useState<string | null>(null);
+  const { clubName, ageGroup, division, loading: authLoading } = useAuth(); 
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Fetch join requests when auth context is ready
   useEffect(() => {
-    const fetchClubInfoAndRequests = async () => {
+    const fetchRequests = async () => {
+      if (authLoading) return;
+
+      if (!clubName || !ageGroup || !division) {
+        setError('Club information is incomplete.');
+        setLoading(false);
+        return;
+      }
+
       try {
-        const user = auth.currentUser;
-        if (!user || !user.email) {
-          console.error('No authenticated user found');
-          return;
-        }
-
-        // Destructure the response correctly
-        const { clubName, ageGroup, division } = await getClubInfo(user.email);
-
-        if (!clubName || !ageGroup || !division) {
-          console.error('Club information is incomplete');
-          return;
-        }
-
-        setClubName(clubName);
-        setAgeGroup(ageGroup);
-        setDivision(division);
-
-        // Fetch join requests for the club, age group, and division
-        await fetchJoinRequests(clubName, ageGroup, division);
+        const requests = await getJoinRequests(clubName, ageGroup, division);
+        setJoinRequests(
+          requests.map((request, index) => ({
+            ...request,
+            id: index.toString(), 
+            ageGroup,
+            division,
+          }))
+        );
+        setError(null);
       } catch (error) {
-        console.error('Error fetching club information or join requests:', error);
+        console.error('Error fetching join requests:', error);
+        setError('Failed to load join requests. Please try again later.');
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchClubInfoAndRequests();
-  }, []);
-
-
-  const fetchJoinRequests = async (club: string, ageGroup: string, division: string) => {
-    try {
-      const requests = await getJoinRequests(club, ageGroup, division);
-      setJoinRequests(
-        requests.map((request, index) => ({
-          ...request,
-          id: index.toString(), // Ensure each row has a unique ID for DataGrid
-          ageGroup,
-          division,
-        }))
-      );
-    } catch (error) {
-      console.error('Error fetching join requests:', error);
+    if (!authLoading) {
+      fetchRequests();
     }
-  };
-
+  }, [clubName, ageGroup, division, authLoading]);
 
   const handleApprove = async (playerEmail: string) => {
     if (!clubName || !ageGroup || !division) return;
@@ -79,7 +64,7 @@ export default function TeamRequests() {
     try {
       await approveJoinRequest(playerEmail, clubName, ageGroup, division);
       alert(`Player ${playerEmail} approved.`);
-      fetchJoinRequests(clubName, ageGroup, division); // Refresh requests
+      setJoinRequests((prev) => prev.filter((req) => req.playerEmail !== playerEmail));
     } catch (error) {
       console.error('Error approving request:', error);
     }
@@ -91,7 +76,7 @@ export default function TeamRequests() {
     try {
       await rejectJoinRequest(playerEmail, clubName, ageGroup, division);
       alert(`Player ${playerEmail} rejected.`);
-      fetchJoinRequests(clubName, ageGroup, division); // Refresh requests
+      setJoinRequests((prev) => prev.filter((req) => req.playerEmail !== playerEmail));
     } catch (error) {
       console.error('Error rejecting request:', error);
     }
@@ -134,7 +119,7 @@ export default function TeamRequests() {
     },
   ];
 
-  if (!clubName || !ageGroup || !division) {
+  if (authLoading || loading) {
     return (
       <Layout>
         <Header />
@@ -143,10 +128,21 @@ export default function TeamRequests() {
     );
   }
 
+  if (error) {
+    return (
+      <Layout>
+        <Header />
+        <Box sx={{ p: 3 }}>
+          <Typography color="error" variant="h6">{error}</Typography>
+        </Box>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <Header />
-      <Box sx={{ p: 3 }}>
+      <Box>
         <Typography variant="h4" sx={{ mb: 2 }}>
           Player Requests for {clubName} ({ageGroup}, {division})
         </Typography>

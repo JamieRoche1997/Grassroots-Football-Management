@@ -12,6 +12,8 @@ import Payments from "./pages/Payments/Payments";
 import Carpool from "./pages/Carpool/Carpool";
 import Feedback from "./pages/Feedback/Feedback";
 import TeamRequests from "./pages/Team/TeamRequests";
+import TeamResults from "./pages/Team/TeamResults";
+import ResultProfile from "./pages/Team/ResultProfile";
 import Schedule from "./pages/Schedule/Schedule";
 import ClubSearch from "./pages/Club/ClubSearch";
 import { useAuth } from "./hooks/useAuth";
@@ -60,6 +62,8 @@ const App: React.FC = () => {
       <Route path="/team/players" element={<ProtectedRoute><TeamPlayers /></ProtectedRoute>} />
       <Route path="/team/players/:playerUid" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
       <Route path="/team/tactics" element={<ProtectedRoute><TeamTactics /></ProtectedRoute>} />
+      <Route path="/team/results" element={<ProtectedRoute><TeamResults /></ProtectedRoute>} />
+      <Route path="/team/results/:matchId" element={<ProtectedRoute><ResultProfile /></ProtectedRoute>} />
       <Route path="/schedule" element={<ProtectedRoute><Schedule /></ProtectedRoute>} />
       <Route path="/schedule/matches" element={<ProtectedRoute><MatchesCalendar /></ProtectedRoute>} />
       <Route path="/schedule/training" element={<ProtectedRoute><TrainingCalendar /></ProtectedRoute>} />

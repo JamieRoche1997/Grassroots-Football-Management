@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, addMonths } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
@@ -7,8 +8,8 @@ import Header from '../../components/Header';
 import Layout from '../../components/Layout';
 import { fetchTrainings, addTraining } from '../../services/schedule_management';
 import { Box, Button, Typography, Dialog, DialogContent, DialogActions, TextField } from '@mui/material';
-import { auth } from '../../services/firebaseConfig';
-import { getClubInfo } from '../../services/user_management';
+import { useAuth } from '../../hooks/useAuth';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const locales = { 'en-US': enUS };
 const localizer = dateFnsLocalizer({
@@ -28,54 +29,50 @@ interface TrainingEvent {
 }
 
 export default function TrainingCalendar() {
+  const { clubName, ageGroup, division, loading: authLoading } = useAuth();
   const [events, setEvents] = useState<TrainingEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [openAddDialog, setOpenAddDialog] = useState(false);
-  const [ageGroup, setAgeGroup] = useState<string | null>(null);
-  const [division, setDivision] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newTraining, setNewTraining] = useState({ date: '', location: '', notes: '', createdBy: '' });
 
-  const fetchTrainingData = async (baseDate: Date) => {
+  const fetchTrainingData = useCallback(async (baseDate: Date) => {
+    if (authLoading) return;
+
+    if ( !clubName || !ageGroup || !division) {
+      setError('Age group or division is missing.');
+      setLoading(false);
+      return;
+    }
     try {
-      const user = auth.currentUser;
-      if (!user || !user.email) {
-        console.error('No authenticated user found');
-        return;
-      }
-
-      const { ageGroup, division } = await getClubInfo(user.email);
-      if (!ageGroup || !division) {
-        console.error('Club information is incomplete');
-        return;
-      }
-
-      setAgeGroup(ageGroup);
-      setDivision(division);
-
       const months = [
         format(addMonths(baseDate, -1), 'yyyy-MM'),
         format(baseDate, 'yyyy-MM'),
         format(addMonths(baseDate, 1), 'yyyy-MM'),
       ];
 
-      const allTrainings = await Promise.all(months.map((month) => fetchTrainings(month, ageGroup, division)));
-      const formattedEvents = allTrainings.flat().map((training) => ({
-        title: `Training at ${training.location}`,
-        start: new Date(training.date),
-        end: new Date(training.date),
-        trainingId: training.trainingId,
-        location: training.location,
-      }));
-
-      setEvents(formattedEvents);
-    } catch (error) {
+        const allTrainings = await Promise.all(months.map((month) => fetchTrainings(month, clubName, ageGroup, division)));
+        const formattedEvents = allTrainings.flat().map((training) => ({
+          title: `Training at ${training.location}`,
+          start: new Date(training.date),
+          end: new Date(training.date),
+          trainingId: training.trainingId,
+          location: training.location,
+        }));
+        setEvents(formattedEvents);
+        setError(null);
+      } catch (error) {
       console.error('Error fetching trainings:', error);
+      setError('Failed to load trainings. Please try again later.');
     }
-  };
+  }, [authLoading, clubName, ageGroup, division]);
 
   useEffect(() => {
-    fetchTrainingData(currentDate);
-  }, [currentDate]);
+    if (!authLoading) {
+      fetchTrainingData(currentDate);
+    }
+  }, [currentDate, fetchTrainingData, authLoading]);
 
   const handleNavigate = (newDate: Date) => {
     setCurrentDate(newDate);
@@ -103,6 +100,28 @@ export default function TrainingCalendar() {
       console.error('Error adding training session:', error);
     }
   };
+
+  if (authLoading || loading) {
+    return (
+      <Layout>
+        <Header />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+          <LoadingSpinner />
+        </Box>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <Header />
+        <Box sx={{ p: 3 }}>
+          <Typography color="error" variant="h6">{error}</Typography>
+        </Box>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

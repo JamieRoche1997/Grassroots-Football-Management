@@ -137,6 +137,7 @@ export const rejectJoinRequest = async (playerEmail: string, clubName: string, a
 };
 
 export interface Player {
+  email: string;
   name: string;
   dob: string;
   position: string;
@@ -155,6 +156,37 @@ export const fetchPlayers = async (clubName: string, ageGroup: string, division:
     return await response.json();
   } catch (error) {
     console.error('Error fetching players:', error);
+    throw error;
+  }
+};
+
+/**
+ * Remove players from the club's players list.
+ * @param clubName - The club name.
+ * @param ageGroup - The age group.
+ * @param division - The division.
+ * @param playerEmails - Array of player emails to remove.
+ */
+export const removePlayersFromClub = async (
+  clubName: string,
+  ageGroup: string,
+  division: string,
+  playerEmails: string[]
+): Promise<void> => {
+  try {
+    const response = await fetch(`${url}/club/players/remove`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clubName, ageGroup, division, playerEmails }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove players from the club.');
+    }
+
+    console.log(`Successfully removed players: ${playerEmails.join(', ')}`);
+  } catch (error) {
+    console.error('Error removing players:', error);
     throw error;
   }
 };

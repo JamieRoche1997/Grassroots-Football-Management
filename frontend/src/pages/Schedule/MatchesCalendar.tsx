@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
@@ -7,8 +8,8 @@ import Header from '../../components/Header';
 import Layout from '../../components/Layout';
 import { fetchMatches, addFixture, updateFixtureResult } from '../../services/schedule_management';
 import { Box, Button, Typography, Dialog, DialogContent, DialogActions, TextField } from '@mui/material';
-import { auth } from '../../services/firebaseConfig';
-import { getClubInfo } from '../../services/user_management';
+import { useAuth } from '../../hooks/useAuth';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const locales = { 'en-US': enUS };
 const localizer = dateFnsLocalizer({
@@ -29,56 +30,53 @@ interface MatchEvent {
 }
 
 export default function MatchesCalendar() {
+  const { clubName, ageGroup, division, loading: authLoading } = useAuth();
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());  // Track the displayed month
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openResultDialog, setOpenResultDialog] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<MatchEvent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [homeScore, setHomeScore] = useState('');
   const [awayScore, setAwayScore] = useState('');
-  const [ageGroup, setAgeGroup] = useState<string | null>(null);
-  const [division, setDivision] = useState<string | null>(null);
   const [newFixture, setNewFixture] = useState({ homeTeam: '', awayTeam: '', date: '', ageGroup: '', division: '', createdBy: '' });
 
-  const fetchMatchData = async (month: Date) => {
+  const fetchMatchData = useCallback(async (month: Date) => {
+    if (authLoading) return;
+
+    if (!clubName || !ageGroup || !division) {
+      setError('Age group or division is missing.');
+      setLoading(false);
+      return;
+    }
     try {
-      const user = auth.currentUser;
-      if (!user || !user.email) {
-        console.error('No authenticated user found');
-        return;
-      }
-
-      // Get club, age group, and division
-      const { clubName, ageGroup, division } = await getClubInfo(user.email);
-      console.log('Club:', clubName, 'Age Group:', ageGroup, 'Division:', division);
-      if (!clubName || !ageGroup || !division) {
-        console.error('Club information is incomplete');
-        return;
-      }
-
-      setAgeGroup(ageGroup);
-      setDivision(division);
-
       const formattedMonth = format(month, 'yyyy-MM'); // e.g., "2025-02"
-      const matches = await fetchMatches(formattedMonth, ageGroup, division);
-      const formattedEvents = matches.map((match) => ({
-        title: `${match.homeTeam} vs ${match.awayTeam}`,
-        start: new Date(match.date),
-        end: new Date(match.date),
-        matchId: match.matchId,
-        homeTeam: match.homeTeam,
-        awayTeam: match.awayTeam,
-      }));
-      setEvents(formattedEvents);
+        const matches = await fetchMatches(formattedMonth, clubName, ageGroup, division);
+        const formattedEvents = matches.map((match) => ({
+          title: `${match.homeTeam} vs ${match.awayTeam}`,
+          start: new Date(match.date),
+          end: new Date(match.date),
+          matchId: match.matchId,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+        }));
+        setEvents(formattedEvents);
+        setError(null);
     } catch (error) {
       console.error('Error fetching matches:', error);
+      setError('Failed to load matches. Please try again later.');
+    }finally {
+      setLoading(false);
     }
-  };
+  }, [authLoading, clubName, ageGroup, division]);
 
   // Fetch matches when the component mounts and when the month changes
   useEffect(() => {
-    fetchMatchData(currentDate);
-  }, [currentDate]);
+    if (!authLoading) {
+      fetchMatchData(currentDate);
+    }
+  }, [currentDate, fetchMatchData, authLoading]);
 
   const handleNavigate = (newDate: Date) => {
     setCurrentDate(newDate);
@@ -118,6 +116,28 @@ export default function MatchesCalendar() {
       console.error('Error updating result:', error);
     }
   };
+
+  if (authLoading || loading) {
+    return (
+      <Layout>
+        <Header />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+          <LoadingSpinner />
+        </Box>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <Header />
+        <Box sx={{ p: 3 }}>
+          <Typography color="error" variant="h6">{error}</Typography>
+        </Box>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

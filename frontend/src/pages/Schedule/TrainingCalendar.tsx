@@ -65,6 +65,8 @@ export default function TrainingCalendar() {
       } catch (error) {
       console.error('Error fetching trainings:', error);
       setError('Failed to load trainings. Please try again later.');
+    }finally {
+      setLoading(false);
     }
   }, [authLoading, clubName, ageGroup, division]);
 

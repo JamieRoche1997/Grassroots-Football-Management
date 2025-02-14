@@ -23,9 +23,6 @@ const ListItemAvatar = styled(MuiListItemAvatar)({
 
 export default function ClubInfoDisplay() {
   const { clubName, ageGroup, division } = useAuth();
-  const data = useAuth();
-  console.log(data);
-  
 
   // Extract initials from the club name
   const getClubInitials = (name: string | null) => {

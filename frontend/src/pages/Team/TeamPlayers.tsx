@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
     Avatar, Box, Card, CardContent, Typography, Button, Grid2 as Grid, Select, MenuItem, FormControl, InputLabel,
-    Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, List, ListItem, ListItemText, ListItemIcon
+    Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, List, ListItem, ListItemText, ListItemIcon, TextField
 } from '@mui/material';
 import { fetchPlayers, removePlayersFromClub } from '../../services/team_management';
-import { updateUserProfile } from '../../services/user_management';
+import { updateUserProfile, createUserInFirestore, checkUserExists } from '../../services/user_management';
+import { v4 as uuidv4 } from 'uuid';
 import Layout from '../../components/Layout';
 import Header from '../../components/Header';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -40,13 +41,15 @@ export default function TeamPlayers() {
     const [error, setError] = useState<string | null>(null);
     const [selectedFilter, setSelectedFilter] = useState<string | null>('All');
     const [sortOption, setSortOption] = useState<string>('name');
+    const [addPlayerOpen, setAddPlayerOpen] = useState(false);
+    const [newPlayer, setNewPlayer] = useState({ name: '', email: '', position: '' });
     const [removePlayerOpen, setRemovePlayerOpen] = useState(false);
     const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
     const navigate = useNavigate();
 
     // Fetch players and club info
     const fetchClubAndPlayers = useCallback(async () => {
-        if (authLoading) return; 
+        if (authLoading) return;
 
         try {
             setLoading(true);
@@ -96,18 +99,46 @@ export default function TeamPlayers() {
         );
     };
 
+    const handleAddPlayer = async () => {
+        if (!clubName || !ageGroup || !division || !newPlayer.name || !newPlayer.email || !newPlayer.position) {
+            alert('Please fill in all fields.');
+            return;
+        }
+
+        try {
+            const userExists = await checkUserExists(newPlayer.email);
+            if (userExists) {
+                alert('A user with this email already exists. Please ask them to sign in.');
+                return;
+            }
+
+            const uid = uuidv4(); // Generate a UID for the new player
+            await createUserInFirestore(uid, newPlayer.email, newPlayer.name, 'player', clubName, ageGroup, division, false);
+
+            alert('Player added successfully!');
+            setAddPlayerOpen(false);
+            setNewPlayer({ name: '', email: '', position: '' });
+
+            // Refresh players list
+            fetchClubAndPlayers();
+        } catch (error) {
+            console.error('Error adding player:', error);
+            alert('Failed to add player. Please try again.');
+        }
+    };
+
     // Handle removing players (Placeholder API Call)
     const handleRemovePlayers = async () => {
         if (selectedPlayers.length === 0) {
             alert('Select players to remove.');
             return;
         }
-    
+
         try {
             console.log('Removing players:', selectedPlayers);
-    
+
             await removePlayersFromClub(clubName!, ageGroup!, division!, selectedPlayers);
-    
+
             // Now update each player's profile in Firestore to remove club info
             await Promise.all(
                 selectedPlayers.map(async (playerEmail) => {
@@ -119,9 +150,9 @@ export default function TeamPlayers() {
                     });
                 })
             );
-    
+
             alert(`Successfully removed players: ${selectedPlayers.join(', ')}`);
-    
+
             // Refresh the players list after removal
             fetchClubAndPlayers();
             setRemovePlayerOpen(false);
@@ -161,7 +192,45 @@ export default function TeamPlayers() {
                     Players in {clubName} ({ageGroup}, {division})
                 </Typography>
 
-                <Button variant="contained" color="primary" sx={{ mb: 3 }} onClick={() => setRemovePlayerOpen(true)}>
+                <Button variant="contained" color="primary" sx={{ width: 200, mb: 3, mr: 2 }} onClick={() => setAddPlayerOpen(true)}>
+                    ➕ Add Player
+                </Button>
+
+                {/* Add Player Modal */}
+                <Dialog open={addPlayerOpen} onClose={() => setAddPlayerOpen(false)}>
+                    <DialogTitle>Add Player</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            placeholder="Player Name"
+                            fullWidth
+                            value={newPlayer.name}
+                            onChange={(e) => setNewPlayer({ ...newPlayer, name: e.target.value })}
+                            sx={{ mt: 2, mb: 2 }}
+                        />
+                        <TextField
+                            placeholder="Player Email"
+                            fullWidth
+                            type="email"
+                            value={newPlayer.email}
+                            onChange={(e) => setNewPlayer({ ...newPlayer, email: e.target.value })}
+                            sx={{ mb: 2 }}
+                        />
+                        <TextField
+                            placeholder="Position"
+                            fullWidth
+                            value={newPlayer.position}
+                            onChange={(e) => setNewPlayer({ ...newPlayer, position: e.target.value })}
+                            sx={{ mb: 2 }}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setAddPlayerOpen(false)}>Cancel</Button>
+                        <Button onClick={handleAddPlayer} variant="contained">Add Player</Button>
+                    </DialogActions>
+                </Dialog>
+
+
+                <Button variant="contained" color="primary" sx={{ width: 200, mb: 3, mr: 2 }} onClick={() => setRemovePlayerOpen(true)}>
                     ❌ Remove Players
                 </Button>
 

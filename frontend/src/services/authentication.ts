@@ -1,6 +1,6 @@
 import { signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from './firebaseConfig';
-import { checkUserExists, createUserInFirestore } from './user_management';
+import { checkUserExists, createUserInFirestore, getClubInfo, updateUserProfile } from './user_management';
 
 const url = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev'
 const googleProvider = new GoogleAuthProvider();
@@ -19,39 +19,73 @@ export const signUp = async (
   role: string
 ): Promise<void> => {
   try {
-    // Step 1: Check if the user already exists
+    // Step 1: Check if the user exists
     const userExists = await checkUserExists(email);
     if (userExists) {
-      throw new Error('A user with this email already exists. Please sign in.');
+      // Fetch user document to check if they were pre-created by a coach
+      const userData = await getClubInfo(email);
+
+      if (!userData) {
+        throw new Error('Failed to fetch user data.');
+      }
+
+      if (userData.userRegistered) {
+        throw new Error('A user with this email already exists. Please sign in.');
+      } else {
+
+        // Step 2: Create the user in Firebase Authentication (pre-created by coach)
+        const authResponse = await fetch(`${url}/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name }),
+        });
+
+        if (!authResponse.ok) {
+          const errorData = await authResponse.json();
+          throw new Error(errorData.error || 'Failed to register user in Firebase Authentication');
+        }
+
+        const authData = await authResponse.json();
+        const firebaseUid = authData.firebase_uid;
+
+        // Step 3: Update Firestore document to mark as registered
+        await updateUserProfile({
+          email,
+          uid: firebaseUid,
+          userRegistered: true,
+        });
+
+        // Log the user in after successful sign-up
+        await signInWithEmailAndPassword(auth, email, password);
+
+        return;
+      }
+    } else {
+
+      // If user does NOT exist, create a new account normally
+      const authResponse = await fetch(`${url}/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      });
+
+      if (!authResponse.ok) {
+        const errorData = await authResponse.json();
+        throw new Error(errorData.error || 'Failed to register user in Firebase Authentication');
+      }
+
+      const authData = await authResponse.json();
+      const firebaseUid = authData.firebase_uid;
+
+      // Create the user in Firestore
+      await createUserInFirestore(firebaseUid, email, name, role, "", "", "", true);
+
+      // Log the user in after successful sign-up
+      await signInWithEmailAndPassword(auth, email, password);
     }
-
-    // Step 2: Create the user in Firebase Authentication
-    const authResponse = await fetch(`${url}/signup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
-    });
-
-    if (!authResponse.ok) {
-      const errorData = await authResponse.json();
-      throw new Error(errorData.error || 'Failed to register user in Firebase Authentication');
-    }
-
-    const authData = await authResponse.json();
-    const firebaseUid = authData.firebase_uid;
-
-    // Step 3: Create the user in Firestore
-    await createUserInFirestore(firebaseUid, email, name, role);
-
-    // Step 4: Log the user in after successful sign-up
-    await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
     console.error('Sign-up error:', error);
-    if (error instanceof Error) {
-      throw new Error(error.message);
-    } else {
-      throw new Error('Sign-up error');
-    }
+    throw error instanceof Error ? new Error(error.message) : new Error('Sign-up error');
   }
 };
 

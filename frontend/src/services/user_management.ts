@@ -14,7 +14,11 @@ export const createUserInFirestore = async (
   uid: string,
   email: string,
   name: string,
-  role: string
+  role: string,
+  clubName: string = "",      
+  ageGroup: string = "",      
+  division: string = "",      
+  userRegistered: boolean = false 
 ): Promise<void> => {
   try {
     const response = await fetch(`${url}/user/create`, {
@@ -25,22 +29,26 @@ export const createUserInFirestore = async (
         email,
         name,
         role,
+        clubName,
+        ageGroup,
+        division,
+        userRegistered,
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to create user in Firestore');
+      throw new Error(errorData.error || "Failed to create user in Firestore");
     }
   } catch (error) {
-    console.error('Error creating user in Firestore:', error);
+    console.error("Error creating user in Firestore:", error);
     throw error;
   }
 };
 
 
-export interface UserProfileData {
-  [key: string]: string | number | string[];
+interface UserProfileData {
+  [key: string]: string | number | string[] | boolean;
 }
 
 export const updateUserProfile = async (data: UserProfileData): Promise<void> => {
@@ -98,7 +106,7 @@ export const checkUserExists = async (email: string): Promise<boolean> => {
  * @param email - The user's email.
  * @returns A promise resolving to the club name.
  */
-export const getClubInfo = async (email: string): Promise<{ clubName: string; ageGroup: string; division: string; role: string }> => {
+export const getClubInfo = async (email: string): Promise<{ clubName: string; ageGroup: string; division: string; role: string, userRegistered: boolean }> => {
   try {
     const response = await fetch(`${url}/user/club-info?email=${encodeURIComponent(email)}`);
     if (!response.ok) {
@@ -111,6 +119,7 @@ export const getClubInfo = async (email: string): Promise<{ clubName: string; ag
       ageGroup: data.ageGroup || '',
       division: data.division || '',
       role: data.role || '',
+      userRegistered: data.userRegistered || false,
     };
   } catch (error) {
     console.error('Error fetching club info:', error);

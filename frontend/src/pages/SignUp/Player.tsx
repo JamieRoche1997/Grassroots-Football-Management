@@ -14,7 +14,7 @@ import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
-import { updateUserProfile } from '../../services/user_management';
+import { updateUserProfile, getClubInfo } from '../../services/user_management';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -69,7 +69,7 @@ export default function PlayerRegistration(props: { disableCustomTheme?: boolean
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-
+  
     const userData = {
       email,
       dob: formData.get('dob') as string,
@@ -78,14 +78,26 @@ export default function PlayerRegistration(props: { disableCustomTheme?: boolean
       emergencyContactName: formData.get('emergencyContactName') as string,
       emergencyContactPhone: formData.get('emergencyContactPhone') as string,
     };
-
+  
     try {
+      // Update user profile
       await updateUserProfile(userData);
-      navigate('/club-search');
+  
+      // Check if the user already has a club assigned
+      const clubInfo = await getClubInfo(email);
+  
+      if (clubInfo.clubName && clubInfo.ageGroup && clubInfo.division) {
+        // If user already belongs to a club, skip club search
+        navigate('/dashboard');
+      } else {
+        // If no club assigned, go to club search
+        navigate('/club-search');
+      }
     } catch (error) {
       console.error('Error updating user profile:', error);
     }
   };
+  
 
   return (
     <AppTheme {...props}>

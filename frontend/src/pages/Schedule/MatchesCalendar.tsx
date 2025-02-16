@@ -141,10 +141,6 @@ export default function MatchesCalendar() {
           endAccessor="end"
           style={{ height: 500 }}
           onNavigate={handleNavigate}  // Track navigation changes
-          onSelectEvent={(event) => {
-            setSelectedMatch(event);
-            setOpenResultDialog(true);
-          }}
         />
 
         {/* Add Fixture Dialog */}

@@ -6,7 +6,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useEffect, useState } from 'react';
 import Header from '../../components/Header';
 import Layout from '../../components/Layout';
-import { fetchMatches, addFixture, updateFixtureResult } from '../../services/schedule_management';
+import { fetchMatches, addFixture } from '../../services/schedule_management';
 import { Box, Button, Typography, Dialog, DialogContent, DialogActions, TextField } from '@mui/material';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -34,12 +34,8 @@ export default function MatchesCalendar() {
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());  // Track the displayed month
   const [openAddDialog, setOpenAddDialog] = useState(false);
-  const [openResultDialog, setOpenResultDialog] = useState(false);
-  const [selectedMatch, setSelectedMatch] = useState<MatchEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [homeScore, setHomeScore] = useState('');
-  const [awayScore, setAwayScore] = useState('');
   const [newFixture, setNewFixture] = useState({ homeTeam: '', awayTeam: '', date: '', ageGroup: '', division: '', createdBy: '' });
 
   const fetchMatchData = useCallback(async (month: Date) => {
@@ -101,19 +97,6 @@ export default function MatchesCalendar() {
       setOpenAddDialog(false);
     } catch (error) {
       console.error('Error adding fixture:', error);
-    }
-  };
-
-  const handleUpdateResult = async () => {
-    try {
-      if (selectedMatch) {
-        await updateFixtureResult(selectedMatch.matchId, parseInt(homeScore), parseInt(awayScore));
-        alert('Match result updated successfully!');
-        fetchMatchData(currentDate);
-        setOpenResultDialog(false);
-      }
-    } catch (error) {
-      console.error('Error updating result:', error);
     }
   };
 
@@ -205,32 +188,6 @@ export default function MatchesCalendar() {
               Add
             </Button>
             <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Update Result Dialog */}
-        <Dialog open={openResultDialog} onClose={() => setOpenResultDialog(false)}>
-          <DialogContent>
-            <Typography variant="h6">{selectedMatch?.title}</Typography>
-            <TextField
-              label="Home Team Score"
-              fullWidth
-              value={homeScore}
-              onChange={(e) => setHomeScore(e.target.value)}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="Away Team Score"
-              fullWidth
-              value={awayScore}
-              onChange={(e) => setAwayScore(e.target.value)}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleUpdateResult} variant="contained">
-              Update
-            </Button>
-            <Button onClick={() => setOpenResultDialog(false)}>Cancel</Button>
           </DialogActions>
         </Dialog>
       </Box>

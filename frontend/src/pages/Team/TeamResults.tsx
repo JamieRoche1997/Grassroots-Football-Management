@@ -45,7 +45,10 @@ export default function TeamResults() {
       const allMatches = await fetchMatches(currentMonth, clubName, ageGroup, division);
 
       // Filter only past matches
-      const pastMatches = allMatches.filter((match) => new Date(match.date) < new Date());
+      const pastMatches = allMatches.filter((match) => {
+        console.log(match.date);
+        return new Date(match.date) < new Date();
+      });
 
       setMatches(pastMatches);
       setError(null);

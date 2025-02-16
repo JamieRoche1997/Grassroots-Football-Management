@@ -35,6 +35,7 @@ export interface MatchData {
     date: string;
     homeScore?: number;
     awayScore?: number;
+    events?: MatchEvent[];
 }
 
 export const fetchMatches = async (month: string, clubName: string, ageGroup: string, division: string): Promise<MatchData[]> => {
@@ -54,7 +55,7 @@ export const fetchMatches = async (month: string, clubName: string, ageGroup: st
   
   export interface MatchEvent {
     type: 'goal' | 'assist' | 'injury' | 'yellowCard' | 'redCard';
-    playerName: string;
+    playerEmail: string;
     minute: string;
     description?: string;
   }

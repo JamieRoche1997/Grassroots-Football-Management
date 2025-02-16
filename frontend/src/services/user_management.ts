@@ -129,24 +129,24 @@ export const getClubInfo = async (email: string): Promise<{ clubName: string; ag
 
 export interface MatchEvent {
   type: 'goal' | 'assist' | 'injury' | 'yellowCard' | 'redCard';
-  playerName: string;
+  playerEmail: string;
   minute: string;
   description?: string;
 }
 
-export const updateUserMatchEvent = async (event: MatchEvent): Promise<void> => {
+export const updateUserMatchEvent = async (playerEmail: string, eventType: string): Promise<void> => {
   try {
-    const response = await fetch(`${url}/users/update-match-event`, {
+    const response = await fetch(`${url}/user/update-match-event`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(event),
+      body: JSON.stringify({ playerEmail, type: eventType }),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to update user match event');
+      throw new Error(`Failed to update ${eventType} for player`);
     }
   } catch (error) {
-    console.error('Error updating user match event:', error);
+    console.error(`Error updating ${eventType} for player:`, error);
     throw error;
   }
 };

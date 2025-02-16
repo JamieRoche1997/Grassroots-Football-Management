@@ -7,6 +7,7 @@ import Header from '../../components/Header';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../hooks/useAuth';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import { updateUserMatchEvent } from '../../services/user_management';
 
 // Interface for match and events
 interface Match {
@@ -17,6 +18,8 @@ interface Match {
   homeScore?: number;
   awayScore?: number;
   events?: MatchEvent[];
+  homeTeamLineup?: { [position: string]: string };
+  awayTeamLineup?: { [position: string]: string };
 }
 
 interface MatchEvent {
@@ -38,6 +41,18 @@ export default function ResultProfile() {
     description: '',
   });
   const { clubName, ageGroup, division } = useAuth();
+  const [homePlayers, setHomePlayers] = useState<string[]>([]);
+  const [awayPlayers, setAwayPlayers] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (match) {
+      const homeTeamPlayers = match.homeTeamLineup ? Object.values(match.homeTeamLineup) : [];
+      const awayTeamPlayers = match.awayTeamLineup ? Object.values(match.awayTeamLineup) : [];
+      setHomePlayers(homeTeamPlayers);
+      setAwayPlayers(awayTeamPlayers);
+    }
+  }, [match]);
+
 
   useEffect(() => {
     const fetchMatchById = async () => {
@@ -56,10 +71,23 @@ export default function ResultProfile() {
     fetchMatchById();
   }, [match, matchId, clubName, ageGroup, division]);
 
-  const handleAddEvent = () => {
+  const handleAddEvent = async () => {
     if (match) {
       const updatedEvents = match.events ? [...match.events, newEvent] : [newEvent];
       setMatch({ ...match, events: updatedEvents });
+
+      // Save to Firestore
+      try {
+        await updateFixtureResult(match.matchId, match.homeScore || 0, match.awayScore || 0, updatedEvents);
+        alert('Match event added successfully!');
+
+        // Update Firestore user collection with the event
+        await updateUserMatchEvent(newEvent);
+      } catch (error) {
+        console.error('Error saving match event:', error);
+        alert('Failed to save match event.');
+      }
+
       setNewEvent({ type: 'goal', playerName: '', minute: '', description: '' });
     }
   };
@@ -67,8 +95,11 @@ export default function ResultProfile() {
   const handleSaveScore = async () => {
     if (match) {
       try {
-        await updateFixtureResult(match.matchId, match.homeScore || 0, match.awayScore || 0);
+        await updateFixtureResult(match.matchId, match.homeScore || 0, match.awayScore || 0, match.events || []);
         alert('Match result updated successfully!');
+
+        // Update UI immediately
+        setMatch((prevMatch) => prevMatch ? { ...prevMatch, homeScore: match.homeScore, awayScore: match.awayScore } : null);
       } catch (error) {
         console.error('Error updating match result:', error);
         alert('Failed to update match result.');
@@ -137,11 +168,28 @@ export default function ResultProfile() {
           {/* Add Match Event */}
           <Typography variant="h5">Add Match Event</Typography>
           <Box sx={{ display: 'flex', gap: 2, my: 2 }}>
-            <TextField
-              label="Player Name"
+            <Select
+              fullWidth
               value={newEvent.playerName}
               onChange={(e) => setNewEvent({ ...newEvent, playerName: e.target.value })}
-            />
+            >
+              <MenuItem disabled value="">
+                Select Player
+              </MenuItem>
+              <MenuItem disabled>── Home Team ──</MenuItem>
+              {homePlayers.map((player) => (
+                <MenuItem key={player} value={player}>
+                  {player}
+                </MenuItem>
+              ))}
+              <MenuItem disabled>── Away Team ──</MenuItem>
+              {awayPlayers.map((player) => (
+                <MenuItem key={player} value={player}>
+                  {player}
+                </MenuItem>
+              ))}
+            </Select>
+
             <TextField
               label="Minute"
               value={newEvent.minute}

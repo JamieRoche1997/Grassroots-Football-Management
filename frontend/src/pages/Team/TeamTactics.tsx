@@ -16,12 +16,24 @@ import Layout from '../../components/Layout';
 import Header from '../../components/Header';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../hooks/useAuth';
-import { fetchMatches, saveTactics } from '../../services/schedule_management';
+import { fetchMatches, saveMatchData } from '../../services/schedule_management';
 
 interface Player {
+  email: string;
   name: string;
   position: string;
   uid: string;
+}
+
+export interface MatchData {
+  matchId: string;
+  homeTeam: string;
+  awayTeam: string;
+  date: string;
+  formation: keyof typeof formations;
+  strategyNotes?: string;
+  homeTeamLineup?: { [position: string]: string }; // Optional because away teams won't send this
+  awayTeamLineup?: { [position: string]: string }; // Optional because home teams won't send this
 }
 
 interface Match {
@@ -31,42 +43,128 @@ interface Match {
   awayTeam: string;
 }
 
-const formations = [
-  { label: '3-6-1', positions: [3, 6, 1] },  // Overloads midfield with one striker
-  { label: '3-5-2', positions: [3, 5, 2] },  // Midfield-heavy, wingbacks push forward
-  { label: '3-4-3', positions: [3, 4, 3] },  // Balanced press with wide attackers
-  { label: '3-4-1-2', positions: [3, 4, 1, 2] },  // Creative attacking midfield
-  { label: '3-3-3-1', positions: [3, 3, 3, 1] },  // Pressing system with attacking midfield
-  { label: '3-2-5', positions: [3, 2, 5] },  // Heavy attacking overload
-  { label: '3-3-4', positions: [3, 3, 4] },  // High offensive intent
+const formations = {
+  '5-4-1': [
+    ['GK'],
+    ['RWB', 'CB', 'CB', 'CB', 'LWB'], // 5 defenders
+    ['RM', 'CM', 'CM', 'LM'], // 4 midfielders
+    ['ST'], // 1 striker
+  ], // Total: 10 outfield players
 
-  { label: '4-6-0', positions: [4, 6, 0] },  // Strikerless, fluid attack
-  { label: '4-5-1', positions: [4, 5, 1] },  // Defensive midfield block
-  { label: '4-4-2', positions: [4, 4, 2] },  // Classic balance
-  { label: '4-4-1-1', positions: [4, 4, 1, 1] },  // More attacking than 4-4-2
-  { label: '4-3-3', positions: [4, 3, 3] },  // Modern pressing and attacking football
-  { label: '4-3-2-1', positions: [4, 3, 2, 1] },  // "Christmas Tree" formation
-  { label: '4-2-4', positions: [4, 2, 4] },  // Heavy attacking, used in classic Brazil teams
-  { label: '4-2-3-1', positions: [4, 2, 3, 1] },  // Flexible, common modern shape
-  { label: '4-2-2-2', positions: [4, 2, 2, 2] },  // Compact with dual strikers
-  { label: '4-1-4-1', positions: [4, 1, 4, 1] },  // Defensive pivot, counterattacks
-  { label: '4-1-3-2', positions: [4, 1, 3, 2] },  // Midfield-heavy, attacking duo
-  { label: '4-3-1-2', positions: [4, 3, 1, 2] },  // Midfield diamond, narrow attacks
+  '5-3-2': [
+    ['GK'],
+    ['RWB', 'CB', 'CB', 'CB', 'LWB'], // 5 defenders
+    ['CM', 'CM', 'CM'], // 3 midfielders
+    ['ST', 'ST'], // 2 strikers
+  ], // Total: 10 outfield players
 
-  { label: '5-4-1', positions: [5, 4, 1] },  // Defensive wall, limited attack
-  { label: '5-3-2', positions: [5, 3, 2] },  // Wingbacks push, defensive core
-  { label: '5-2-3', positions: [5, 2, 3] },  // Balance between attack and defense
-  { label: '5-2-2-1', positions: [5, 2, 2, 1] },  // Defensive with counter-attacking wide players
-];
+  '4-5-1': [
+    ['GK'],
+    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
+    ['CDM'], // 1 defensive mid
+    ['RM', 'CM', 'CM', 'LM'], // 4 midfielders
+    ['ST'], // 1 striker
+  ], // Total: 10 outfield players
 
-  
+  '4-4-2': [
+    ['GK'],
+    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
+    ['RM', 'CM', 'CM', 'LM'], // 4 midfielders
+    ['ST', 'ST'], // 2 strikers
+  ], // Total: 10 outfield players
+
+  '4-1-4-1': [
+    ['GK'],
+    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
+    ['CDM'], // 1 defensive mid
+    ['RM', 'CM', 'CM', 'LM'], // 4 midfielders
+    ['ST'], // 1 striker
+  ], // Total: 10 outfield players
+
+  '4-3-3': [
+    ['GK'],
+    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
+    ['CM', 'CM', 'CM'], // 3 midfielders
+    ['RW', 'ST', 'LW'], // 3 forwards
+  ], // Total: 10 outfield players
+
+  '4-3-2-1': [
+    ['GK'],
+    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
+    ['CM', 'CDM', 'CM'], // 3 midfielders
+    ['CAM', 'CAM'], // 2 attacking mids
+    ['ST'], // 1 striker
+  ], // Total: 10 outfield players
+
+  '4-2-3-1': [
+    ['GK'],
+    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
+    ['CDM', 'CDM'], // 2 defensive mids
+    ['RW', 'CAM', 'LW'], // 3 attacking mids
+    ['ST'], // 1 striker
+  ], // Total: 10 outfield players
+
+  '4-2-2-2': [
+    ['GK'],
+    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
+    ['CDM', 'CDM'], // 2 defensive mids
+    ['CAM', 'CAM'], // 2 attacking mids
+    ['ST', 'ST'], // 2 strikers
+  ], // Total: 10 outfield players
+
+  '3-6-1': [
+    ['GK'],
+    ['CB', 'CB', 'CB'], // 3 defenders
+    ['RWB', 'CM', 'CDM', 'CM', 'LWB'], // 5 midfielders
+    ['CAM'], // 1 attacking mid
+    ['ST'], // 1 striker
+  ], // Total: 10 outfield players
+
+  '3-5-2': [
+    ['GK'],
+    ['CB', 'CB', 'CB'], // 3 defenders
+    ['RWB', 'CM', 'CDM', 'CM', 'LWB'], // 5 midfielders
+    ['ST', 'ST'], // 2 strikers
+  ], // Total: 10 outfield players
+
+  '3-4-3': [
+    ['GK'],
+    ['CB', 'CB', 'CB'], // 3 defenders
+    ['RWB', 'CM', 'CM', 'LWB'], // 4 midfielders
+    ['RW', 'ST', 'LW'], // 3 forwards
+  ], // Total: 10 outfield players
+
+  '3-4-1-2': [
+    ['GK'],
+    ['CB', 'CB', 'CB'], // 3 defenders
+    ['RWB', 'CM', 'CM', 'LWB'], // 4 midfielders
+    ['CAM'], // 1 attacking mid
+    ['ST', 'ST'], // 2 strikers
+  ], // Total: 10 outfield players
+
+  '3-3-4': [
+    ['GK'],
+    ['CB', 'CB', 'CB'], // 3 defenders
+    ['CM', 'CM', 'CM'], // 3 midfielders
+    ['RW', 'ST', 'ST', 'LW'], // 4 forwards
+  ], // Total: 10 outfield players
+
+  '3-2-5': [
+    ['GK'],
+    ['CB', 'CB', 'CB'], // 3 defenders
+    ['CDM', 'CDM'], // 2 midfielders
+    ['RW', 'CAM', 'ST', 'CAM', 'LW'], // 5 attackers
+  ], // Total: 10 outfield players
+};
+
+
 export default function TeamTactics() {
   const { clubName, ageGroup, division, loading: authLoading } = useAuth();
   const [players, setPlayers] = useState<Player[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [selectedFormation, setSelectedFormation] = useState(formations[0]);
+  const [selectedFormation, setSelectedFormation] = useState<keyof typeof formations>('4-4-2');
   const [assignedPlayers, setAssignedPlayers] = useState<{ [position: string]: string }>({});
   const [strategyNotes, setStrategyNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -127,36 +225,49 @@ export default function TeamTactics() {
   }, [authLoading, selectedMatch, clubName, ageGroup, division]);
 
   const handleFormationChange = (event: SelectChangeEvent) => {
-    const newFormation = formations.find((f) => f.label === event.target.value);
-    if (newFormation) setSelectedFormation(newFormation);
+    const newFormation = event.target.value as keyof typeof formations;
+    setSelectedFormation(newFormation);
   };
 
-  const handlePlayerAssign = (position: string, playerUid: string) => {
-    setAssignedPlayers((prev) => ({ ...prev, [position]: playerUid }));
-  };
+  const handlePlayerAssign = (position: string, playerEmail: string) => {
+    setAssignedPlayers((prev) => ({ ...prev, [position]: playerEmail }));
+  };  
 
-const handleSaveTactics = async () => {
+  const handleSaveMatchData = async () => {
     if (!selectedMatch) {
-        alert('Please select a match before saving tactics.');
-        return;
+      alert('Please select a match before saving.');
+      return;
     }
-
-    const tacticsData = {
-        matchId: selectedMatch.matchId,
-        formation: selectedFormation.label,
-        assignedPlayers,
-        strategyNotes,
+  
+    const userTeam = clubName;
+    const isHomeTeam = selectedMatch.homeTeam === userTeam;
+    const isAwayTeam = selectedMatch.awayTeam === userTeam;
+  
+    if (!isHomeTeam && !isAwayTeam) {
+      alert("You are not a coach for either of the teams in this match.");
+      return;
+    }
+  
+    // Dynamically assign home or away lineup
+    const matchData: MatchData = {
+      matchId: selectedMatch.matchId,
+      homeTeam: selectedMatch.homeTeam,
+      awayTeam: selectedMatch.awayTeam,
+      date: selectedMatch.date,
+      formation: selectedFormation,
+      strategyNotes,
+      ...(isHomeTeam ? { homeTeamLineup: assignedPlayers } : { awayTeamLineup: assignedPlayers }),
     };
-
+  
     try {
-        console.log('Saving tactics:', tacticsData);
-        await saveTactics(tacticsData);
-        alert('Tactics saved successfully!');
+      console.log('Saving match data:', matchData);
+      await saveMatchData(matchData);
+      alert('Match data saved successfully!');
     } catch (error) {
-        console.error('Error saving tactics:', error);
-        alert('Failed to save tactics. Please try again.');
+      console.error('Error saving match data:', error);
+      alert('Failed to save match data. Please try again.');
     }
-};
+  };  
 
   if (authLoading || loading) {
     return (
@@ -204,99 +315,86 @@ const handleSaveTactics = async () => {
           </Select>
         </Box>
 
-        {/* Formation Selector */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6">Select Formation</Typography>
-          <Select
-            value={selectedFormation.label}
-            onChange={handleFormationChange}
-            sx={{ width: 200, mb: 2 }}
-          >
-            {formations.map((formation) => (
-              <MenuItem key={formation.label} value={formation.label}>
-                {formation.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </Box>
-
-        {/* Formation Grid */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            minHeight: '60vh',
-            backgroundImage: 'url(/football_pitch.png)', // Add a football pitch background
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            p: 2,
-          }}
+        {/* Formation Selection */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h6">Select Formation</Typography>
+        <Select
+          value={selectedFormation}
+          onChange={handleFormationChange}
+          sx={{ width: 200, mb: 2 }}
         >
-          {selectedFormation.positions.map((count, rowIndex) => (
-            <Grid
-              container
-              key={rowIndex}
-              justifyContent="center"
-              spacing={2}
-              sx={{
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'center',
-                mb: 3, // ✅ Adds space between rows
-              }}
-            >
-              {Array.from({ length: count }).map((_, positionIndex) => {
-                const positionKey = `${rowIndex}-${positionIndex}`;
-
-                return (
-                  <Grid
-                    size={{ xs: 12 / count}} 
-                    key={positionKey}
-                    sx={{ textAlign: 'center', display: 'flex', justifyContent: 'center' }}
-                  >
-                    <Card
-                      sx={{
-                        p: 2,
-                        textAlign: 'center',
-                        backgroundColor: '#f0f0f0',
-                        minWidth: 120,
-                        width: '100%', 
-                        maxWidth: 250, 
-                        height: 100, 
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                        Position {rowIndex + 1}-{positionIndex + 1}
-                      </Typography>
-                      <Select
-                        fullWidth
-                        displayEmpty
-                        value={assignedPlayers[positionKey] || ''}
-                        onChange={(e) => handlePlayerAssign(positionKey, e.target.value)}
-                        sx={{ mt: 1 }}
-                      >
-                        <MenuItem value="">Select Player</MenuItem>
-                        {players.map((player) => (
-                          <MenuItem key={player.uid} value={player.uid}>
-                            {player.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </Card>
-                  </Grid>
-                );
-              })}
-            </Grid>
+          {Object.keys(formations).map((formation) => (
+            <MenuItem key={formation} value={formation}>
+              {formation}
+            </MenuItem>
           ))}
+        </Select>
+      </Box>
 
-        </Box>
+      {/* Formation Grid Display */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          minHeight: '60vh',
+          backgroundImage: 'url(/football_pitch.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          p: 2,
+        }}
+      >
+        {formations[selectedFormation].map((row, rowIndex) => (
+          <Grid
+            key={rowIndex}
+            container
+            spacing={2}
+            justifyContent="center"
+            sx={{ width: '100%', display: 'flex', justifyContent: 'center', mb: 3 }}
+          >
+            {row.map((position, positionIndex) => (
+              <Grid key={positionIndex} sx={{ textAlign: 'center' }}>
+                <Card
+                  sx={{
+                    p: 2,
+                    textAlign: 'center',
+                    backgroundColor: '#f0f0f0',
+                    minWidth: 200,
+                    width: '100%',
+                    maxWidth: 150,
+                    height: 100,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                    {position}
+                  </Typography>
+                  <Select
+                    fullWidth
+                    displayEmpty
+                    value={assignedPlayers[position] || ''}
+                    onChange={(e) => handlePlayerAssign(position, e.target.value)}
+                    sx={{ mt: 1 }}
+                  >
+                    <MenuItem value="">Select Player</MenuItem>
+                    {players.map((player) => (
+                      <MenuItem key={player.email} value={player.email}>
+                        {player.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        ))}
+      </Box>
+
 
         {/* Strategy Notes */}
         <Box sx={{ mb: 3 }}>
@@ -311,7 +409,7 @@ const handleSaveTactics = async () => {
         </Box>
 
         {/* Save Button */}
-        <Button variant="contained" onClick={handleSaveTactics}>
+        <Button variant="contained" onClick={handleSaveMatchData}>
           Save Tactics
         </Button>
       </Box>

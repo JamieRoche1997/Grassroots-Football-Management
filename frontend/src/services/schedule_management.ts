@@ -52,24 +52,32 @@ export const fetchMatches = async (month: string, clubName: string, ageGroup: st
     }
   };
   
+  export interface MatchEvent {
+    type: 'goal' | 'assist' | 'injury' | 'yellowCard' | 'redCard';
+    playerName: string;
+    minute: string;
+    description?: string;
+  }
+  
 
 /**
 * Update the result of a fixture.
 */
-export const updateFixtureResult = async (matchId: string, homeScore: number, awayScore: number): Promise<void> => {
-    try {
-        const response = await fetch(`${url}/schedule/update-result`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ matchId, homeScore, awayScore }),
-        });
-        if (!response.ok) {
-            throw new Error('Failed to update match result');
-        }
-    } catch (error) {
-        console.error('Error updating match result:', error);
-        throw error;
-    }
+export const updateFixtureResult = async (matchId: string, homeScore: number, awayScore: number, events: MatchEvent[]): Promise<void> => {
+  try {
+      const response = await fetch(`${url}/schedule/update-result`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ matchId, homeScore, awayScore, events }),
+      });
+
+      if (!response.ok) {
+          throw new Error('Failed to update match result');
+      }
+  } catch (error) {
+      console.error('Error updating match result:', error);
+      throw error;
+  }
 };
 
 export interface TrainingData {
@@ -113,27 +121,35 @@ export const addTraining = async (training: TrainingData): Promise<void> => {
   }
 };
 
-export interface TacticsData {
+export interface MatchData {
   matchId: string;
+  homeTeam: string;
+  awayTeam: string;
+  date: string;
   formation: string;
-  assignedPlayers: { [position: string]: string };
   strategyNotes?: string;
+  homeTeamLineup?: { [position: string]: string };
+  awayTeamLineup?: { [position: string]: string };
 }
 
-export const saveTactics = async (tactics: TacticsData): Promise<void> => {
-  try {
-      const response = await fetch(`${url}/schedule/save-tactics`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(tactics),
-      });
 
-      if (!response.ok) {
-          throw new Error('Failed to save tactics');
-      }
+export const saveMatchData = async (matchData: MatchData): Promise<void> => {
+  try {
+    const response = await fetch(`${url}/schedule/save-match-data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(matchData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to save match data: ${errorText}`);
+    }
+
+    console.log('Match data saved successfully!');
   } catch (error) {
-      console.error('Error saving tactics:', error);
-      throw error;
+    console.error('Error saving match data:', error);
+    throw error;
   }
 };
 

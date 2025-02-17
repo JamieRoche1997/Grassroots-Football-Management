@@ -24,6 +24,7 @@
     "@mui/x-date-pickers": "^7.24.0",
     "@mui/x-date-pickers-pro": "^7.24.0",
     "@mui/x-tree-view": "^7.24.0",
+    "d3": "^7.9.0",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "firebase": "^11.2.0",
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@types/d3": "^7.4.3",
     "@types/lodash": "^4.17.15",
     "@types/react": "^18.3.18",
     "@types/react-big-calendar": "^1.16.1",

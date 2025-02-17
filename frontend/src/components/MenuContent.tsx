@@ -54,8 +54,8 @@ const menuItems = [
     icon: <RateReviewIcon />,
     subItems: [
       { text: 'Overview', icon: <HomeRoundedIcon />, path: '/feedback' },
-      { text: 'Player Ratings', icon: <AssignmentIndIcon />, path: '/feedback/ratings' },
-      { text: 'Match Ratings', icon: <GroupIcon />, path: '/feedback/match-ratings' },
+      { text: 'Player Ratings', icon: <AssignmentIndIcon />, path: '/feedback/players' },
+      { text: 'Match Ratings', icon: <GroupIcon />, path: '/feedback/matches' },
     ],
   },
   {

@@ -8,6 +8,8 @@ import {
   Card,
   TextField,
   SelectChangeEvent,
+  Divider,
+  ListSubheader,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { fetchPlayers } from '../../services/team_management';
@@ -158,45 +160,59 @@ const formations = {
 };
 
 
-export default function TeamTactics() {
+export default function TeamLineups() {
   const { clubName, ageGroup, division, loading: authLoading } = useAuth();
+  const positionOrder = ["Goalkeeper", "Defender", "Midfielder", "Forward"];
   const [players, setPlayers] = useState<Player[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedFormation, setSelectedFormation] = useState<keyof typeof formations>('4-4-2');
   const [assignedPlayers, setAssignedPlayers] = useState<{ [position: string]: string }>({});
+  const [substitutes, setSubstitutes] = useState<string[]>([]); 
   const [strategyNotes, setStrategyNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const assignedPlayerEmails = new Set(Object.values(assignedPlayers)); 
+  const availableSubstitutes = players.filter(player => !assignedPlayerEmails.has(player.email));
 
   useEffect(() => {
-    const fetchUpcomingMatches = async () => {
+    const fetchAllMatchesForYear = async () => {
       if (authLoading) return;
-
+  
       if (!clubName || !ageGroup || !division) {
         setError('Club information is incomplete.');
         setLoading(false);
         return;
       }
-
+  
       try {
-        const currentMonth = format(new Date(), 'yyyy-MM');
-        const allMatches = await fetchMatches(currentMonth, clubName, ageGroup, division);
-
-        // Filter matches to only show upcoming matches (after today's date)
-        const upcomingMatches = allMatches.filter((match: Match) => new Date(match.date) > new Date());
-
-        setMatches(upcomingMatches);
+        const currentYear = format(new Date(), 'yyyy'); // Get current year
+        let allMatches: Match[] = [];
+  
+        // Loop through all months from January (1) to December (12)
+        for (let month = 1; month <= 12; month++) {
+          const formattedMonth = `${currentYear}-${month.toString().padStart(2, '0')}`;
+          const matches = await fetchMatches(formattedMonth, clubName, ageGroup, division);
+  
+          if (matches && matches.length > 0) {
+            allMatches = [...allMatches, ...matches];
+          }
+        }
+  
+        setMatches(allMatches); // Store all matches for the year
         setError(null);
       } catch (error) {
         console.error('Error fetching matches:', error);
         setError('Failed to load matches. Please try again later.');
+      } finally {
+        setLoading(false);
       }
     };
-
-    fetchUpcomingMatches();
+  
+    fetchAllMatchesForYear();
   }, [authLoading, clubName, ageGroup, division]);
-
+  
+  
   useEffect(() => {
     const fetchPlayersForMatch = async () => {
       if (authLoading) return;
@@ -231,7 +247,17 @@ export default function TeamTactics() {
 
   const handlePlayerAssign = (position: string, playerEmail: string) => {
     setAssignedPlayers((prev) => ({ ...prev, [position]: playerEmail }));
-  };  
+  };
+
+  const handleAddSubstitute = (playerEmail: string) => {
+    if (!substitutes.includes(playerEmail) && substitutes.length < 10) {
+      setSubstitutes([...substitutes, playerEmail]);
+    }
+  };
+
+  const handleRemoveSubstitute = (playerEmail: string) => {
+    setSubstitutes(substitutes.filter((sub) => sub !== playerEmail));
+  };
 
   const handleSaveMatchData = async () => {
     if (!selectedMatch) {
@@ -248,7 +274,16 @@ export default function TeamTactics() {
       return;
     }
   
-    // Dynamically assign home or away lineup
+    // ✅ Convert substitutes into individual fields: { Sub1: "player1", Sub2: "player2" }
+    const substituteEntries = substitutes.reduce((acc, playerEmail, index) => {
+      acc[`Sub${index + 1}`] = playerEmail;
+      return acc;
+    }, {} as { [key: string]: string });
+  
+    // ✅ Assign substitutes inside the home or away lineup
+    const teamLineup = { ...assignedPlayers, ...substituteEntries };
+  
+    // ✅ Dynamically assign home or away lineup
     const matchData: MatchData = {
       matchId: selectedMatch.matchId,
       homeTeam: selectedMatch.homeTeam,
@@ -256,7 +291,7 @@ export default function TeamTactics() {
       date: selectedMatch.date,
       formation: selectedFormation,
       strategyNotes,
-      ...(isHomeTeam ? { homeTeamLineup: assignedPlayers } : { awayTeamLineup: assignedPlayers }),
+      ...(isHomeTeam ? { homeTeamLineup: teamLineup } : { awayTeamLineup: teamLineup }),
     };
   
     try {
@@ -294,7 +329,7 @@ export default function TeamTactics() {
       <Header />
       <Box>
         <Typography variant="h4" sx={{ mb: 3 }}>
-          Team Tactics
+          Team Lineups
         </Typography>
 
         {/* Match Selection Dropdown */}
@@ -316,84 +351,123 @@ export default function TeamTactics() {
         </Box>
 
         {/* Formation Selection */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6">Select Formation</Typography>
-        <Select
-          value={selectedFormation}
-          onChange={handleFormationChange}
-          sx={{ width: 200, mb: 2 }}
-        >
-          {Object.keys(formations).map((formation) => (
-            <MenuItem key={formation} value={formation}>
-              {formation}
-            </MenuItem>
-          ))}
-        </Select>
-      </Box>
-
-      {/* Formation Grid Display */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '100%',
-          minHeight: '60vh',
-          backgroundImage: 'url(/football_pitch.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          p: 2,
-        }}
-      >
-        {formations[selectedFormation].map((row, rowIndex) => (
-          <Grid
-            key={rowIndex}
-            container
-            spacing={2}
-            justifyContent="center"
-            sx={{ width: '100%', display: 'flex', justifyContent: 'center', mb: 3 }}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6">Select Formation</Typography>
+          <Select
+            value={selectedFormation}
+            onChange={handleFormationChange}
+            sx={{ width: 200, mb: 2 }}
           >
-            {row.map((position, positionIndex) => (
-              <Grid key={positionIndex} sx={{ textAlign: 'center' }}>
-                <Card
-                  sx={{
-                    p: 2,
-                    textAlign: 'center',
-                    backgroundColor: '#f0f0f0',
-                    minWidth: 200,
-                    width: '100%',
-                    maxWidth: 150,
-                    height: 100,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                    {position}
-                  </Typography>
-                  <Select
-                    fullWidth
-                    displayEmpty
-                    value={assignedPlayers[position] || ''}
-                    onChange={(e) => handlePlayerAssign(position, e.target.value)}
-                    sx={{ mt: 1 }}
-                  >
-                    <MenuItem value="">Select Player</MenuItem>
-                    {players.map((player) => (
-                      <MenuItem key={player.email} value={player.email}>
-                        {player.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </Card>
-              </Grid>
+            {Object.keys(formations).map((formation) => (
+              <MenuItem key={formation} value={formation}>
+                {formation}
+              </MenuItem>
             ))}
-          </Grid>
-        ))}
-      </Box>
+          </Select>
+        </Box>
+
+        {/* Formation Grid Display */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            minHeight: '60vh',
+            backgroundImage: 'url(/football_pitch.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            p: 2,
+          }}
+        >
+          {formations[selectedFormation].map((row, rowIndex) => (
+            <Grid
+              key={rowIndex}
+              container
+              spacing={2}
+              justifyContent="center"
+              sx={{ width: '100%', display: 'flex', justifyContent: 'center', mb: 3 }}
+            >
+              {row.map((position, positionIndex) => {
+                const positionKey = `${position}-${rowIndex}-${positionIndex}`; // ✅ Unique key
+
+                return (
+                  <Grid key={positionKey} sx={{ textAlign: 'center' }}>
+                    <Card
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        backgroundColor: '#f0f0f0',
+                        minWidth: 200,
+                        width: '100%',
+                        maxWidth: 150,
+                        height: 100,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        {position}
+                      </Typography>
+                      <Select
+                        fullWidth
+                        displayEmpty
+                        value={assignedPlayers[positionKey] || ""}
+                        onChange={(e) => handlePlayerAssign(positionKey, e.target.value)}
+                        sx={{ mt: 1 }}
+                      >
+                        <MenuItem value="">Select Player</MenuItem>
+
+                        {/* ✅ Group players by position, ensuring correct order */}
+                        {positionOrder.flatMap((posCategory, index) => {
+                          const groupedPlayers = players.filter(player => player.position === posCategory);
+                          if (groupedPlayers.length === 0) return []; // Skip empty categories
+
+                          // ✅ Return an array instead of React.Fragment
+                          return [
+                            index > 0 && <Divider key={`divider-${posCategory}`} />, // ✅ Add divider if not the first category
+                            <ListSubheader key={`header-${posCategory}`}>{posCategory}</ListSubheader>,
+                            ...groupedPlayers.map((player) => (
+                              <MenuItem key={player.email} value={player.email}>
+                                {player.name}
+                              </MenuItem>
+                            ))
+                          ];
+                        })}
+                      </Select>
+                    </Card>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          ))}
+
+
+
+        </Box>
+
+
+        {/* Substitutes Selection */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6">Select Substitutes</Typography>
+          {availableSubstitutes.map((player) => (
+            <Button
+              key={player.email}
+              variant={substitutes.includes(player.email) ? 'contained' : 'outlined'}
+              onClick={() =>
+                substitutes.includes(player.email)
+                  ? handleRemoveSubstitute(player.email)
+                  : handleAddSubstitute(player.email)
+              }
+              sx={{ mr: 1, mb: 1 }}
+            >
+              {player.name}
+            </Button>
+          ))}
+        </Box>
 
 
         {/* Strategy Notes */}
@@ -410,7 +484,7 @@ export default function TeamTactics() {
 
         {/* Save Button */}
         <Button variant="contained" onClick={handleSaveMatchData}>
-          Save Tactics
+          Save Lineup
         </Button>
       </Box>
     </Layout>

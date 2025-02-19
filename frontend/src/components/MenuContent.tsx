@@ -13,7 +13,6 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import RateReviewIcon from '@mui/icons-material/RateReview';
 import LocalTaxiIcon from '@mui/icons-material/LocalTaxi';
 import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded';
 import PaymentIcon from '@mui/icons-material/Payment';
@@ -21,6 +20,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import SportsScoreIcon from '@mui/icons-material/SportsScore';
+import StarIcon from '@mui/icons-material/Star';
 
 // Define menu items dynamically
 const menuItems = [
@@ -35,8 +35,8 @@ const menuItems = [
     subItems: [
       { text: 'Overview', icon: <HomeRoundedIcon />, path: '/team' },
       { text: 'Player Requests', icon: <AssignmentIndIcon />, path: '/team/requests' },
-      { text: 'Players', icon: <GroupIcon />, path: '/team/players' },
-      { text: 'Tactics', icon: <SportsSoccerIcon />, path: '/team/tactics' },
+      { text: 'Squad', icon: <GroupIcon />, path: '/team/squad' },
+      { text: 'Lineups', icon: <SportsSoccerIcon />, path: '/team/lineups' },
       { text: 'Results', icon: <SportsScoreIcon />, path: '/team/results' },
     ],
   },
@@ -50,12 +50,11 @@ const menuItems = [
     ],
   },
   {
-    text: 'Feedback',
-    icon: <RateReviewIcon />,
+    text: 'Ratings',
+    icon: <StarIcon />,
     subItems: [
-      { text: 'Overview', icon: <HomeRoundedIcon />, path: '/feedback' },
-      { text: 'Player Ratings', icon: <AssignmentIndIcon />, path: '/feedback/players' },
-      { text: 'Match Ratings', icon: <GroupIcon />, path: '/feedback/matches' },
+      { text: 'Player Ratings', icon: <AssignmentIndIcon />, path: '/ratings/players' },
+      { text: 'Match Ratings', icon: <GroupIcon />, path: '/ratings/matches' },
     ],
   },
   {
@@ -64,7 +63,6 @@ const menuItems = [
     subItems: [
       { text: 'Overview', icon: <HomeRoundedIcon />, path: '/carpool' },
       { text: 'Drivers', icon: <AssignmentIndIcon />, path: '/carpool/drivers' },
-      { text: 'Passengers', icon: <GroupIcon />, path: '/carpool/passengers' },
     ],
   },
   {

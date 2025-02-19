@@ -33,23 +33,31 @@ export default function TeamResults() {
   // Fetch previous matches (matches that have already been played)
   const fetchPreviousMatches = useCallback(async () => {
     if (authLoading) return;
-
+  
     if (!clubName || !ageGroup || !division) {
       setError('Club information is incomplete.');
       setLoading(false);
       return;
     }
-
+  
     try {
-      const currentMonth = format(new Date(), 'yyyy-MM');
-      const allMatches = await fetchMatches(currentMonth, clubName, ageGroup, division);
-
+      const currentYear = format(new Date(), 'yyyy'); // Get current year
+      const currentMonth = new Date().getMonth() + 1; // Get current month (0-based index, so add 1)
+      let allMatches: Match[] = [];
+  
+      // Loop through all months of the current year up to the current month
+      for (let month = 1; month <= currentMonth; month++) {
+        const formattedMonth = `${currentYear}-${month.toString().padStart(2, '0')}`; // Format month as "YYYY-MM"
+        const matches = await fetchMatches(formattedMonth, clubName, ageGroup, division);
+        
+        if (matches && matches.length > 0) {
+          allMatches = [...allMatches, ...matches];
+        }
+      }
+  
       // Filter only past matches
-      const pastMatches = allMatches.filter((match) => {
-        console.log(match.date);
-        return new Date(match.date) < new Date();
-      });
-
+      const pastMatches = allMatches.filter((match) => new Date(match.date) < new Date());
+  
       setMatches(pastMatches);
       setError(null);
     } catch (error) {
@@ -59,6 +67,7 @@ export default function TeamResults() {
       setLoading(false);
     }
   }, [authLoading, clubName, ageGroup, division]);
+  
 
   useEffect(() => {
     if (!authLoading) {

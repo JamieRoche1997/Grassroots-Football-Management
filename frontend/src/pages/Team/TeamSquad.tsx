@@ -113,7 +113,8 @@ export default function TeamPlayers() {
             }
 
             const uid = uuidv4(); // Generate a UID for the new player
-            await createUserInFirestore(uid, newPlayer.email, newPlayer.name, 'player', clubName, ageGroup, division, false);
+            console.log('Adding player:', newPlayer);
+            await createUserInFirestore(uid, newPlayer.email, newPlayer.name, 'player', newPlayer.position, clubName, ageGroup, division, false);
 
             alert('Player added successfully!');
             setAddPlayerOpen(false);
@@ -215,13 +216,22 @@ export default function TeamPlayers() {
                             onChange={(e) => setNewPlayer({ ...newPlayer, email: e.target.value })}
                             sx={{ mb: 2 }}
                         />
-                        <TextField
-                            placeholder="Position"
-                            fullWidth
-                            value={newPlayer.position}
-                            onChange={(e) => setNewPlayer({ ...newPlayer, position: e.target.value })}
-                            sx={{ mb: 2 }}
-                        />
+                        <FormControl fullWidth sx={{ mb: 2 }}>
+                            <Select
+                                displayEmpty
+                                value={newPlayer.position}
+                                onChange={(e) => setNewPlayer({ ...newPlayer, position: e.target.value })}
+                            >
+                                <MenuItem value="" disabled>
+                                    Position
+                                </MenuItem>
+                                <MenuItem value="Goalkeeper">Goalkeeper</MenuItem>
+                                <MenuItem value="Defender">Defender</MenuItem>
+                                <MenuItem value="Midfielder">Midfielder</MenuItem>
+                                <MenuItem value="Forward">Forward</MenuItem>
+                            </Select>
+                        </FormControl>
+
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={() => setAddPlayerOpen(false)}>Cancel</Button>
@@ -299,7 +309,7 @@ export default function TeamPlayers() {
                                         '&:hover': { transform: 'scale(1.05)', boxShadow: 3 },
                                     }}
                                     onClick={() =>
-                                        navigate(`/team/players/${encodeURIComponent(player.uid)}`, {
+                                        navigate(`/team/squad/${encodeURIComponent(player.uid)}`, {
                                             state: { player },
                                         })
                                     }

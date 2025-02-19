@@ -9,10 +9,10 @@ import Player from "./pages/SignUp/Player";
 import Parent from "./pages/SignUp/Parent";
 import TeamOverview from "./pages/Team/TeamOverview";
 import Payments from "./pages/Payments/Payments";
-import Carpool from "./pages/Carpool/Carpool";
-import FeedbackOverview from "./pages/Feedback/FeedbackOverview";
-import PlayerRatings from "./pages/Feedback/PlayerRatings";
-import MatchRatings from "./pages/Feedback/MatchRatings";
+import CarpoolOverview from "./pages/Carpool/Carpool";
+import Drivers from "./pages/Carpool/Drivers";
+import PlayerRatings from "./pages/Ratings/PlayerRatings";
+import MatchRatings from "./pages/Ratings/MatchRatings";
 import TeamRequests from "./pages/Team/TeamRequests";
 import TeamResults from "./pages/Team/TeamResults";
 import ResultProfile from "./pages/Team/ResultProfile";
@@ -20,9 +20,9 @@ import Schedule from "./pages/Schedule/Schedule";
 import ClubSearch from "./pages/Club/ClubSearch";
 import { useAuth } from "./hooks/useAuth";
 import LoadingSpinner from "./components/LoadingSpinner";
-import TeamPlayers from "./pages/Team/TeamPlayers";
+import TeamSquad from "./pages/Team/TeamSquad";
 import PlayerProfile from "./pages/Team/PlayerProfile";
-import TeamTactics from "./pages/Team/TeamTactics";
+import TeamLineups from "./pages/Team/TeamLineups";
 import MatchesCalendar from "./pages/Schedule/MatchesCalendar";
 import TrainingCalendar from "./pages/Schedule/TrainingCalendar";
 
@@ -57,15 +57,15 @@ const App: React.FC = () => {
       <Route path="/signup/parent" element={<ProtectedRoute><Parent /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
-      <Route path="/carpool" element={<ProtectedRoute><Carpool /></ProtectedRoute>} />
-      <Route path="/feedback" element={<ProtectedRoute><FeedbackOverview /></ProtectedRoute>} />
-      <Route path="/feedback/players" element={<ProtectedRoute><PlayerRatings /></ProtectedRoute>} />
-      <Route path="/feedback/matches" element={<ProtectedRoute><MatchRatings /></ProtectedRoute>} />
+      <Route path="/carpool" element={<ProtectedRoute><CarpoolOverview /></ProtectedRoute>} />
+      <Route path="/carpool/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
+      <Route path="/ratings/players" element={<ProtectedRoute><PlayerRatings /></ProtectedRoute>} />
+      <Route path="/ratings/matches" element={<ProtectedRoute><MatchRatings /></ProtectedRoute>} />
       <Route path="/team" element={<ProtectedRoute> <TeamOverview /></ProtectedRoute>} />
       <Route path="/team/requests" element={<ProtectedRoute><TeamRequests /></ProtectedRoute>} />
-      <Route path="/team/players" element={<ProtectedRoute><TeamPlayers /></ProtectedRoute>} />
-      <Route path="/team/players/:playerUid" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
-      <Route path="/team/tactics" element={<ProtectedRoute><TeamTactics /></ProtectedRoute>} />
+      <Route path="/team/squad" element={<ProtectedRoute><TeamSquad /></ProtectedRoute>} />
+      <Route path="/team/squad/:playerUid" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
+      <Route path="/team/lineups" element={<ProtectedRoute><TeamLineups /></ProtectedRoute>} />
       <Route path="/team/results" element={<ProtectedRoute><TeamResults /></ProtectedRoute>} />
       <Route path="/team/results/:matchId" element={<ProtectedRoute><ResultProfile /></ProtectedRoute>} />
       <Route path="/schedule" element={<ProtectedRoute><Schedule /></ProtectedRoute>} />

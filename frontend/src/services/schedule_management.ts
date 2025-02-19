@@ -54,11 +54,12 @@ export const fetchMatches = async (month: string, clubName: string, ageGroup: st
   };
   
   export interface MatchEvent {
-    type: 'goal' | 'assist' | 'injury' | 'yellowCard' | 'redCard';
-    playerEmail: string;
+    type: 'goal' | 'assist' | 'injury' | 'yellowCard' | 'redCard' | 'substitution';
+    playerEmail: string; 
     minute: string;
-    description?: string;
+    subbedInEmail?: string; 
   }
+  
   
 
 /**

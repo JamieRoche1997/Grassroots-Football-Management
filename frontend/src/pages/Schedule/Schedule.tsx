@@ -49,26 +49,24 @@ export default function ScheduleOverview() {
       }
 
       try {
-        const currentMonth = format(new Date(), 'yyyy-MM');
-        const nextMonth = format(new Date().setMonth(new Date().getMonth() + 1), 'yyyy-MM');
+        const currentYear = new Date().getFullYear();
+        const allMonths = Array.from({ length: 12 }, (_, i) => format(new Date(currentYear, i, 1), 'yyyy-MM'));
 
-        // Fetch matches and trainings for the current and next month
-        const [matchesCurrent, matchesNext, trainingsCurrent, trainingsNext] = await Promise.all([
-          fetchMatches(currentMonth, clubName, ageGroup, division),
-          fetchMatches(nextMonth, clubName, ageGroup, division),
-          fetchTrainings(currentMonth, clubName, ageGroup, division),
-          fetchTrainings(nextMonth, clubName, ageGroup, division),
+        // Fetch matches and trainings for **all months** in the current year
+        const [matches, trainings] = await Promise.all([
+          Promise.all(allMonths.map(month => fetchMatches(month, clubName, ageGroup, division))),
+          Promise.all(allMonths.map(month => fetchTrainings(month, clubName, ageGroup, division))),
         ]);
 
-        // Format and merge events
-        const matchEvents: Event[] = [...matchesCurrent, ...matchesNext].map((match) => ({
+        // Flatten the array since Promise.all returns an array of arrays
+        const matchEvents: Event[] = matches.flat().map((match) => ({
           title: `${match.homeTeam} vs ${match.awayTeam}`,
           date: match.date,
           type: 'match',
           details: `Match between ${match.homeTeam} and ${match.awayTeam}`,
         }));
 
-        const trainingEvents: Event[] = [...trainingsCurrent, ...trainingsNext].map((training) => ({
+        const trainingEvents: Event[] = trainings.flat().map((training) => ({
           title: `Training at ${training.location}`,
           date: training.date,
           type: 'training',
@@ -156,7 +154,7 @@ export default function ScheduleOverview() {
             {events.map((event, index) => {
               const eventDate = new Date(event.date);
               const isTodayEvent = event.type === 'today' || isToday(eventDate);
-              
+
               return (
                 <TimelineItem key={index} ref={isTodayEvent ? todayRef : null}>
                   <TimelineSeparator>

@@ -78,7 +78,7 @@ export const signUp = async (
       const firebaseUid = authData.firebase_uid;
 
       // Create the user in Firestore
-      await createUserInFirestore(firebaseUid, email, name, role, "", "", "", true);
+      await createUserInFirestore(firebaseUid, email, name, role, "", "", "", "", true);
 
       // Log the user in after successful sign-up
       await signInWithEmailAndPassword(auth, email, password);

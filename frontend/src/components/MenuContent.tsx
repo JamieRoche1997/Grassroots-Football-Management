@@ -70,8 +70,8 @@ const menuItems = [
     icon: <PaymentIcon />,
     subItems: [
       { text: 'Overview', icon: <HomeRoundedIcon />, path: '/payments' },
-      { text: 'Invoices', icon: <AssignmentIndIcon />, path: '/payments/invoices' },
-      { text: 'Transactions', icon: <GroupIcon />, path: '/payments/transactions' },
+      { text: 'Products', icon: <AssignmentIndIcon />, path: '/payments/products' },
+      { text: 'Shop', icon: <GroupIcon />, path: '/payments/shop' },
     ],
   },
 ];

@@ -8,7 +8,11 @@ import Coach from "./pages/SignUp/Coach";
 import Player from "./pages/SignUp/Player";
 import Parent from "./pages/SignUp/Parent";
 import TeamOverview from "./pages/Team/TeamOverview";
-import Payments from "./pages/Payments/Payments";
+import PaymentsOverview from "./pages/Payments/PaymentsOverview";
+import AddProduct from "./pages/Payments/Product";
+import Shop from "./pages/Payments/Shop";
+import Success from "./pages/Payments/Success";
+import Cancel from "./pages/Payments/Cancel";
 import CarpoolOverview from "./pages/Carpool/Carpool";
 import Drivers from "./pages/Carpool/Drivers";
 import PlayerRatings from "./pages/Ratings/PlayerRatings";
@@ -25,6 +29,9 @@ import PlayerProfile from "./pages/Team/PlayerProfile";
 import TeamLineups from "./pages/Team/TeamLineups";
 import MatchesCalendar from "./pages/Schedule/MatchesCalendar";
 import TrainingCalendar from "./pages/Schedule/TrainingCalendar";
+import Account from "./pages/Account/Account";
+import Profile from "./pages/Account/Profile";
+import Settings from "./pages/Account/Settings";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -56,7 +63,11 @@ const App: React.FC = () => {
       <Route path="/signup/player" element={<ProtectedRoute><Player /></ProtectedRoute>} />
       <Route path="/signup/parent" element={<ProtectedRoute><Parent /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+      <Route path="/payments" element={<ProtectedRoute><PaymentsOverview /></ProtectedRoute>} />
+      <Route path="/payments/products" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
+      <Route path="/payments/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
+      <Route path="/payments/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
+      <Route path="/payments/cancel" element={<ProtectedRoute><Cancel /></ProtectedRoute>} />
       <Route path="/carpool" element={<ProtectedRoute><CarpoolOverview /></ProtectedRoute>} />
       <Route path="/carpool/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
       <Route path="/ratings/players" element={<ProtectedRoute><PlayerRatings /></ProtectedRoute>} />
@@ -72,6 +83,9 @@ const App: React.FC = () => {
       <Route path="/schedule/matches" element={<ProtectedRoute><MatchesCalendar /></ProtectedRoute>} />
       <Route path="/schedule/training" element={<ProtectedRoute><TrainingCalendar /></ProtectedRoute>} />
       <Route path="/club-search" element={<ProtectedRoute><ClubSearch /></ProtectedRoute>} />
+      <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
     </Routes>
   );
 };

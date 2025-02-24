@@ -28,6 +28,30 @@ export default function OptionsMenu() {
     setAnchorEl(null);
   };
 
+  const handleProfile = async () => {
+    try {
+      navigate('/profile'); 
+    } catch (error) {
+      console.error('Failed to load:', error);
+    }
+  };
+
+  const handleAccount = async () => {
+    try {
+      navigate('/account'); 
+    } catch (error) {
+      console.error('Failed to load:', error);
+    }
+  };
+
+  const handleSettings = async () => {
+    try {
+      navigate('/settings'); 
+    } catch (error) {
+      console.error('Failed to load:', error);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await logoutUser();  
@@ -66,11 +90,10 @@ export default function OptionsMenu() {
           },
         }}
       >
-        <MenuItem onClick={handleClose}>Profile</MenuItem>
-        <MenuItem onClick={handleClose}>My account</MenuItem>
+        <MenuItem onClick={handleProfile}>Profile</MenuItem>
+        <MenuItem onClick={handleAccount}>My account</MenuItem>
         <Divider />
-        <MenuItem onClick={handleClose}>Add another account</MenuItem>
-        <MenuItem onClick={handleClose}>Settings</MenuItem>
+        <MenuItem onClick={handleSettings}>Settings</MenuItem>
         <Divider />
         <MenuItem
           onClick={handleLogout}

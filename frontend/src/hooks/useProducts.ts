@@ -22,6 +22,7 @@ export function useProducts(
         setLoading(true);
         setError(null);
         const data = await fetchProducts(clubName, ageGroup, division);
+        console.log(data);
         // Adjust based on how your fetchProducts returns data
         setProducts(data.products);
       } catch (err) {

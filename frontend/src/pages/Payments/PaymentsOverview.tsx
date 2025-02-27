@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Box, Button, Modal, CircularProgress, Typography, Alert } from "@mui/material";
 import Layout from "../../components/Layout";
 import Header from "../../components/Header";
-import { checkStripeStatus, createStripeAccount } from "../../services/payments";
+import { checkStripeStatus, createStripeAccount, createStripeLoginLink } from "../../services/payments";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function PaymentsOverview() {
@@ -21,7 +21,7 @@ export default function PaymentsOverview() {
                 const response = await checkStripeStatus(clubName);
                 setStripeAccount(response.stripe_account_id);
                 setLoading(false);
-                
+
                 // 🚨 If no Stripe account, show onboarding modal
                 if (!response.stripe_account_id) {
                     setShowOnboarding(true);
@@ -53,6 +53,25 @@ export default function PaymentsOverview() {
             setError("An error occurred. Please try again.");
         } finally {
             setOnboardingLoading(false);
+        }
+    };
+
+    const handleOpenStripeDashboard = async () => {
+        if (!clubName) {
+            setError("Club name is required to generate Stripe login link.");
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const loginUrl = await createStripeLoginLink(clubName);
+            window.open(loginUrl, "_blank");
+        } catch {
+            setError("An error occurred while generating the login link.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -108,11 +127,22 @@ export default function PaymentsOverview() {
 
                 {/* ✅ Payments Page Content (Only Shows If Stripe Account Exists) */}
                 {stripeAccount && (
-                    <Box sx={{ mt: 3 }}>
+                    <Box sx={{ mt: 3, textAlign: "center" }}>
                         <Typography variant="h6">Your Stripe Account is Connected ✅</Typography>
                         <Typography variant="body2">You can now sell products and accept payments.</Typography>
-                        {/* Add links to product management */}
+
+                        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mt: 3 }}>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={handleOpenStripeDashboard}
+                                disabled={loading}
+                            >
+                                {loading ? <CircularProgress size={24} /> : "Open Stripe Dashboard"}
+                            </Button>
+                        </Box>
                     </Box>
+
                 )}
             </Box>
         </Layout>

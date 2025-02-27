@@ -21,6 +21,8 @@ import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import SportsScoreIcon from '@mui/icons-material/SportsScore';
 import StarIcon from '@mui/icons-material/Star';
+import EuroIcon from '@mui/icons-material/Euro';
+import ReceiptIcon from '@mui/icons-material/Receipt';
 
 // Define menu items dynamically
 const menuItems = [
@@ -71,7 +73,8 @@ const menuItems = [
     subItems: [
       { text: 'Overview', icon: <HomeRoundedIcon />, path: '/payments' },
       { text: 'Products', icon: <AssignmentIndIcon />, path: '/payments/products' },
-      { text: 'Shop', icon: <GroupIcon />, path: '/payments/shop' },
+      { text: 'Shop', icon: <EuroIcon />, path: '/payments/shop' },
+      { text: 'Transactions', icon: <ReceiptIcon />, path: '/payments/transactions' },
     ],
   },
 ];

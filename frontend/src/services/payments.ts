@@ -4,6 +4,8 @@ interface ProductPayload {
     name: string;
     price: number;
     installmentMonths: number | null;
+    category: string;
+    isMembership: boolean;
 }
 
 // ✅ Check if a club has a Stripe Express account
@@ -48,7 +50,7 @@ export const createProduct = async (clubName: string, ageGroup: string, division
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ clubName, ageGroup, division, products }), // ✅ Include clubName to specify the correct Stripe account
+            body: JSON.stringify({ clubName, ageGroup, division, products }),
         });
 
         if (!response.ok) {
@@ -67,22 +69,24 @@ export const fetchProducts = async (clubName: string, ageGroup: string, division
     try {
         console.log('Fetching products for:', clubName, ageGroup, division);
         const response = await fetch(`${url}/products/list?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`);
-        
+
         if (!response.ok) {
             throw new Error("Failed to fetch products");
         }
-        
+
         const data = await response.json();
 
         // ✅ Ensure `stripe_price_id` is included
         return {
             ...data,
-            products: data.products.map((product: { id: string; stripe_product_id: string, stripe_price_id: string; price: number; installmentMonths: number | null }) => ({
+            products: data.products.map((product: { id: string; stripe_product_id: string, stripe_price_id: string; price: number; installmentMonths: number | null; category: string; isMembership: boolean }) => ({
                 id: product.id,
                 productId: product.stripe_product_id, // 🔹 Include productId
                 priceId: product.stripe_price_id, // ✅ Include `stripe_price_id`
                 price: product.price,
                 installmentMonths: product.installmentMonths,
+                category: product.category,
+                isMembership: product.isMembership,
             })),
         };
     } catch (error) {
@@ -116,6 +120,42 @@ export const createCheckoutSession = async (clubName: string, ageGroup: string, 
         return data.checkoutUrl; // ✅ Return Stripe-hosted checkout URL
     } catch (error) {
         console.error("Error creating checkout session:", error);
+        throw error;
+    }
+};
+
+// ✅ Fetch a user's transaction history
+export const fetchTransactions = async (userEmail: string) => {
+    try {
+        const response = await fetch(`${url}/transactions/list?email=${encodeURIComponent(userEmail)}`);
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch transactions");
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching transactions:", error);
+        throw error;
+    }
+};
+
+export const createStripeLoginLink = async (clubName: string) => {
+    try {
+        const response = await fetch(`${url}/stripe/login-link`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ clubName }),
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to generate Stripe login link");
+        }
+
+        const data = await response.json();
+        return data.url; // ✅ Return the login link
+    } catch (error) {
+        console.error("Error creating Stripe login link:", error);
         throw error;
     }
 };

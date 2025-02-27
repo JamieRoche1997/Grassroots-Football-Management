@@ -13,6 +13,7 @@ import AddProduct from "./pages/Payments/Product";
 import Shop from "./pages/Payments/Shop";
 import Success from "./pages/Payments/Success";
 import Cancel from "./pages/Payments/Cancel";
+import Transactions from "./pages/Payments/Transactions";
 import CarpoolOverview from "./pages/Carpool/Carpool";
 import Drivers from "./pages/Carpool/Drivers";
 import PlayerRatings from "./pages/Ratings/PlayerRatings";
@@ -68,6 +69,7 @@ const App: React.FC = () => {
       <Route path="/payments/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
       <Route path="/payments/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
       <Route path="/payments/cancel" element={<ProtectedRoute><Cancel /></ProtectedRoute>} />
+      <Route path="/payments/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
       <Route path="/carpool" element={<ProtectedRoute><CarpoolOverview /></ProtectedRoute>} />
       <Route path="/carpool/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
       <Route path="/ratings/players" element={<ProtectedRoute><PlayerRatings /></ProtectedRoute>} />

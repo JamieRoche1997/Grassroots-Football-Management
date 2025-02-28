@@ -198,70 +198,173 @@ export default function TeamPlayers() {
                 </Button>
 
                 {/* Add Player Modal */}
-                <Dialog open={addPlayerOpen} onClose={() => setAddPlayerOpen(false)}>
-                    <DialogTitle>Add Player</DialogTitle>
-                    <DialogContent>
-                        <TextField
-                            placeholder="Player Name"
-                            fullWidth
-                            value={newPlayer.name}
-                            onChange={(e) => setNewPlayer({ ...newPlayer, name: e.target.value })}
-                            sx={{ mt: 2, mb: 2 }}
-                        />
-                        <TextField
-                            placeholder="Player Email"
-                            fullWidth
-                            type="email"
-                            value={newPlayer.email}
-                            onChange={(e) => setNewPlayer({ ...newPlayer, email: e.target.value })}
-                            sx={{ mb: 2 }}
-                        />
-                        <FormControl fullWidth sx={{ mb: 2 }}>
-                            <Select
-                                displayEmpty
-                                value={newPlayer.position}
-                                onChange={(e) => setNewPlayer({ ...newPlayer, position: e.target.value })}
-                            >
-                                <MenuItem value="" disabled>
-                                    Position
-                                </MenuItem>
-                                <MenuItem value="Goalkeeper">Goalkeeper</MenuItem>
-                                <MenuItem value="Defender">Defender</MenuItem>
-                                <MenuItem value="Midfielder">Midfielder</MenuItem>
-                                <MenuItem value="Forward">Forward</MenuItem>
-                            </Select>
-                        </FormControl>
+                <Dialog
+                    open={addPlayerOpen}
+                    onClose={() => setAddPlayerOpen(false)}
+                    maxWidth="sm"
+                    fullWidth
+                    slotProps={{
+                        paper: {
+                            sx: {
+                                borderRadius: 20,
+                            },
+                        },
+                    }}
+                >
+                    <DialogTitle
+                        sx={{
+                            bgcolor: 'primary.main',
+                            color: 'primary.contrastText',
+                            fontWeight: 'bold',
+                            textAlign: 'center',
+                            fontSize: '1.25rem',
+                            py: 1.5
+                        }}
+                    >
+                        Add New Player
+                    </DialogTitle>
 
+                    <DialogContent sx={{ p: 3 }}>
+                        <Box component="form" noValidate autoComplete="off" sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <TextField
+                                placeholder="Player Name"
+                                fullWidth
+                                value={newPlayer.name}
+                                onChange={(e) => setNewPlayer({ ...newPlayer, name: e.target.value })}
+                            />
+
+                            <TextField
+                                placeholder="Player Email"
+                                fullWidth
+                                type="email"
+                                value={newPlayer.email}
+                                onChange={(e) => setNewPlayer({ ...newPlayer, email: e.target.value })}
+                            />
+
+                            <FormControl fullWidth>
+                                <Select
+                                    displayEmpty
+                                    value={newPlayer.position}
+                                    onChange={(e) => setNewPlayer({ ...newPlayer, position: e.target.value })}
+                                >
+                                    <MenuItem value="" disabled>
+                                        Select Position
+                                    </MenuItem>
+                                    <MenuItem value="Goalkeeper">Goalkeeper</MenuItem>
+                                    <MenuItem value="Defender">Defender</MenuItem>
+                                    <MenuItem value="Midfielder">Midfielder</MenuItem>
+                                    <MenuItem value="Forward">Forward</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
                     </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setAddPlayerOpen(false)}>Cancel</Button>
-                        <Button onClick={handleAddPlayer} variant="contained">Add Player</Button>
+
+                    <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+                        <Button
+                            onClick={() => setAddPlayerOpen(false)}
+                            variant="outlined"
+                            sx={{ textTransform: 'none' }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleAddPlayer}
+                            variant="contained"
+                            sx={{ textTransform: 'none' }}
+                        >
+                            Add Player
+                        </Button>
                     </DialogActions>
                 </Dialog>
-
 
                 <Button variant="contained" color="primary" sx={{ width: 200, mb: 3, mr: 2 }} onClick={() => setRemovePlayerOpen(true)}>
                     ❌ Remove Players
                 </Button>
 
                 {/* Remove Player Modal */}
-                <Dialog open={removePlayerOpen} onClose={() => setRemovePlayerOpen(false)}>
-                    <DialogTitle>Select Players to Remove</DialogTitle>
-                    <DialogContent>
-                        <List>
-                            {players.map((player) => (
-                                <ListItem key={player.email} component="div" onClick={() => togglePlayerSelection(player.email)}>
-                                    <ListItemIcon>
-                                        <Checkbox checked={selectedPlayers.includes(player.email)} />
-                                    </ListItemIcon>
-                                    <ListItemText primary={player.name} />
-                                </ListItem>
-                            ))}
-                        </List>
+                <Dialog
+                    open={removePlayerOpen}
+                    onClose={() => setRemovePlayerOpen(false)}
+                    maxWidth="sm"
+                    fullWidth
+                    slotProps={{
+                        paper: {
+                            sx: {
+                                borderRadius: 20,
+                            },
+                        },
+                    }}
+                >
+                    <DialogTitle
+                        sx={{
+                            bgcolor: 'error.main',
+                            color: 'error.contrastText',
+                            fontWeight: 'bold',
+                            textAlign: 'center',
+                            fontSize: '1.25rem',
+                            py: 1.5
+                        }}
+                    >
+
+                        Remove Players
+                    </DialogTitle>
+
+                    <DialogContent sx={{ p: 3 }}>
+                        <Box component="form" noValidate autoComplete="off" sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
+                                Select players to remove from the squad:
+                            </Typography>
+
+                            <List dense disablePadding>
+                                {players.map((player) => (
+                                    <ListItem
+                                        key={player.email}
+                                        component="div"
+                                        onClick={() => togglePlayerSelection(player.email)}
+                                        sx={{
+                                            cursor: 'pointer',
+                                            borderBottom: '1px solid',
+                                            borderColor: 'divider',
+                                            '&:hover': { bgcolor: 'action.hover' },
+                                            py: 1,
+                                        }}
+                                    >
+                                        <ListItemIcon>
+                                            <Checkbox
+                                                checked={selectedPlayers.includes(player.email)}
+                                                color="error"
+                                            />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary={
+                                                <Typography variant="body1" fontWeight={selectedPlayers.includes(player.email) ? 'bold' : 'normal'}>
+                                                    {player.name}
+                                                </Typography>
+                                            }
+                                            secondary={player.position}
+                                        />
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </Box>
                     </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setRemovePlayerOpen(false)}>Cancel</Button>
-                        <Button onClick={handleRemovePlayers} variant="contained">Confirm Remove</Button>
+
+                    <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+                        <Button
+                            onClick={() => setRemovePlayerOpen(false)}
+                            variant="outlined"
+                            sx={{ textTransform: 'none' }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleRemovePlayers}
+                            variant="contained"
+                            color="error"
+                            sx={{ textTransform: 'none' }}
+                        >
+                            Confirm Remove
+                        </Button>
                     </DialogActions>
                 </Dialog>
 
@@ -305,8 +408,8 @@ export default function TeamPlayers() {
                                     sx={{
                                         p: 2,
                                         cursor: 'pointer',
-                                        transition: '0.3s',
-                                        '&:hover': { transform: 'scale(1.05)', boxShadow: 3 },
+                                        transition: '0.1s',
+                                        '&:hover': { transform: 'scale(1.1)', boxShadow: 3 },
                                     }}
                                     onClick={() =>
                                         navigate(`/team/squad/${encodeURIComponent(player.uid)}`, {
@@ -339,7 +442,8 @@ export default function TeamPlayers() {
                                                     height: 60,
                                                     fontSize: 20,
                                                     fontWeight: 'bold',
-                                                    color: "#fff",
+                                                    bgcolor: 'primary.main',
+                                                    color: 'primary.contrastText',
                                                     ml: 2
                                                 }}
                                             >

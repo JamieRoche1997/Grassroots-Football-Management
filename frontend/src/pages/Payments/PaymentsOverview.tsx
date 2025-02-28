@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Box, Button, Modal, CircularProgress, Typography, Alert } from "@mui/material";
+import { Box, Button, Modal, CircularProgress, Typography, Alert, Backdrop } from "@mui/material";
 import Layout from "../../components/Layout";
 import Header from "../../components/Header";
 import { checkStripeStatus, createStripeAccount, createStripeLoginLink } from "../../services/payments";
@@ -94,36 +94,69 @@ export default function PaymentsOverview() {
                 <Typography variant="body1">Manage your club’s products and payments here.</Typography>
 
                 {/* 🚨 Stripe Onboarding Modal (Only Shows If No Stripe Account) */}
-                <Modal open={showOnboarding}>
+                <Modal
+                    open={showOnboarding}
+                    onClose={() => setShowOnboarding(false)}
+                    closeAfterTransition
+                    slots={{ backdrop: Backdrop }}
+                    slotProps={{
+                        backdrop: {
+                            sx: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.3)' // Semi-transparent backdrop
+                            }
+                        }
+                    }}
+                >
                     <Box
                         sx={{
+                            alignSelf: "center",
                             position: "absolute",
                             top: "50%",
                             left: "50%",
                             transform: "translate(-50%, -50%)",
-                            bgcolor: "white",
+                            bgcolor: "background.paper",
+                            boxShadow: 24,
+                            borderRadius: 4,
                             p: 4,
-                            borderRadius: 2,
+                            maxWidth: 500,
+                            width: "90%",
                             textAlign: "center",
                         }}
                     >
-                        <Typography variant="h6">Set Up Your Stripe Account</Typography>
-                        <Typography variant="body2" sx={{ mb: 2 }}>
-                            Your club must set up a Stripe account to receive payments.
+                        <Typography variant="h5" fontWeight="bold" gutterBottom>
+                            🚀 Set Up Your Stripe Account
+                        </Typography>
+                        <Typography variant="body1" sx={{ color: "text.secondary", mb: 3 }}>
+                            To receive payments, your club must connect to Stripe. This only takes a minute!
                         </Typography>
 
-                        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                        {error && (
+                            <Alert severity="error" sx={{ mb: 2 }}>
+                                {error}
+                            </Alert>
+                        )}
 
                         <Button
                             variant="contained"
                             color="primary"
                             onClick={handleCreateStripeAccount}
                             disabled={onboardingLoading}
+                            fullWidth
+                            sx={{ py: 1.5, fontSize: "1rem", textTransform: "none" }}
                         >
-                            {onboardingLoading ? <CircularProgress size={24} /> : "Set Up Stripe"}
+                            {onboardingLoading ? (
+                                <CircularProgress size={24} sx={{ color: "white" }} />
+                            ) : (
+                                "Start Stripe Onboarding"
+                            )}
                         </Button>
+
+                        <Typography variant="caption" sx={{ display: "block", mt: 2, color: "text.disabled" }}>
+                            This will redirect you to Stripe’s secure onboarding page.
+                        </Typography>
                     </Box>
                 </Modal>
+
 
                 {/* ✅ Payments Page Content (Only Shows If Stripe Account Exists) */}
                 {stripeAccount && (

@@ -10,8 +10,19 @@ import {
   SelectChangeEvent,
   Divider,
   ListSubheader,
+  Chip,
+  Tooltip,
+  Paper,
+  Stack,
+  Alert,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
+import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+import SaveIcon from '@mui/icons-material/Save';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { fetchPlayers } from '../../services/team_management';
 import { format } from 'date-fns';
 import Layout from '../../components/Layout';
@@ -172,6 +183,9 @@ export default function TeamLineups() {
   const [substitutes, setSubstitutes] = useState<string[]>([]); 
   const [strategyNotes, setStrategyNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const assignedPlayerEmails = new Set(Object.values(assignedPlayers)); 
   const availableSubstitutes = players.filter(player => !assignedPlayerEmails.has(player.email));
 
@@ -324,39 +338,65 @@ export default function TeamLineups() {
     );
   }
 
+  function getPlayerName(playerEmail: string): string {
+    const player = players.find(p => p.email === playerEmail);
+    return player ? player.name : 'Unknown Player';
+  }
   return (
     <Layout>
       <Header />
-      <Box>
-        <Typography variant="h4" sx={{ mb: 3 }}>
+      <Box sx={{ px: { xs: 2, md: 4 }, py: 3, maxWidth: 1200, mx: "auto" }}>
+        <Typography variant="h4" component="h1" fontWeight={600} sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
+          <SportsSoccerIcon sx={{ mr: 1.5, color: 'primary.main' }} />
           Team Lineups
         </Typography>
 
-        {/* Match Selection Dropdown */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6">Select Match</Typography>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        {saveSuccess && (
+          <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSaveSuccess(false)}>
+            Match data saved successfully!
+          </Alert>
+        )}
+
+        <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+          <Typography variant="h6" fontWeight={500} sx={{ mb: 2 }}>
+            Match Details
+          </Typography>
+          
           <Select
             fullWidth
             displayEmpty
             value={selectedMatch?.matchId || ''}
             onChange={(e) => setSelectedMatch(matches.find((m) => m.matchId === e.target.value) || null)}
+            sx={{ mb: 3 }}
           >
             <MenuItem value="" disabled>Select a match</MenuItem>
             {matches.map((match) => (
               <MenuItem key={match.matchId} value={match.matchId}>
-                {match.homeTeam} vs {match.awayTeam} - {format(new Date(match.date), 'MMMM d, yyyy')}
+                <Box sx={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body1">{match.homeTeam} vs {match.awayTeam}</Typography>
+                  <Chip 
+                    size="small" 
+                    label={format(new Date(match.date), 'MMM d, yyyy')} 
+                    sx={{ ml: 2 }}
+                  />
+                </Box>
               </MenuItem>
             ))}
           </Select>
-        </Box>
 
-        {/* Formation Selection */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6">Select Formation</Typography>
+          <Typography variant="subtitle1" fontWeight={500} sx={{ mb: 1 }}>
+            Formation
+          </Typography>
           <Select
             value={selectedFormation}
             onChange={handleFormationChange}
-            sx={{ width: 200, mb: 2 }}
+            sx={{ width: '100%', mb: 2 }}
           >
             {Object.keys(formations).map((formation) => (
               <MenuItem key={formation} value={formation}>
@@ -364,128 +404,205 @@ export default function TeamLineups() {
               </MenuItem>
             ))}
           </Select>
-        </Box>
+        </Paper>
 
-        {/* Formation Grid Display */}
-        <Box
+        {/* Field and lineup visualization */}
+        <Paper 
+          elevation={3} 
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            minHeight: '60vh',
-            backgroundImage: 'url(/football_pitch.png)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            p: 2,
+            mb: 4,
+            overflow: 'hidden',
+            borderRadius: 2,
           }}
         >
-          {formations[selectedFormation].map((row, rowIndex) => (
-            <Grid
-              key={rowIndex}
-              container
-              spacing={2}
-              justifyContent="center"
-              sx={{ width: '100%', display: 'flex', justifyContent: 'center', mb: 3 }}
-            >
-              {row.map((position, positionIndex) => {
-                const positionKey = `${position}-${rowIndex}-${positionIndex}`; // ✅ Unique key
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              minHeight: '60vh',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              p: 3,
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 0,
+              }
+            }}
+          >
+            {formations[selectedFormation].map((row, rowIndex) => (
+              <Grid
+                key={rowIndex}
+                container
+                spacing={isMobile ? 1 : 2}
+                justifyContent="center"
+                sx={{ width: '100%', mb: 3, position: 'relative', zIndex: 1 }}
+              >
+                {row.map((position, positionIndex) => {
+                  const positionKey = `${position}-${rowIndex}-${positionIndex}`;
+                  const assignedPlayer = players.find(p => p.email === assignedPlayers[positionKey]);
 
-                return (
-                  <Grid key={positionKey} sx={{ textAlign: 'center' }}>
-                    <Card
-                      sx={{
-                        p: 2,
-                        textAlign: 'center',
-                        backgroundColor: '#f0f0f0',
-                        minWidth: 200,
-                        width: '100%',
-                        maxWidth: 150,
-                        height: 100,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                        {position}
-                      </Typography>
-                      <Select
-                        fullWidth
-                        displayEmpty
-                        value={assignedPlayers[positionKey] || ""}
-                        onChange={(e) => handlePlayerAssign(positionKey, e.target.value)}
-                        sx={{ mt: 1 }}
+                  return (
+                    <Grid key={positionKey} sx={{ textAlign: 'center' }}>
+                      <Card
+                        sx={{
+                          p: 1.5,
+                          textAlign: 'center',
+                          minWidth: isMobile ? 120 : 150,
+                          width: '100%',
+                          height: isMobile ? 80 : 100,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          borderRadius: 2,
+                          boxShadow: 3,
+                          transition: 'transform 0.2s, box-shadow 0.2s',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: 6,
+                          },
+                        }}
                       >
-                        <MenuItem value="">Select Player</MenuItem>
+                        <Typography variant="subtitle2" fontWeight={600} sx={{ 
+                          color: 'primary.main',
+                          mb: 0.5
+                        }}>
+                          {position}
+                        </Typography>
+                        
+                        <Select
+                          fullWidth
+                          displayEmpty
+                          value={assignedPlayers[positionKey] || ""}
+                          onChange={(e) => handlePlayerAssign(positionKey, e.target.value)}
+                          size={isMobile ? "small" : "medium"}
+                          sx={{ 
+                            '.MuiOutlinedInput-notchedOutline': { 
+                              borderColor: assignedPlayer ? 'transparent' : 'inherit',
+                            },
+                            backgroundColor: assignedPlayer ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
+                            borderRadius: 1.5
+                          }}
+                        >
+                          <MenuItem value="">
+                            <Typography variant="body2" color="text.secondary">
+                              Select Player
+                            </Typography>
+                          </MenuItem>
 
-                        {/* ✅ Group players by position, ensuring correct order */}
-                        {positionOrder.flatMap((posCategory, index) => {
-                          const groupedPlayers = players.filter(player => player.position === posCategory);
-                          if (groupedPlayers.length === 0) return []; // Skip empty categories
+                          {positionOrder.flatMap((posCategory, index) => {
+                            const groupedPlayers = players.filter(player => player.position === posCategory);
+                            if (groupedPlayers.length === 0) return [];
 
-                          // ✅ Return an array instead of React.Fragment
-                          return [
-                            index > 0 && <Divider key={`divider-${posCategory}`} />, // ✅ Add divider if not the first category
-                            <ListSubheader key={`header-${posCategory}`}>{posCategory}</ListSubheader>,
-                            ...groupedPlayers.map((player) => (
-                              <MenuItem key={player.email} value={player.email}>
-                                {player.name}
-                              </MenuItem>
-                            ))
-                          ];
-                        })}
-                      </Select>
-                    </Card>
-                  </Grid>
-                );
-              })}
-            </Grid>
-          ))}
-
-
-
-        </Box>
-
+                            return [
+                              index > 0 && <Divider key={`divider-${posCategory}`} />,
+                              <ListSubheader key={`header-${posCategory}`}>{posCategory}</ListSubheader>,
+                              ...groupedPlayers.map((player) => (
+                                <MenuItem key={player.email} value={player.email}>
+                                  {player.name}
+                                </MenuItem>
+                              ))
+                            ];
+                          })}
+                        </Select>
+                      </Card>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            ))}
+          </Box>
+        </Paper>
 
         {/* Substitutes Selection */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6">Select Substitutes</Typography>
-          {availableSubstitutes.map((player) => (
-            <Button
-              key={player.email}
-              variant={substitutes.includes(player.email) ? 'contained' : 'outlined'}
-              onClick={() =>
-                substitutes.includes(player.email)
-                  ? handleRemoveSubstitute(player.email)
-                  : handleAddSubstitute(player.email)
-              }
-              sx={{ mr: 1, mb: 1 }}
-            >
-              {player.name}
-            </Button>
-          ))}
-        </Box>
-
+        <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+          <Typography variant="h6" fontWeight={500} sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+            Substitutes ({substitutes.length}/10)
+          </Typography>
+          
+          {substitutes.length > 0 && (
+            <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 3 }}>
+              {substitutes.map((playerEmail) => (
+                <Chip
+                  key={playerEmail}
+                  label={getPlayerName(playerEmail)}
+                  onDelete={() => handleRemoveSubstitute(playerEmail)}
+                  color="primary"
+                  variant="outlined"
+                  deleteIcon={<PersonRemoveIcon />}
+                  sx={{ mb: 1 }}
+                />
+              ))}
+            </Stack>
+          )}
+          
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+            Available Players
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {availableSubstitutes.map((player) => (
+              <Chip
+                key={player.email}
+                label={player.name}
+                onClick={() => handleAddSubstitute(player.email)}
+                icon={<PersonAddIcon />}
+                disabled={substitutes.length >= 10}
+                variant="outlined"
+                clickable
+                sx={{ mb: 1 }}
+              />
+            ))}
+          </Box>
+        </Paper>
 
         {/* Strategy Notes */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6">Strategy Notes</Typography>
+        <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+          <Typography variant="h6" fontWeight={500} sx={{ mb: 2 }}>
+            Strategy Notes
+          </Typography>
           <TextField
             fullWidth
-            multiline
-            minRows={4}
             value={strategyNotes}
             onChange={(e) => setStrategyNotes(e.target.value)}
+            placeholder="Enter your strategy and tactical notes here..."
           />
-        </Box>
+        </Paper>
 
         {/* Save Button */}
-        <Button variant="contained" onClick={handleSaveMatchData}>
-          Save Lineup
-        </Button>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Tooltip title={!selectedMatch ? "Please select a match first" : ""}>
+            <span>
+              <Button 
+                variant="contained" 
+                size="large"
+                onClick={handleSaveMatchData}
+                disabled={!selectedMatch}
+                startIcon={<SaveIcon />}
+                sx={{ 
+                  mt: 3,
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 2,
+                  boxShadow: 4,
+                  '&:hover': {
+                    boxShadow: 6,
+                  }
+                }}
+              >
+                Save Lineup
+              </Button>
+            </span>
+          </Tooltip>
+        </Box>
       </Box>
     </Layout>
   );

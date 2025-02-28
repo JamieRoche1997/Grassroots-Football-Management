@@ -11,6 +11,7 @@ import {
   datePickersCustomizations,
   treeViewCustomizations,
 } from '../components/theme/customizations'; 
+import Chatbot from './Chatbot';
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -50,6 +51,7 @@ export default function Layout({ children }: LayoutProps) {
             {children}
           </Box>
         </Box>
+        <Chatbot />
       </Box>
     </AppTheme>
   );

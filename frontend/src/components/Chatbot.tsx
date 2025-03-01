@@ -177,7 +177,6 @@ function FloatingChatbot({
                           <Avatar
                             sx={{
                               mr: 1,
-                              bgcolor: theme.palette.primary.main,
                               width: 28,
                               height: 28
                             }}
@@ -192,7 +191,7 @@ function FloatingChatbot({
                             borderRadius: 2,
                             backgroundColor:
                               message.role === 'user'
-                                ? theme.palette.primary.light
+                                ? theme.palette.primary.main
                                 : theme.palette.background.paper,
                             color:
                               message.role === 'user'
@@ -220,7 +219,7 @@ function FloatingChatbot({
                           </Typography>
                         </Box>
                         {message.role === 'user' && (
-                          <Avatar sx={{ ml: 1, bgcolor: theme.palette.secondary.main, width: 28, height: 28 }}>
+                          <Avatar sx={{ ml: 1, width: 28, height: 28 }}>
                             <PersonIcon fontSize="small" />
                           </Avatar>
                         )}

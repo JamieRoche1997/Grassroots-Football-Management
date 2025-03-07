@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Typography, Box, Card, Divider, TextField, Button, IconButton, Select, MenuItem, ListSubheader } from '@mui/material';
-import { updateFixtureResult, fetchMatches } from '../../services/schedule_management';
 import Layout from '../../components/Layout';
 import Header from '../../components/Header';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../hooks/useAuth';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import { updateUserMatchEvent } from '../../services/user_management';
-import { fetchPlayers } from '../../services/team_management';
+import { getMembershipsForTeam } from '../../services/membership';
+import { getFixtureById } from '../../services/schedule_management';
+import { getEvents, addEvent, getLineups } from '../../services/match_management';
+import { saveResult } from '../../services/match_management';
+import { fetchPlayerRatings, submitPlayerRating } from '../../services/match_management';
+
 
 // Interface for match and events
 interface Match {
@@ -30,6 +33,28 @@ interface MatchEvent {
   subbedInEmail?: string;
 }
 
+function mapPositionToCategory(position: string): string {
+  position = position.split("-")[0]; // ✅ Extract the main position
+  const positionMapping: { [key: string]: string } = {
+    GK: "Goalkeeper",
+    CB: "Defender",
+    RB: "Defender",
+    LB: "Defender",
+    RWB: "Defender",
+    LWB: "Defender",
+    CDM: "Midfielder",
+    CM: "Midfielder",
+    CAM: "Midfielder",
+    RM: "Midfielder",
+    LM: "Midfielder",
+    RW: "Forward",
+    LW: "Forward",
+    ST: "Forward"
+  };
+  return positionMapping[position] || "Unknown";  // Fallback to Unknown
+}
+
+
 export default function ResultProfile() {
   const { matchId } = useParams();
   const { state } = useLocation();
@@ -44,16 +69,27 @@ export default function ResultProfile() {
   const [homePlayers, setHomePlayers] = useState<{ email: string; name: string; position: string }[]>([]);
   const [awayPlayers, setAwayPlayers] = useState<{ email: string; name: string; position: string }[]>([]);
   const [playersMap, setPlayersMap] = useState<{ [email: string]: { name: string; position: string } }>({});
+  const [playerRatings, setPlayerRatings] = useState<{ [email: string]: number }>({});
 
   useEffect(() => {
     const fetchPlayersData = async () => {
       if (clubName && ageGroup && division) {
         try {
-          const allPlayers = await fetchPlayers(clubName, ageGroup, division); // ✅ Fetch all players
-          const emailToPlayerMap = allPlayers.reduce((map, player) => {
+          const allPlayers = await getMembershipsForTeam(clubName, ageGroup, division); // ✅ Fetch all players
+          interface Player {
+            email: string;
+            name: string;
+            position: string;
+          }
+
+          interface PlayersMap {
+            [email: string]: { name: string; position: string };
+          }
+
+          const emailToPlayerMap: PlayersMap = allPlayers.reduce((map: PlayersMap, player: Player) => {
             map[player.email] = { name: player.name, position: player.position }; // ✅ Store name & position
             return map;
-          }, {} as { [email: string]: { name: string; position: string } });
+          }, {});
 
           setPlayersMap(emailToPlayerMap);
         } catch (error) {
@@ -66,118 +102,118 @@ export default function ResultProfile() {
   }, [clubName, ageGroup, division]);
 
   useEffect(() => {
-    if (match) {
-      // Convert home and away lineup from { position: email } to [{ email, name, position }]
-      const homeTeamPlayers = match.homeTeamLineup
-        ? Object.entries(match.homeTeamLineup).map(([, email]) => ({
-          email,
-          name: playersMap[email]?.name || "Unknown Player",
-          position: playersMap[email]?.position || "Unknown Position", // ✅ Ensure position is included
-        }))
-        : [];
+    const fetchLineups = async () => {
+      if (matchId && clubName && ageGroup && division) {
+        try {
+          const lineups = await getLineups(matchId, clubName, ageGroup, division);
 
-      const awayTeamPlayers = match.awayTeamLineup
-        ? Object.entries(match.awayTeamLineup).map(([, email]) => ({
-          email,
-          name: playersMap[email]?.name || "Unknown Player",
-          position: playersMap[email]?.position || "Unknown Position", // ✅ Ensure position is included
-        }))
-        : [];
+          const homeTeamPlayers = Object.entries(lineups.homeTeamLineup || {}).map(([position, email]) => ({
+            email,
+            name: playersMap[email]?.name || "Unknown Player",
+            position: mapPositionToCategory(position)
+          }));
 
-      setHomePlayers(homeTeamPlayers);
-      setAwayPlayers(awayTeamPlayers);
-    }
-  }, [match, playersMap]);
+          const awayTeamPlayers = Object.entries(lineups.awayTeamLineup || {}).map(([position, email]) => ({
+            email,
+            name: playersMap[email]?.name || "Unknown Player",
+            position: mapPositionToCategory(position)
+          }));
+
+          setHomePlayers(homeTeamPlayers);
+          setAwayPlayers(awayTeamPlayers);
+        } catch (error) {
+          console.error("Error fetching lineups:", error);
+        }
+      }
+    };
+
+    fetchLineups();
+  }, [matchId, clubName, ageGroup, division, playersMap]);  // Notice: match itself is not a dependency
 
 
   useEffect(() => {
-    const fetchMatchById = async () => {
-      if (!match && matchId) {
+    const fetchFixtureAndEvents = async () => {
+      if (matchId && clubName && ageGroup && division) {
+        setLoading(true);
         try {
-          console.log("Fetching match data...");
-          const matches = await fetchMatches(new Date().toISOString().slice(0, 7), clubName!, ageGroup!, division!);
-          const foundMatch = matches.find((m) => m.matchId === matchId);
+          const fixture = await getFixtureById(matchId, clubName, ageGroup, division);
+          const events = await getEvents(matchId, clubName, ageGroup, division);
+          console.log('fixture:', fixture);
 
-          if (foundMatch) {
-            console.log("Match found:", foundMatch);
-
-            if (!foundMatch.homeTeamLineup) foundMatch.homeTeamLineup = {};
-            if (!foundMatch.awayTeamLineup) foundMatch.awayTeamLineup = {};
-            if (!foundMatch.events) foundMatch.events = []; // Ensure events exist
-            setMatch(foundMatch);
-          }
+          setMatch({ ...fixture, events: events as MatchEvent[] });  // ✅ Load both at once
         } catch (error) {
-          console.error("Error fetching match details:", error);
+          console.error('Error fetching match details:', error);
         } finally {
           setLoading(false);
         }
       }
     };
 
-    fetchMatchById();
-  }, [match, matchId, clubName, ageGroup, division]);
+    fetchFixtureAndEvents();
+  }, [matchId, clubName, ageGroup, division]);  // ✅ `match` itself is NOT a dependency
+
+  useEffect(() => {
+    const loadRatings = async () => {
+        if (matchId && clubName && ageGroup && division) {
+            const ratings = await fetchPlayerRatings(matchId, clubName, ageGroup, division);
+            const ratingMap = ratings.reduce((map, rating) => {
+                map[rating.playerEmail] = rating.overallPerformance ?? 0;
+                return map;
+            }, {} as { [email: string]: number });
+
+            setPlayerRatings(ratingMap);
+        }
+    };
+
+    loadRatings();
+}, [matchId, clubName, ageGroup, division]);
+
 
 
   const handleAddEvent = async () => {
-    if (!match) return;
+    if (!match || !clubName || !ageGroup || !division) return;
 
     try {
-      // ✅ Fetch the latest match data to get the most recent event list
-      const updatedMatchData = await fetchMatches(new Date().toISOString().slice(0, 7), clubName!, ageGroup!, division!);
-      const refreshedMatch = updatedMatchData.find((m) => m.matchId === match.matchId);
+      await addEvent(match.matchId, clubName, ageGroup, division, newEvent);
+      alert('Event added successfully!');
 
-      const existingEvents = refreshedMatch?.events || []; // ✅ Get existing events from DB
+      // Fetch latest events and update the UI
+      const updatedEvents = await getEvents(match.matchId, clubName, ageGroup, division);
+      setMatch((prevMatch) => prevMatch ? { ...prevMatch, events: updatedEvents as MatchEvent[] } : prevMatch);
 
-      // ✅ Append the new event to existing ones
-      const updatedEvents = [...existingEvents, newEvent];
-
-      // ✅ Ensure no duplicate events before saving
-      const uniqueEvents = updatedEvents.filter(
-        (event, index, self) =>
-          index === self.findIndex((e) =>
-            e.playerEmail === event.playerEmail &&
-            e.minute === event.minute &&
-            e.type === event.type &&
-            e.subbedInEmail === event.subbedInEmail
-          )
-      );
-
-      // ✅ Overwrite Firestore data to remove duplicates
-      await updateFixtureResult(match.matchId, match.homeScore || 0, match.awayScore || 0, uniqueEvents);
-
-      alert("Match event added successfully!");
-
-      // ✅ Update UI with latest unique events
-      setMatch((prevMatch) =>
-        prevMatch ? { ...prevMatch, events: uniqueEvents } : prevMatch
-      );
-
-      // ✅ Update Firestore user collection with event counts
-      await updateUserMatchEvent(newEvent.playerEmail, newEvent.type);
+      // Reset the form
+      setNewEvent({ type: 'goal', playerEmail: '', minute: '', subbedInEmail: '' });
     } catch (error) {
-      console.error("Error saving match event:", error);
-      alert("Failed to save match event.");
+      console.error('Error saving match event:', error);
+      alert('Failed to save match event.');
     }
-
-    // ✅ Reset new event form without affecting existing state
-    setNewEvent({ type: "goal", playerEmail: "", minute: "", subbedInEmail: "" });
   };
 
-
   const handleSaveScore = async () => {
-    if (match) {
+    if (match && clubName && ageGroup && division) {
       try {
-        await updateFixtureResult(match.matchId, match.homeScore || 0, match.awayScore || 0, match.events || []);
+        await saveResult(match.matchId, clubName, ageGroup, division, match.homeScore ?? 0, match.awayScore ?? 0);
         alert('Match result updated successfully!');
-
-        // Update UI immediately
-        setMatch((prevMatch) => prevMatch ? { ...prevMatch, homeScore: match.homeScore, awayScore: match.awayScore } : null);
       } catch (error) {
         console.error('Error updating match result:', error);
         alert('Failed to update match result.');
       }
     }
   };
+
+  const handleRatingChange = async (email: string, rating: number) => {
+    setPlayerRatings((prev) => ({ ...prev, [email]: rating }));
+
+    console.log('Rating:', rating);
+
+    try {
+      await submitPlayerRating(matchId!, clubName!, ageGroup!, division!, { playerEmail: email, overallPerformance: rating });
+    } catch (error) {
+      console.error("Failed to save rating:", error);
+      alert("Failed to save rating.");
+    }
+  };
+
 
   if (loading) {
     return (
@@ -340,7 +376,7 @@ export default function ResultProfile() {
                     <ListSubheader key={`header-away-${posCategory}`}>{posCategory}</ListSubheader>,
                     ...groupedPlayers.map((player) => (
                       <MenuItem key={player.email} value={player.email}>
-                        {player.name} - {player.position} {/* ✅ Show Name and Position */}
+                        {player.name}
                       </MenuItem>
                     ))
                   ];
@@ -371,6 +407,28 @@ export default function ResultProfile() {
               No events recorded.
             </Typography>
           )}
+
+          <Divider sx={{ my: 2 }} />
+
+          {/* Player Ratings */}
+          <Typography variant="h6">Home Team Lineup</Typography>
+          {homePlayers.map((player) => (
+            <Box key={player.email} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography>{player.name} - {player.position}</Typography>
+              <Select
+                value={playerRatings[player.email] ?? ""}
+                onChange={(e) => handleRatingChange(player.email, Number(e.target.value))}
+                displayEmpty
+                sx={{ width: 80 }}
+              >
+                <MenuItem value="" disabled>Rate</MenuItem>
+                {Array.from({ length: 10 }, (_, i) => (
+                  <MenuItem key={i + 1} value={i + 1}>{i + 1}</MenuItem>
+                ))}
+              </Select>
+            </Box>
+          ))}
+
         </Card>
       </Box>
     </Layout>

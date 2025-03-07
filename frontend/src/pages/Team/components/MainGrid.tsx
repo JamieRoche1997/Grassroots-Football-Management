@@ -7,7 +7,8 @@ import TeamDataGrid from "./TeamDataGrid";
 import PlayerDataGrid from "./PlayerDataGrid";
 import PageViewsBarChart from "./PageViewsBarChart";
 import StatCard, { StatCardProps } from "../../../components/StatCard";
-import { fetchMatches } from "../../../services/schedule_management";
+import { fetchAllFixtures } from "../../../services/schedule_management";
+import { getResult, getEvents, MatchEvent, MatchResult } from "../../../services/match_management";
 import { useAuth } from "../../../hooks/useAuth";
 
 export default function MainGrid() {
@@ -18,77 +19,92 @@ export default function MainGrid() {
   useEffect(() => {
     const fetchTeamStats = async () => {
       if (!clubName || !ageGroup || !division) return;
-
+  
       try {
-        const currentMonth = new Date().toISOString().slice(0, 7);
-        const matches = await fetchMatches(currentMonth, clubName, ageGroup, division);
-
-        // Filtering completed matches (those with results)
-        const completedMatches = matches.filter((match) => match.homeScore !== undefined && match.awayScore !== undefined);
-
-        const totalMatches = completedMatches.length;
-        const totalWins = completedMatches.filter(
-          (match) =>
-            (match.homeTeam === clubName && (match.homeScore ?? 0) > (match.awayScore ?? 0)) ||
-            (match.awayTeam === clubName && (match.awayScore ?? 0) > (match.homeScore ?? 0))
-        ).length;
-
-        const totalGoals = completedMatches.reduce((sum, match) => {
-          return (
-            sum +
-            (match.homeTeam === clubName ? match.homeScore ?? 0 : match.awayScore ?? 0)
-          );
-        }, 0);
-
-        const goalsPerMatch = totalMatches > 0 ? (totalGoals / totalMatches).toFixed(1) : "0.0";
-        const winRate = totalMatches > 0 ? ((totalWins / totalMatches) * 100).toFixed(1) + "%" : "0%";
-
-        // Fetch player statistics
-        const activePlayers = new Set();
-        completedMatches.forEach((match) => {
-          if (match.events) {
-            match.events.forEach((event) => {
-              activePlayers.add(event.playerEmail);
-            });
-          }
-        });
-
-        setStats([
-          {
-            title: "Win Rate",
-            value: winRate,
-            interval: "Last 30 days",
-            trend: totalWins > 0 ? "up" : "down",
-            data: [], // Placeholder, you can fetch trend data separately
-          },
-          {
-            title: "Total Matches",
-            value: totalMatches.toString(),
-            interval: "Last 30 days",
-            trend: "neutral",
-            data: [],
-          },
-          {
-            title: "Goals Per Match",
-            value: goalsPerMatch,
-            interval: "Last 30 days",
-            trend: "up",
-            data: [],
-          },
-          {
-            title: "Active Players",
-            value: activePlayers.size.toString(),
-            interval: "Last 30 days",
-            trend: "neutral",
-            data: [],
-          },
-        ]);
+          const fixtures = await fetchAllFixtures(clubName, ageGroup, division);
+  
+          const completedMatches = await Promise.all(fixtures.map(async (fixture) => {
+              try {
+                  const result: MatchResult = await getResult(fixture.matchId, clubName, ageGroup, division);
+                  const events: MatchEvent[] = await getEvents(fixture.matchId, clubName, ageGroup, division);
+  
+                  if (result.homeScore !== undefined && result.awayScore !== undefined) {
+                      return {
+                          ...fixture,
+                          homeScore: result.homeScore,
+                          awayScore: result.awayScore,
+                          events
+                      };
+                  }
+              } catch (err) {
+                  console.warn(`No result or events found for match ${fixture.matchId}`, err);
+              }
+              return null; // Filter out fixtures with no results
+          }));
+  
+          const validMatches = completedMatches.filter((m): m is NonNullable<typeof m> => m !== null);
+  
+          const totalMatches = validMatches.length;
+          const totalWins = validMatches.filter(
+              (match) =>
+                  (match.homeTeam === clubName && (match.homeScore ?? 0) > (match.awayScore ?? 0)) ||
+                  (match.awayTeam === clubName && (match.awayScore ?? 0) > (match.homeScore ?? 0))
+          ).length;
+  
+          const totalGoals = validMatches.reduce((sum, match) => {
+              return (
+                  sum +
+                  (match.homeTeam === clubName ? match.homeScore ?? 0 : match.awayScore ?? 0)
+              );
+          }, 0);
+  
+          const goalsPerMatch = totalMatches > 0 ? (totalGoals / totalMatches).toFixed(1) : "0.0";
+          const winRate = totalMatches > 0 ? ((totalWins / totalMatches) * 100).toFixed(1) + "%" : "0%";
+  
+          const activePlayers = new Set();
+          validMatches.forEach((match) => {
+              match.events?.forEach((event) => {
+                  activePlayers.add(event.playerEmail);
+              });
+          });
+  
+          setStats([
+              {
+                  title: "Win Rate",
+                  value: winRate,
+                  interval: "All Fixtures",
+                  trend: totalWins > 0 ? "up" : "down",
+                  data: [],
+              },
+              {
+                  title: "Total Matches",
+                  value: totalMatches.toString(),
+                  interval: "All Fixtures",
+                  trend: "neutral",
+                  data: [],
+              },
+              {
+                  title: "Goals Per Match",
+                  value: goalsPerMatch,
+                  interval: "All Fixtures",
+                  trend: "up",
+                  data: [],
+              },
+              {
+                  title: "Active Players",
+                  value: activePlayers.size.toString(),
+                  interval: "All Fixtures",
+                  trend: "neutral",
+                  data: [],
+              },
+          ]);
       } catch (error) {
-        console.error("Error fetching team stats:", error);
+          console.error("Error fetching team stats:", error);
       } finally {
-        setLoading(false);
+          setLoading(false);
       }
-    };
+  };
+  
 
     fetchTeamStats();
   }, [clubName, ageGroup, division]);

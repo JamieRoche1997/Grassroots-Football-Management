@@ -125,9 +125,9 @@ export const createCheckoutSession = async (clubName: string, ageGroup: string, 
 };
 
 // ✅ Fetch a user's transaction history
-export const fetchTransactions = async (userEmail: string) => {
+export const fetchTransactions = async (userEmail: string, clubName: string, ageGroup: string, division: string) => {
     try {
-        const response = await fetch(`${url}/transactions/list?email=${encodeURIComponent(userEmail)}`);
+        const response = await fetch(`${url}/transactions/list?email=${encodeURIComponent(userEmail)}&clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`);
 
         if (!response.ok) {
             throw new Error("Failed to fetch transactions");
@@ -156,6 +156,28 @@ export const createStripeLoginLink = async (clubName: string) => {
         return data.url; // ✅ Return the login link
     } catch (error) {
         console.error("Error creating Stripe login link:", error);
+        throw error;
+    }
+};
+
+export const getPayments = async (clubName: string, ageGroup: string, division: string) => {
+    try {
+        const queryParams = new URLSearchParams({
+            clubName,
+            ageGroup,
+            division
+        }).toString();
+
+        const response = await fetch(`${url}/payments?${queryParams}`);
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch payments: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return data.payments;  // Directly return the payments array if that's the key inside the response object
+    } catch (error) {
+        console.error("Error fetching payments:", error);
         throw error;
     }
 };

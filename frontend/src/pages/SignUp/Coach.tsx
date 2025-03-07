@@ -14,8 +14,10 @@ import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
-import { updateUserProfile } from '../../services/user_management';
+import { updateProfile } from '../../services/profile';
 import { createOrJoinClub } from '../../services/team_management';
+import { createMembership } from '../../services/membership';
+import { useAuth } from '../../hooks/useAuth';
 
 const Card = styled(MuiCard)(({ theme }) => ({
     display: 'flex',
@@ -75,6 +77,7 @@ const ageGroups = [
 const divisions = Array.from({ length: 16 }, (_, i) => `Division ${i === 0 ? 'Premier' : i}`);
 
 export default function Coach(props: { disableCustomTheme?: boolean }) {
+    const { uid, name } = useAuth();
     const navigate = useNavigate();
     const [county, setCounty] = React.useState('');
     const [clubName, setClubName] = React.useState('');
@@ -97,16 +100,15 @@ export default function Coach(props: { disableCustomTheme?: boolean }) {
             division: division,
         };
 
+        console.log('Coach Registration Data:', userData);
+
         if (!userData.email) {
             console.error('User email not found in localStorage.');
             return;
         }
 
         try {
-            // Step 1: Update user profile
-            await updateUserProfile(userData);
-
-            // Step 2: Create the club or join the existing one
+            // Create the club or join the existing one
             await createOrJoinClub({
                 clubName: clubName,
                 coachEmail: email || '',
@@ -114,6 +116,35 @@ export default function Coach(props: { disableCustomTheme?: boolean }) {
                 ageGroups: ageGroup,
                 divisions: division
             });
+
+            // Update user profile
+            await updateProfile(email, {
+                dob: userData.dob,
+                phone: userData.phone,
+                county: userData.county,
+                clubName: userData.clubName,
+                ageGroup: userData.ageGroup,
+                division: userData.division
+            });
+
+            console.log('Profile updated successfully.');
+
+            const response = await createMembership({
+                email: email,
+                name: name || '',
+                dob: userData.dob,
+                uid: uid || '', // Add appropriate value for uid
+                clubName: clubName,
+                ageGroup: ageGroup,
+                division: division,
+                role: 'coach',
+                position: '', // Add appropriate value for position
+                userRegistered: true // Set to true or false based on your logic
+            });
+
+            console.log('Membership created successfully:', response);
+
+            console.log('Club created or joined successfully.');
 
             navigate('/dashboard');
         } catch (error) {

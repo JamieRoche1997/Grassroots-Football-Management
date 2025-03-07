@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchTransactions } from '../services/payments';
+import { useAuth } from './useAuth';
 
 export interface PurchasedItem {
     productId: string;
@@ -23,6 +24,7 @@ interface Transaction {
 }
 
 export function useTransactions(userEmail: string | undefined) {
+    const { clubName, ageGroup, division } = useAuth();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -33,13 +35,18 @@ export function useTransactions(userEmail: string | undefined) {
         const getTransactions = async () => {
             setLoading(true);
             try {
-                const data = await fetchTransactions(userEmail);
+                if (clubName && ageGroup && division) {
+                    const data = await fetchTransactions(userEmail, clubName, ageGroup, division);
+                    console.log(data);
+                    
+                    if (!data.transactions) {
+                        throw new Error("Invalid response format");
+                    }
 
-                if (!data.transactions) {
-                    throw new Error("Invalid response format");
+                    setTransactions(data.transactions);
+                } else {
+                    throw new Error("Missing required user information");
                 }
-
-                setTransactions(data.transactions);
             } catch (err) {
                 setError("Failed to load transactions.");
                 console.error("Error fetching transactions:", err);
@@ -49,7 +56,7 @@ export function useTransactions(userEmail: string | undefined) {
         };
 
         getTransactions();
-    }, [userEmail]);
+    }, [userEmail, clubName, ageGroup, division]);
 
     return { transactions, loading, error };
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../services/firebaseConfig';
-import { getClubInfo } from '../services/user_management';
+import { getProfile } from '../services/profile';
 import { AuthContext, AuthContextType } from './AuthContextObject';
 
 // AuthProvider component
@@ -9,6 +9,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [userData, setUserDataState] = useState<Omit<AuthContextType, 'user' | 'loading'>>({
+    uid: null,
+    email: null,
+    name: null,
     clubName: null,
     ageGroup: null,
     division: null,
@@ -35,8 +38,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const email = currentUser.email;
           if (email) {
-            const { clubName, ageGroup, division, role } = await getClubInfo(email);
+            const { clubName, ageGroup, division, role} = await getProfile(email);
+            const { name } = await getProfile(currentUser.email);
             setUserData({
+              name,
+              email,
+              uid: currentUser.uid,
               clubName,
               ageGroup,
               division,
@@ -50,6 +57,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUser(null);
         setUserData({
+          name: null,
+          email: null,
+          uid: null,
           clubName: null,
           ageGroup: null,
           division: null,

@@ -14,7 +14,7 @@ import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
-import { updateUserProfile } from '../../services/user_management';
+import { updateProfile } from '../../services/profile';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -108,7 +108,15 @@ export default function ParentRegistration(props: { disableCustomTheme?: boolean
     };
 
     try {
-      await updateUserProfile(userData);
+      await updateProfile(userData.email, {
+        dob: userData.dob,
+        phone: userData.phone,
+        relationship: userData.relationship,
+        children: userData.children,
+        emergencyContactName: userData.emergencyContactName,
+        emergencyContactPhone: userData.emergencyContactPhone,
+    });
+    
       navigate('/dashboard');
     } catch (error) {
       console.error('Error updating user profile:', error);

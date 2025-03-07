@@ -5,6 +5,9 @@ import { User } from 'firebase/auth';
 export interface AuthContextType {
   user: User | null;
   loading: boolean;
+  name: string | null;
+  uid: string | null;
+  email: string | null;
   clubName: string | null;
   ageGroup: string | null;
   division: string | null;

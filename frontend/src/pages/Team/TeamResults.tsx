@@ -6,7 +6,7 @@ import {
   CardContent,
   Grid2 as Grid
 } from '@mui/material';
-import { fetchMatches } from '../../services/schedule_management';
+import { fetchFixturesByMonth } from '../../services/schedule_management';
 import Layout from '../../components/Layout';
 import Header from '../../components/Header';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -48,8 +48,8 @@ export default function TeamResults() {
       // Loop through all months of the current year up to the current month
       for (let month = 1; month <= currentMonth; month++) {
         const formattedMonth = `${currentYear}-${month.toString().padStart(2, '0')}`; // Format month as "YYYY-MM"
-        const matches = await fetchMatches(formattedMonth, clubName, ageGroup, division);
-        
+        const matches = await fetchFixturesByMonth(formattedMonth, clubName, ageGroup, division);
+        console.log(matches);
         if (matches && matches.length > 0) {
           allMatches = [...allMatches, ...matches];
         }

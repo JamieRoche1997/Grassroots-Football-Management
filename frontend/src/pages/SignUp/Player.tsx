@@ -14,7 +14,7 @@ import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
-import { updateUserProfile, getClubInfo } from '../../services/user_management';
+import { getProfile, updateProfile } from '../../services/profile';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -69,7 +69,7 @@ export default function PlayerRegistration(props: { disableCustomTheme?: boolean
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-  
+
     const userData = {
       email,
       dob: formData.get('dob') as string,
@@ -78,15 +78,21 @@ export default function PlayerRegistration(props: { disableCustomTheme?: boolean
       emergencyContactName: formData.get('emergencyContactName') as string,
       emergencyContactPhone: formData.get('emergencyContactPhone') as string,
     };
-  
+
     try {
       // Update user profile
-      await updateUserProfile(userData);
-  
+      await updateProfile(email, {
+        dob: userData.dob,
+        phone: userData.phone,
+        emergencyContactName: userData.emergencyContactName,
+        emergencyContactPhone: userData.emergencyContactPhone,
+        position: userData.position,
+      });
+
       // Check if the user already has a club assigned
-      const clubInfo = await getClubInfo(email);
-  
-      if (clubInfo.clubName && clubInfo.ageGroup && clubInfo.division) {
+      const membershipInfo = await getProfile(email);
+
+      if (membershipInfo.clubName && membershipInfo.ageGroup && membershipInfo.division) {
         // If user already belongs to a club, skip club search
         navigate('/dashboard');
       } else {
@@ -97,7 +103,7 @@ export default function PlayerRegistration(props: { disableCustomTheme?: boolean
       console.error('Error updating user profile:', error);
     }
   };
-  
+
 
   return (
     <AppTheme {...props}>

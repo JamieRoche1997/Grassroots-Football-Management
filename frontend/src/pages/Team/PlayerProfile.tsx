@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Typography, Box, Card, Avatar, Grid2 as Grid, Divider } from '@mui/material';
-import { fetchPlayers } from '../../services/team_management';
+import { getMembershipInfo } from '../../services/membership';
 import Layout from '../../components/Layout';
 import Header from '../../components/Header';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useAuth } from '../../hooks/useAuth';
 
 // Player Interface
 interface Player {
+  email: string;
   name: string;
   dob: string;
   position: string;
@@ -51,16 +53,23 @@ export default function PlayerProfile() {
   const { state } = useLocation(); // Access passed state
   const [player, setPlayer] = useState<Player | null>(state?.player || null); // Set initial player from state
   console.log(player);
+  const email = state?.player?.email;
   const [loading, setLoading] = useState<boolean>(!state?.player); // Only load if no player is passed through state
+  const { clubName, ageGroup, division } = useAuth();
 
   // Fallback fetch in case player is accessed via direct URL
   useEffect(() => {
     const fetchPlayerByUid = async () => {
       if (!player && playerUid) {
         try {
-          const players = await fetchPlayers('Cobh Ramblers', 'Professional', 'Division Premier');
-          const foundPlayer = players.find((p) => p.uid === playerUid);
-          setPlayer(foundPlayer || null);
+          if (clubName && ageGroup && division) {
+            const players = await getMembershipInfo(clubName, ageGroup, division, email);
+            const foundPlayer: Player | undefined = players.find((p: Player) => p.uid === playerUid);
+            setPlayer(foundPlayer || null);
+          } else {
+            console.error('User email is null');
+            setLoading(false);
+          }
         } catch (error) {
           console.error('Error fetching player details:', error);
         } finally {
@@ -69,7 +78,7 @@ export default function PlayerProfile() {
       }
     };
     fetchPlayerByUid();
-  }, [player, playerUid]);
+  }, [player, playerUid, ageGroup, clubName, division, email]);
 
   if (loading) {
     return (

@@ -56,7 +56,6 @@ const menuItems = [
     icon: <StarIcon />,
     subItems: [
       { text: 'Player Ratings', icon: <AssignmentIndIcon />, path: '/ratings/players' },
-      { text: 'Match Ratings', icon: <GroupIcon />, path: '/ratings/matches' },
     ],
   },
   {

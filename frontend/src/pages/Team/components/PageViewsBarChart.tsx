@@ -6,7 +6,7 @@ import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { useTheme } from "@mui/material/styles";
-import { fetchMatches } from "../../../services/schedule_management";
+import { fetchFixturesByMonth } from "../../../services/schedule_management";
 import { useAuth } from "../../../hooks/useAuth";
 import { format } from "date-fns";
 
@@ -61,7 +61,7 @@ export default function PageViewsBarChart() {
 
         let allMatches: Match[] = [];
         for (const month of pastSixMonths) {
-          const matches = await fetchMatches(month, clubName, ageGroup, division);
+          const matches = await fetchFixturesByMonth(month, clubName, ageGroup, division);
           allMatches = [...allMatches, ...matches]; // Merge all matches
         }
   

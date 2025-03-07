@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react';
-import { Button, Typography, Box } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import {
+  Button,
+  Typography,
+  Box,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Paper,
+} from '@mui/material';
 import { getJoinRequests, approveJoinRequest, rejectJoinRequest } from '../../services/team_management';
 import Layout from '../../components/Layout';
 import Header from '../../components/Header';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../hooks/useAuth';
-
+import { createMembership } from '../../services/membership';
+import { getProfile, updateProfile } from '../../services/profile';
+import { getUser } from '../../services/authentication';
 interface JoinRequest {
   id: string;
   playerEmail: string;
@@ -15,15 +26,15 @@ interface JoinRequest {
   division: string;
   status: string;
   requestedAt: string;
+  name: string; // Ensure this field is included
 }
 
 export default function TeamRequests() {
-  const { clubName, ageGroup, division, loading: authLoading } = useAuth(); 
+  const { clubName, ageGroup, division, loading: authLoading } = useAuth();
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch join requests when auth context is ready
   useEffect(() => {
     const fetchRequests = async () => {
       if (authLoading) return;
@@ -36,10 +47,11 @@ export default function TeamRequests() {
 
       try {
         const requests = await getJoinRequests(clubName, ageGroup, division);
+
         setJoinRequests(
-          requests.map((request, index) => ({
+          requests.map((request) => ({
             ...request,
-            id: index.toString(), 
+            id: request.playerEmail,
             ageGroup,
             division,
           }))
@@ -62,6 +74,25 @@ export default function TeamRequests() {
     if (!clubName || !ageGroup || !division) return;
 
     try {
+
+      const profile = await getProfile(playerEmail);
+      const user = await getUser(playerEmail);
+      const position = profile.position;
+
+      await createMembership({
+        email: playerEmail,
+        name: profile.name || '', // Add appropriate value for name
+        dob: profile.dob || '', // Add appropriate value for dob
+        uid: user.uid || '', // Add appropriate value for uid
+        clubName: clubName,
+        ageGroup: ageGroup,
+        division: division,
+        role: 'player',
+        position: position || '', // Ensure position is a string
+        userRegistered: true // Set to true or false based on your logic
+      });
+
+      await updateProfile(playerEmail, { club: clubName, ageGroup, division });
       await approveJoinRequest(playerEmail, clubName, ageGroup, division);
       alert(`Player ${playerEmail} approved.`);
       setJoinRequests((prev) => prev.filter((req) => req.playerEmail !== playerEmail));
@@ -81,43 +112,6 @@ export default function TeamRequests() {
       console.error('Error rejecting request:', error);
     }
   };
-
-  const columns: GridColDef[] = [
-    { field: 'name', headerName: 'Player Name', flex: 1, minWidth: 200 },
-    { field: 'playerEmail', headerName: 'Player Email', flex: 1, minWidth: 200 },
-    {
-      field: 'requestedAt',
-      headerName: 'Requested At',
-      flex: 1,
-      minWidth: 200,
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      flex: 1,
-      renderCell: (params) => (
-        <Box>
-          <Button
-            variant="contained"
-            color="primary"
-            size="small"
-            sx={{ mr: 1 }}
-            onClick={() => handleApprove(params.row.playerEmail)}
-          >
-            Approve
-          </Button>
-          <Button
-            variant="outlined"
-            color="secondary"
-            size="small"
-            onClick={() => handleReject(params.row.playerEmail)}
-          >
-            Reject
-          </Button>
-        </Box>
-      ),
-    },
-  ];
 
   if (authLoading || loading) {
     return (
@@ -147,33 +141,56 @@ export default function TeamRequests() {
           Player Requests for {clubName} ({ageGroup}, {division})
         </Typography>
 
-        <Box sx={{ height: 400, width: '100%', mt: 3 }}>
-          {joinRequests.length > 0 ? (
-            <DataGrid
-              rows={joinRequests}
-              columns={columns}
-              initialState={{
-                pagination: {
-                  paginationModel: { pageSize: 5 },
-                },
-              }}
-              pageSizeOptions={[5, 10, 20]}
-              disableRowSelectionOnClick
-              sx={{
-                '& .MuiDataGrid-root': {
-                  borderRadius: 2,
-                  overflow: 'hidden',
-                  boxShadow: 1,
-                },
-                '& .MuiDataGrid-cell': {
-                  fontSize: '0.875rem',
-                },
-              }}
-            />
-          ) : (
-            <Typography>No pending join requests.</Typography>
-          )}
-        </Box>
+        <Paper sx={{ width: '100%', overflow: 'hidden', mt: 3 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Player Name</TableCell>
+                <TableCell>Player Email</TableCell>
+                <TableCell>Requested At</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {joinRequests.length > 0 ? (
+                joinRequests.map((request) => (
+                  <TableRow key={request.playerEmail}>
+                    <TableCell>{request.name}</TableCell>
+                    <TableCell>{request.playerEmail}</TableCell>
+                    <TableCell>{request.requestedAt}</TableCell>
+                    <TableCell>
+                      <Box>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          sx={{ mr: 1 }}
+                          onClick={() => handleApprove(request.playerEmail)}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="secondary"
+                          size="small"
+                          onClick={() => handleReject(request.playerEmail)}
+                        >
+                          Reject
+                        </Button>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} align="center">
+                    <Typography>No pending join requests.</Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Paper>
       </Box>
     </Layout>
   );

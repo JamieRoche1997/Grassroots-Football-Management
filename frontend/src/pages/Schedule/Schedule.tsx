@@ -20,7 +20,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import TodayIcon from '@mui/icons-material/Today';
 import Layout from '../../components/Layout';
 import Header from '../../components/Header';
-import { fetchMatches, fetchTrainings } from '../../services/schedule_management';
+import { fetchFixturesByMonth, fetchTrainingsByMonth } from '../../services/schedule_management';
 import { format, isToday, isBefore } from 'date-fns';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -54,8 +54,8 @@ export default function ScheduleOverview() {
 
         // Fetch matches and trainings for **all months** in the current year
         const [matches, trainings] = await Promise.all([
-          Promise.all(allMonths.map(month => fetchMatches(month, clubName, ageGroup, division))),
-          Promise.all(allMonths.map(month => fetchTrainings(month, clubName, ageGroup, division))),
+          Promise.all(allMonths.map(month => fetchFixturesByMonth(month, clubName, ageGroup, division))),
+          Promise.all(allMonths.map(month => fetchTrainingsByMonth(month, clubName, ageGroup, division))),
         ]);
 
         // Flatten the array since Promise.all returns an array of arrays

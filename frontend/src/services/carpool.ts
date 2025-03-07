@@ -2,6 +2,9 @@ const url = "https://grassroots-gateway-2au66zeb.nw.gateway.dev";
 
 // 📝 Define TypeScript Interfaces for Ride Data
 interface Ride {
+    clubName: string;
+    ageGroup: string;
+    division: string;
     id: string;
     matchId: string;
     driverName: string;
@@ -39,9 +42,19 @@ export const offerRide = async (rideData: Ride): Promise<{ message: string; ride
 };
 
 // 🚙 Get Available Rides
-export const getRides = async (): Promise<Ride[]> => {
+export const getRides = async (clubName: string, ageGroup: string, division: string): Promise<Ride[]> => {
     try {
-        const response = await fetch(`${url}/carpool/rides`);
+        const queryParams = new URLSearchParams({
+            clubName,
+            ageGroup,
+            division
+        }).toString();
+
+        const response = await fetch(`${url}/carpool/rides?${queryParams}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        });
+
         if (!response.ok) throw new Error("Failed to fetch rides");
 
         return await response.json();
@@ -52,12 +65,12 @@ export const getRides = async (): Promise<Ride[]> => {
 };
 
 // 📩 Request a Ride
-export const requestRide = async (requestData: RideRequest): Promise<{ message: string }> => {
+export const requestRide = async (requestData: RideRequest, clubName: string, ageGroup: string, division: string): Promise<{ message: string }> => {
     try {
         const response = await fetch(`${url}/carpool/request`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestData),
+            body: JSON.stringify({ ...requestData, clubName, ageGroup, division }),
         });
 
         if (!response.ok) throw new Error("Failed to request ride");
@@ -70,14 +83,14 @@ export const requestRide = async (requestData: RideRequest): Promise<{ message: 
 };
 
 // ❌ Cancel a Ride
-export const cancelRide = async (rideId: string): Promise<{ message: string }> => {
+export const cancelRide = async (rideId: string, clubName: string, ageGroup: string, division: string): Promise<{ message: string }> => {
     try {
         console.log(`Sending request to cancel ride: ${rideId}`);  // ✅ Log request
 
         const response = await fetch(`${url}/carpool/cancel`, {
             method: "POST",  // ✅ Use POST instead of DELETE
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ rideId })  // ✅ Pass rideId in the request body
+            body: JSON.stringify({ rideId, clubName, ageGroup, division })  // ✅ Pass rideId in the request body
         });
 
         if (!response.ok) throw new Error(`Failed to cancel ride. Status: ${response.status}`);

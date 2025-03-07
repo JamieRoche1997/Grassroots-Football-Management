@@ -6,7 +6,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useEffect, useState } from 'react';
 import Header from '../../components/Header';
 import Layout from '../../components/Layout';
-import { fetchMatches, addFixture } from '../../services/schedule_management';
+import { fetchFixturesByMonth, addFixture } from '../../services/schedule_management';
 import { Box, Button, Typography, Dialog, DialogContent, DialogActions, TextField } from '@mui/material';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -36,7 +36,7 @@ export default function MatchesCalendar() {
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [newFixture, setNewFixture] = useState({ homeTeam: '', awayTeam: '', date: '', ageGroup: '', division: '', createdBy: '' });
+  const [newFixture, setNewFixture] = useState({ matchId: '', homeTeam: '', awayTeam: '', date: '', ageGroup: '', division: '', createdBy: '' });
 
   const fetchMatchData = useCallback(async (month: Date) => {
     if (authLoading) return;
@@ -48,7 +48,8 @@ export default function MatchesCalendar() {
     }
     try {
       const formattedMonth = format(month, 'yyyy-MM'); // e.g., "2025-02"
-        const matches = await fetchMatches(formattedMonth, clubName, ageGroup, division);
+        const matches = await fetchFixturesByMonth(formattedMonth, clubName, ageGroup, division);
+        console.log('matches:', matches);
         const formattedEvents = matches.map((match) => ({
           title: `${match.homeTeam} vs ${match.awayTeam}`,
           start: new Date(match.date),
@@ -91,7 +92,11 @@ export default function MatchesCalendar() {
         division,
       };
 
-      await addFixture(updatedFixture);
+      if (clubName && ageGroup && division) {
+        await addFixture({ ...updatedFixture, matchId: new Date().toISOString() }, clubName, ageGroup, division);
+      } else {
+        console.error('Club name, age group, or division is null');
+      }
       alert('Fixture added successfully!');
       fetchMatchData(currentDate);
       setOpenAddDialog(false);

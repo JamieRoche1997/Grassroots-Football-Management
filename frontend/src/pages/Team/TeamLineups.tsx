@@ -23,13 +23,14 @@ import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import SaveIcon from '@mui/icons-material/Save';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import { fetchPlayers } from '../../services/team_management';
+import { getMembershipsForTeam } from '../../services/membership';
 import { format } from 'date-fns';
 import Layout from '../../components/Layout';
 import Header from '../../components/Header';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../hooks/useAuth';
-import { fetchMatches, saveMatchData } from '../../services/schedule_management';
+import { fetchAllFixtures } from '../../services/schedule_management';
+import { saveLineups } from '../../services/match_management';
 
 interface Player {
   email: string;
@@ -194,34 +195,22 @@ export default function TeamLineups() {
       if (authLoading) return;
   
       if (!clubName || !ageGroup || !division) {
-        setError('Club information is incomplete.');
-        setLoading(false);
-        return;
+          setError('Club information is incomplete.');
+          setLoading(false);
+          return;
       }
   
       try {
-        const currentYear = format(new Date(), 'yyyy'); // Get current year
-        let allMatches: Match[] = [];
-  
-        // Loop through all months from January (1) to December (12)
-        for (let month = 1; month <= 12; month++) {
-          const formattedMonth = `${currentYear}-${month.toString().padStart(2, '0')}`;
-          const matches = await fetchMatches(formattedMonth, clubName, ageGroup, division);
-  
-          if (matches && matches.length > 0) {
-            allMatches = [...allMatches, ...matches];
-          }
-        }
-  
-        setMatches(allMatches); // Store all matches for the year
-        setError(null);
+          const allMatches = await fetchAllFixtures(clubName, ageGroup, division);
+          setMatches(allMatches);
+          setError(null);
       } catch (error) {
-        console.error('Error fetching matches:', error);
-        setError('Failed to load matches. Please try again later.');
+          console.error('Error fetching matches:', error);
+          setError('Failed to load matches. Please try again later.');
       } finally {
-        setLoading(false);
+          setLoading(false);
       }
-    };
+  };  
   
     fetchAllMatchesForYear();
   }, [authLoading, clubName, ageGroup, division]);
@@ -238,7 +227,7 @@ export default function TeamLineups() {
       }
 
       try {
-        const playersData = await fetchPlayers(clubName, ageGroup, division);
+        const playersData = await getMembershipsForTeam(clubName, ageGroup, division);
         setPlayers(playersData);
         setError(null);
       } catch (error) {
@@ -275,48 +264,43 @@ export default function TeamLineups() {
 
   const handleSaveMatchData = async () => {
     if (!selectedMatch) {
-      alert('Please select a match before saving.');
-      return;
+        alert('Please select a match before saving.');
+        return;
     }
-  
-    const userTeam = clubName;
-    const isHomeTeam = selectedMatch.homeTeam === userTeam;
-    const isAwayTeam = selectedMatch.awayTeam === userTeam;
-  
+
+    const isHomeTeam = selectedMatch.homeTeam === clubName;
+    const isAwayTeam = selectedMatch.awayTeam === clubName;
+
     if (!isHomeTeam && !isAwayTeam) {
-      alert("You are not a coach for either of the teams in this match.");
-      return;
+        alert("You are not a coach for either team in this match.");
+        return;
     }
-  
-    // ✅ Convert substitutes into individual fields: { Sub1: "player1", Sub2: "player2" }
-    const substituteEntries = substitutes.reduce((acc, playerEmail, index) => {
-      acc[`Sub${index + 1}`] = playerEmail;
-      return acc;
-    }, {} as { [key: string]: string });
-  
-    // ✅ Assign substitutes inside the home or away lineup
-    const teamLineup = { ...assignedPlayers, ...substituteEntries };
-  
-    // ✅ Dynamically assign home or away lineup
-    const matchData: MatchData = {
-      matchId: selectedMatch.matchId,
-      homeTeam: selectedMatch.homeTeam,
-      awayTeam: selectedMatch.awayTeam,
-      date: selectedMatch.date,
-      formation: selectedFormation,
-      strategyNotes,
-      ...(isHomeTeam ? { homeTeamLineup: teamLineup } : { awayTeamLineup: teamLineup }),
+
+    const lineup = {
+        ...assignedPlayers,
+        ...substitutes.reduce((acc, playerEmail, index) => {
+            acc[`Sub${index + 1}`] = playerEmail;
+            return acc;
+        }, {} as { [key: string]: string }),
     };
-  
+
     try {
-      console.log('Saving match data:', matchData);
-      await saveMatchData(matchData);
-      alert('Match data saved successfully!');
+        console.log('Saving lineups:', lineup);
+
+        if (isHomeTeam && clubName && ageGroup && division) {
+            await saveLineups(selectedMatch.matchId, clubName, ageGroup, division, lineup, {});
+        } else if (isAwayTeam && clubName && ageGroup && division) {
+            await saveLineups(selectedMatch.matchId, clubName, ageGroup, division, {}, lineup);
+        }
+
+        alert('Lineup saved successfully!');
+        setSaveSuccess(true);
     } catch (error) {
-      console.error('Error saving match data:', error);
-      alert('Failed to save match data. Please try again.');
+        console.error('Error saving lineup:', error);
+        alert('Failed to save lineup. Please try again.');
     }
-  };  
+};
+
 
   if (authLoading || loading) {
     return (
@@ -340,6 +324,7 @@ export default function TeamLineups() {
 
   function getPlayerName(playerEmail: string): string {
     const player = players.find(p => p.email === playerEmail);
+    console.log(player);
     return player ? player.name : 'Unknown Player';
   }
   return (
@@ -579,7 +564,8 @@ export default function TeamLineups() {
 
         {/* Save Button */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Tooltip title={!selectedMatch ? "Please select a match first" : ""}>
+          {/* Tool top but change the colour of the test to white */}
+          <Tooltip title={!selectedMatch ? "Please select a match first" : ""} >
             <span>
               <Button 
                 variant="contained" 

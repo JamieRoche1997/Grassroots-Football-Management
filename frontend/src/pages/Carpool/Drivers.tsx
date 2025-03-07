@@ -16,7 +16,7 @@ import { Phone, LocationOn, People, AccessTime, Delete } from "@mui/icons-materi
 import Layout from "../../components/Layout";
 import Header from "../../components/Header";
 import { getRides, cancelRide } from "../../services/carpool";
-import { fetchMatches, MatchData } from "../../services/schedule_management";
+import { fetchFixturesByMonth, FixtureData } from "../../services/schedule_management";
 import { useAuth } from "../../hooks/useAuth";
 
 interface Driver {
@@ -35,7 +35,7 @@ interface Driver {
 
 export default function Drivers() {
   const { clubName, ageGroup, division } = useAuth();
-  const [matches, setMatches] = useState<MatchData[]>([]);
+  const [matches, setMatches] = useState<FixtureData[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [confirmCancel, setConfirmCancel] = useState<boolean>(false);
@@ -51,9 +51,9 @@ export default function Drivers() {
           return futureDate.toISOString().slice(0, 7); // Format as "YYYY-MM"
         });
 
-        let allMatches: MatchData[] = [];
+        let allMatches: FixtureData[] = [];
         for (const month of futureMonths) {
-          const fetchedMatches = await fetchMatches(month, clubName!, ageGroup!, division!);
+          const fetchedMatches = await fetchFixturesByMonth(month, clubName!, ageGroup!, division!);
           allMatches = [...allMatches, ...fetchedMatches];
         }
 
@@ -77,7 +77,7 @@ export default function Drivers() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const rides = await getRides();
+        const rides = await getRides(clubName!, ageGroup!, division!);
         setDrivers(rides);
       } catch (error) {
         console.error("Error fetching rides:", error);
@@ -102,7 +102,7 @@ export default function Drivers() {
     if (selectedDriver) {
       try {
         console.log("Cancelling ride:", selectedDriver.id); // ✅ Log ride ID before deletion
-        await cancelRide(selectedDriver.id); // ✅ Ensure backend completes first
+        await cancelRide(selectedDriver.id, clubName!, ageGroup!, division!); // ✅ Ensure backend completes first
 
         // ✅ Update state correctly after deletion
         setDrivers((prevDrivers) => prevDrivers.filter((d) => d.id !== selectedDriver.id));

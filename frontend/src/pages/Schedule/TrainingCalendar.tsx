@@ -6,7 +6,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useEffect, useState } from 'react';
 import Header from '../../components/Header';
 import Layout from '../../components/Layout';
-import { fetchTrainings, addTraining } from '../../services/schedule_management';
+import { fetchTrainingsByMonth, addTraining } from '../../services/schedule_management';
 import { Box, Button, Typography, Dialog, DialogContent, DialogActions, TextField } from '@mui/material';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -52,7 +52,8 @@ export default function TrainingCalendar() {
         format(addMonths(baseDate, 1), 'yyyy-MM'),
       ];
 
-        const allTrainings = await Promise.all(months.map((month) => fetchTrainings(month, clubName, ageGroup, division)));
+        const allTrainings = await Promise.all(months.map((month) => fetchTrainingsByMonth(month, clubName, ageGroup, division)));
+        console.log('allTrainings:', allTrainings);
         const formattedEvents = allTrainings.flat().map((training) => ({
           title: `Training at ${training.location}`,
           start: new Date(training.date),
@@ -94,7 +95,11 @@ export default function TrainingCalendar() {
         trainingId: '', // Generate or assign a unique ID here
       };
 
-      await addTraining(updatedTraining);
+      if (clubName && ageGroup && division) {
+        await addTraining(updatedTraining, clubName, ageGroup, division);
+      } else {
+        console.error('Club name, age group, or division is null');
+      }
       alert('Training session added successfully!');
       fetchTrainingData(currentDate);
       setOpenAddDialog(false);

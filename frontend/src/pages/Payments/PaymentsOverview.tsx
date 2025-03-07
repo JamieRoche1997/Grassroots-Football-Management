@@ -1,17 +1,49 @@
 import { useState, useEffect } from "react";
-import { Box, Button, Modal, CircularProgress, Typography, Alert, Backdrop } from "@mui/material";
+import {
+    Box, Button,
+    Modal,
+    CircularProgress,
+    Typography,
+    Alert,
+    Backdrop,
+    Grid2 as Grid, Card,
+    Table,
+    TableHead,
+    TableBody,
+    TableRow,
+    TableCell,
+    Paper
+} from "@mui/material";
 import Layout from "../../components/Layout";
 import Header from "../../components/Header";
 import { checkStripeStatus, createStripeAccount, createStripeLoginLink } from "../../services/payments";
 import { useAuth } from "../../hooks/useAuth";
+import { getPayments } from "../../services/payments";
 
 export default function PaymentsOverview() {
-    const { user, clubName } = useAuth();
+    const { user, clubName, ageGroup, division } = useAuth();
     const [stripeAccount, setStripeAccount] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [onboardingLoading, setOnboardingLoading] = useState(false);
+    const [payments, setPayments] = useState<Payment[]>([]);
+    const membershipPayments = payments.filter(p => p.purchasedItems.some((item: { productName: string; isMembership: boolean }) => item.isMembership));
+    const productPayments = payments.filter(p => p.purchasedItems.every(item => !item.isMembership));
+
+    const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
+    const membershipRevenue = membershipPayments.reduce((sum, p) => sum + p.amount, 0);
+    const productRevenue = productPayments.reduce((sum, p) => sum + p.amount, 0);
+
+
+    interface Payment {
+        id: string;
+        amount: number;
+        currency: string;
+        status: string;
+        timestamp: string;
+        purchasedItems: { productName: string; isMembership: boolean }[];
+    }
 
     useEffect(() => {
         const fetchStripeStatus = async () => {
@@ -22,8 +54,12 @@ export default function PaymentsOverview() {
                 setStripeAccount(response.stripe_account_id);
                 setLoading(false);
 
-                // 🚨 If no Stripe account, show onboarding modal
-                if (!response.stripe_account_id) {
+                if (response.stripe_account_id) {
+                    // If stripeAccount exists, fetch payments
+                    const paymentsData = await getPayments(clubName, ageGroup!, division!);
+                    console.log(paymentsData);
+                    setPayments(paymentsData);
+                } else {
                     setShowOnboarding(true);
                 }
             } catch {
@@ -33,7 +69,8 @@ export default function PaymentsOverview() {
         };
 
         fetchStripeStatus();
-    }, [clubName]);
+    }, [clubName, ageGroup, division]);
+
 
     const handleCreateStripeAccount = async () => {
         if (!clubName || !user?.email) {
@@ -75,6 +112,28 @@ export default function PaymentsOverview() {
         }
     };
 
+    function KpiCard({ title, value }: { title: string, value: string | number }) {
+        return (
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Card
+                    sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        boxShadow: 3,
+                        height: '100%', // Ensures all cards fill their grid cell equally
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <Typography variant="h6">{title}</Typography>
+                    <Typography variant="h5" fontWeight="bold">{value}</Typography>
+                </Card>
+            </Grid>
+        );
+    }
+
+
     if (loading) {
         return (
             <Layout>
@@ -90,8 +149,13 @@ export default function PaymentsOverview() {
         <Layout>
             <Header />
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 5 }}>
-                <Typography variant="h4">Payments & Products</Typography>
-                <Typography variant="body1">Manage your club’s products and payments here.</Typography>
+                <Typography variant="h4" fontWeight="bold">
+                    💳 Payments Dashboard
+                </Typography>
+                <Typography variant="h6" color="text.secondary">
+                    Track your club’s income, membership sales, and product purchases in real time.
+                </Typography>
+
 
                 {/* 🚨 Stripe Onboarding Modal (Only Shows If No Stripe Account) */}
                 <Modal
@@ -161,10 +225,7 @@ export default function PaymentsOverview() {
                 {/* ✅ Payments Page Content (Only Shows If Stripe Account Exists) */}
                 {stripeAccount && (
                     <Box sx={{ mt: 3, textAlign: "center" }}>
-                        <Typography variant="h6">Your Stripe Account is Connected ✅</Typography>
-                        <Typography variant="body2">You can now sell products and accept payments.</Typography>
-
-                        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mt: 3 }}>
+                        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                             <Button
                                 variant="contained"
                                 color="primary"
@@ -174,8 +235,68 @@ export default function PaymentsOverview() {
                                 {loading ? <CircularProgress size={24} /> : "Open Stripe Dashboard"}
                             </Button>
                         </Box>
-                    </Box>
 
+                        <Box sx={{ p: 3 }}>
+
+                            {/* KPI Summary */}
+                            <Grid container spacing={2}>
+                                <KpiCard title="Total Revenue" value={`€${totalRevenue.toFixed(2)}`} />
+                                <KpiCard title="Transactions" value={payments.length} />
+                                <KpiCard title="Membership Revenue" value={`€${membershipRevenue.toFixed(2)}`} />
+                                <KpiCard title="Product Revenue" value={`€${productRevenue.toFixed(2)}`} />
+                            </Grid>
+
+                            {/* Payment Table */}
+                            <Box sx={{ mt: 3 }}>
+                                <Typography variant="h6" gutterBottom>All Payments</Typography>
+
+                                <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+                                    <Table>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>Date</TableCell>
+                                                <TableCell>User Email</TableCell>
+                                                <TableCell>Purchased Items</TableCell>
+                                                <TableCell>Status</TableCell>
+                                                <TableCell>Amount</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {payments.length > 0 ? (
+                                                payments.map((payment) => (
+                                                    <TableRow key={payment.id}>
+                                                        <TableCell>{new Date(payment.timestamp).toLocaleDateString()}</TableCell>
+                                                        <TableCell>{payment.id}</TableCell>
+                                                        <TableCell>
+                                                            {payment.purchasedItems.map(item => item.productName).join(", ")}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Typography
+                                                                sx={{
+                                                                    color: payment.status === 'completed' ? 'green' : 'orange',
+                                                                    fontWeight: 'bold'
+                                                                }}
+                                                            >
+                                                                {payment.status.toUpperCase()}
+                                                            </Typography>
+                                                        </TableCell>
+                                                        <TableCell>€{payment.amount.toFixed(2)}</TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={5} align="center">
+                                                        <Typography>No payments found.</Typography>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </Paper>
+                            </Box>
+
+                        </Box>
+                    </Box>
                 )}
             </Box>
         </Layout>

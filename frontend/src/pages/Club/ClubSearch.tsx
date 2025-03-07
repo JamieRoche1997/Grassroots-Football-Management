@@ -16,6 +16,7 @@ import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
 import { fetchClubs, applyToJoinClub } from '../../services/team_management';
 import { auth } from '../../services/firebaseConfig';
+import { useAuth } from '../../hooks/useAuth';
 
 const Card = styled(MuiCard)(({ theme }) => ({
     display: 'flex',
@@ -94,6 +95,7 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
     const [ageGroup, setAgeGroup] = React.useState('');
     const [division, setDivision] = React.useState('');
     const [clubs, setClubs] = React.useState<Club[]>([]);
+    const { name } = useAuth();
     const navigate = useNavigate();
 
     const handleSearch = async () => {
@@ -121,8 +123,8 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
                 console.error('No authenticated user found');
                 return;
             }
-            if (user.displayName && user.email) {
-                await applyToJoinClub(user.displayName, user.email, club, ageGroup, division);
+            if (name && user.email) {
+                await applyToJoinClub(name, user.email, club, ageGroup, division);
             } else {
                 console.error('User displayName or email is null');
             }

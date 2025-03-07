@@ -3,14 +3,15 @@ import {
     Avatar, Box, Card, CardContent, Typography, Button, Grid2 as Grid, Select, MenuItem, FormControl, InputLabel,
     Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, List, ListItem, ListItemText, ListItemIcon, TextField
 } from '@mui/material';
-import { fetchPlayers, removePlayersFromClub } from '../../services/team_management';
-import { updateUserProfile, createUserInFirestore, checkUserExists } from '../../services/user_management';
-import { v4 as uuidv4 } from 'uuid';
+import { createProfile } from '../../services/profile';
 import Layout from '../../components/Layout';
 import Header from '../../components/Header';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { checkUserExists, createUser } from '../../services/authentication';
+import { createMembership, getMembershipsForTeam, deleteMembership } from '../../services/membership';
+import { updateProfile } from '../../services/profile';
 
 // Player Interface
 interface Player {
@@ -42,10 +43,11 @@ export default function TeamPlayers() {
     const [selectedFilter, setSelectedFilter] = useState<string | null>('All');
     const [sortOption, setSortOption] = useState<string>('name');
     const [addPlayerOpen, setAddPlayerOpen] = useState(false);
-    const [newPlayer, setNewPlayer] = useState({ name: '', email: '', position: '' });
+    const [newPlayer, setNewPlayer] = useState({ name: '', email: '', position: '', dob: '', uid: '' });
     const [removePlayerOpen, setRemovePlayerOpen] = useState(false);
     const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
     const navigate = useNavigate();
+    const uid = Math.random().toString(36).substr(2, 9);
 
     // Fetch players and club info
     const fetchClubAndPlayers = useCallback(async () => {
@@ -60,7 +62,8 @@ export default function TeamPlayers() {
             }
 
             // Fetch players
-            const playersData = await fetchPlayers(clubName, ageGroup, division);
+            const playersData = await getMembershipsForTeam(clubName, ageGroup, division);
+            console.log('Players:', playersData);
             setPlayers(playersData);
             setError(null);
         } catch (error) {
@@ -112,13 +115,37 @@ export default function TeamPlayers() {
                 return;
             }
 
-            const uid = uuidv4(); // Generate a UID for the new player
-            console.log('Adding player:', newPlayer);
-            await createUserInFirestore(uid, newPlayer.email, newPlayer.name, 'player', newPlayer.position, clubName, ageGroup, division, false);
+            await createUser(
+                newPlayer.email,
+                uid
+            );
+
+            await createProfile(
+                newPlayer.email,
+                newPlayer.name,
+                'player',
+                false,
+                clubName,
+                ageGroup,
+                division,
+            );
+
+            await createMembership({
+                email: newPlayer.email,
+                name: newPlayer.name,
+                dob: newPlayer.dob,
+                uid: uid,
+                position: newPlayer.position,
+                clubName: clubName,
+                ageGroup: ageGroup,
+                division: division,
+                role: 'player',
+                userRegistered: false,
+            });
 
             alert('Player added successfully!');
             setAddPlayerOpen(false);
-            setNewPlayer({ name: '', email: '', position: '' });
+            setNewPlayer({ name: '', email: '', position: '', dob: '', uid: '' });
 
             // Refresh players list
             fetchClubAndPlayers();
@@ -138,19 +165,36 @@ export default function TeamPlayers() {
         try {
             console.log('Removing players:', selectedPlayers);
 
-            await removePlayersFromClub(clubName!, ageGroup!, division!, selectedPlayers);
-
             // Now update each player's profile in Firestore to remove club info
             await Promise.all(
                 selectedPlayers.map(async (playerEmail) => {
-                    await updateUserProfile({
-                        email: playerEmail,
-                        clubName: '',
-                        ageGroup: '',
-                        division: '',
-                    });
+                    if (clubName && ageGroup && division) {
+                        await deleteMembership(
+                            clubName,
+                            ageGroup,
+                            division,
+                            playerEmail
+                        );
+                    } else {
+                        console.error('Club information is incomplete.');
+                    }
                 })
-            );
+            );      
+            
+            await Promise.all(
+                selectedPlayers.map(async (playerEmail) => {
+                    if (clubName && ageGroup && division) {
+                        await updateProfile(
+                            playerEmail, {
+                            clubName: "",
+                            ageGroup: "",
+                            division: ""},
+                        );
+                    } else {
+                        console.error('Club information is incomplete.');
+                    }
+                })
+            );  
 
             alert(`Successfully removed players: ${selectedPlayers.join(', ')}`);
 
@@ -338,7 +382,7 @@ export default function TeamPlayers() {
                                         <ListItemText
                                             primary={
                                                 <Typography variant="body1" fontWeight={selectedPlayers.includes(player.email) ? 'bold' : 'normal'}>
-                                                    {player.name}
+                                                    {player.name || "Unknown Player"}
                                                 </Typography>
                                             }
                                             secondary={player.position}
@@ -449,9 +493,8 @@ export default function TeamPlayers() {
                                             >
                                                 {player.name
                                                     .split(' ')
-                                                    .map(word => word[0])
-                                                    .join('')
-                                                    .toUpperCase()}
+                                                    .map((name) => name[0])
+                                                    .join('')}
                                             </Avatar>
                                         )}
                                     </CardContent>

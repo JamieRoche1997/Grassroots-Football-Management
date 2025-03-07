@@ -24,7 +24,7 @@ const Drawer = styled(MuiDrawer)({
 });
 
 export default function SideMenu() {
-  const { user } = useAuth();
+  const { user, name } = useAuth();
 
   return (
     <Drawer
@@ -74,7 +74,7 @@ export default function SideMenu() {
         />
         <Box sx={{ mr: 'auto' }}>
           <Typography variant="body2" sx={{ fontSize: 12, fontWeight: 500, lineHeight: '16px' }}>
-            {user?.displayName}
+            {name}
           </Typography>
           <Typography variant="caption" sx={{ fontSize: 10, color: 'text.secondary' }}>
             {user?.email}

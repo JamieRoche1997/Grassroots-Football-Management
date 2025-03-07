@@ -15,15 +15,20 @@ import {
   FormControl,
   Select,
   MenuItem,
+  Snackbar,
+  Alert
 } from "@mui/material";
 import { DriveEta, People, LocationOn, AccessTime, SportsSoccer } from "@mui/icons-material";
 import Layout from "../../components/Layout";
 import Header from "../../components/Header";
 import { getRides, offerRide, requestRide } from "../../services/carpool";
-import { fetchMatches, MatchData } from "../../services/schedule_management";
+import { fetchFixturesByMonth, FixtureData } from "../../services/schedule_management";
 import { useAuth } from "../../hooks/useAuth";
 
 interface Ride {
+  clubName: string;
+  ageGroup: string;
+  division: string;
   id: string;
   matchId: string;
   driverName: string;
@@ -45,12 +50,15 @@ export default function CarpoolOverview() {
   const [departureLocation, setDepartureLocation] = useState<string>("");
   const [departureTime, setDepartureTime] = useState<string>("");
   const [pickupStops, setPickupStops] = useState<string>("Yes");
-  const [matches, setMatches] = useState<MatchData[]>([]);
+  const [matches, setMatches] = useState<FixtureData[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<string>("");
   const [availableRides, setAvailableRides] = useState<Ride[]>([]);
   const [rideRequests, setRideRequests] = useState<string[]>([]);
   const [matchRides, setMatchRides] = useState<Ride[]>([]);
   const [rideDialogOpen, setRideDialogOpen] = useState<boolean>(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
 
   // Fetch All Future Matches
   useEffect(() => {
@@ -62,9 +70,9 @@ export default function CarpoolOverview() {
           return futureDate.toISOString().slice(0, 7); // Format as "YYYY-MM"
         });
 
-        let allMatches: MatchData[] = [];
+        let allMatches: FixtureData[] = [];
         for (const month of futureMonths) {
-          const fetchedMatches = await fetchMatches(month, clubName!, ageGroup!, division!);
+          const fetchedMatches = await fetchFixturesByMonth(month, clubName!, ageGroup!, division!);
           allMatches = [...allMatches, ...fetchedMatches];
         }
 
@@ -85,7 +93,7 @@ export default function CarpoolOverview() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const rides = await getRides(); // Fetch rides from backend
+        const rides = await getRides(clubName!, ageGroup!, division!); // Fetch rides from backend
         const ridesWithDetails = rides.map(ride => ({
           ...ride,
           matchDetails: ride.matchDetails || "Unknown Match"
@@ -96,7 +104,7 @@ export default function CarpoolOverview() {
       }
     }
     fetchData();
-  }, []);
+  }, [clubName, ageGroup, division]);
 
   // Toggle Driver Mode
   const handleToggleDriver = () => {
@@ -104,7 +112,7 @@ export default function CarpoolOverview() {
   };
 
   // Handle Match Click
-  const handleMatchClick = (match: MatchData) => {
+  const handleMatchClick = (match: FixtureData) => {
     const ridesForMatch = availableRides.filter((ride) => ride.matchId === match.matchId);
     setSelectedMatch(match.matchId);
     setMatchRides(ridesForMatch);
@@ -115,15 +123,41 @@ export default function CarpoolOverview() {
   const handleRequestRide = async (rideId: string) => {
     try {
       if (user?.displayName) {
-        await requestRide({ userName: user.displayName, ride_id: rideId }); 
+
+        if (user?.displayName === availableRides.find(ride => ride.id === rideId)?.driverName) {
+          setSnackbarMessage("You cannot request a ride from yourself!");
+          setSnackbarSeverity("error");
+          setSnackbarOpen(true);
+          return;
+        }
+        // If the user has already requested a ride, show a message
+        if (availableRides.find(ride => ride.id === rideId)?.passengers.includes(user?.displayName)) {
+          setSnackbarMessage("You have already requested a ride for this match!");
+          setSnackbarSeverity("error");
+          setSnackbarOpen(true);
+          return;
+        }
+        await requestRide({ userName: user.displayName, ride_id: rideId }, clubName!, ageGroup!, division!);
+
         setRideRequests([...rideRequests, rideId]);
+
+        setSnackbarMessage("Ride request sent successfully!");
+        setSnackbarSeverity("success");
+        setSnackbarOpen(true);
       } else {
-        console.error("User display name is not available");
+        throw new Error("User display name is not available");
       }
-      setRideRequests([...rideRequests, rideId]);
     } catch (error) {
       console.error("Error requesting ride:", error);
+      setSnackbarMessage("Failed to request ride. Please try again.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
     }
+  };
+
+  // To close the Snackbar
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
   };
 
   // ✅ Modify handleOfferRide to include matchId
@@ -137,6 +171,9 @@ export default function CarpoolOverview() {
       const matchInfo = matches.find((match) => match.matchId === selectedMatch);
 
       const newRide: Ride = {
+        clubName: clubName || "",
+        ageGroup: ageGroup || "",
+        division: division || "",
         id: "",
         matchId: matchInfo?.matchId || "",
         driverName: user?.displayName || "Unknown Driver",
@@ -152,7 +189,7 @@ export default function CarpoolOverview() {
 
       console.log("Offering ride:", newRide);
       await offerRide(newRide); // ✅ Call API with matchId
-      const rides = await getRides(); // Fetch updated rides
+      const rides = await getRides(clubName!, ageGroup!, division!); // Fetch updated rides
       setAvailableRides(rides);
       setOfferRideOpen(false);
     } catch (error) {
@@ -163,6 +200,17 @@ export default function CarpoolOverview() {
   return (
     <Layout>
       <Header />
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+
       <Box sx={{ maxWidth: 900, margin: "auto", mt: 4 }}>
         <Typography variant="h3" sx={{ textAlign: "center", fontWeight: "bold", mb: 2 }}>
           🚗 Carpool
@@ -192,7 +240,7 @@ export default function CarpoolOverview() {
           {matches.map((match) => {
             const opponentTeam = match.homeTeam === clubName ? match.awayTeam : match.homeTeam;
             return (
-              <Grid size={{ xs: 12, sm: 6}} key={match.matchId}>
+              <Grid size={{ xs: 12, sm: 6 }} key={match.matchId}>
                 <Card
                   sx={{
                     p: 2,

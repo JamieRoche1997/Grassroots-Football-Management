@@ -17,11 +17,15 @@ export const createOrJoinClub = async (data: ClubData): Promise<void> => {
       divisions: Array.isArray(data.divisions) ? data.divisions : data.divisions.split(',').map(div => div.trim()),
     };
 
+    console.log('Formatted club data:', formattedData);
+
     const response = await fetch(`${url}/club/create-join`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formattedData),
     });
+
+    console.log('Create or join club response:', response);
 
     if (!response.ok) {
       throw new Error('Failed to create or join club');
@@ -143,50 +147,3 @@ export interface Player {
   position: string;
   uid: string;
 }
-
-export const fetchPlayers = async (clubName: string, ageGroup: string, division: string): Promise<Player[]> => {
-  try {
-    const response = await fetch(
-      `${url}/club/players?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`
-    );
-    if (!response.ok) {
-      throw new Error('Failed to fetch players');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching players:', error);
-    throw error;
-  }
-};
-
-/**
- * Remove players from the club's players list.
- * @param clubName - The club name.
- * @param ageGroup - The age group.
- * @param division - The division.
- * @param playerEmails - Array of player emails to remove.
- */
-export const removePlayersFromClub = async (
-  clubName: string,
-  ageGroup: string,
-  division: string,
-  playerEmails: string[]
-): Promise<void> => {
-  try {
-    const response = await fetch(`${url}/club/players/remove`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clubName, ageGroup, division, playerEmails }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to remove players from the club.');
-    }
-
-    console.log(`Successfully removed players: ${playerEmails.join(', ')}`);
-  } catch (error) {
-    console.error('Error removing players:', error);
-    throw error;
-  }
-};

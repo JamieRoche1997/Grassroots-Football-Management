@@ -7,7 +7,6 @@ import Dashboard from "./pages/Dashboard/CoachDashboard";
 import Coach from "./pages/SignUp/Coach";
 import Player from "./pages/SignUp/Player";
 import Parent from "./pages/SignUp/Parent";
-import TeamOverview from "./pages/Team/TeamOverview";
 import PaymentsOverview from "./pages/Payments/PaymentsOverview";
 import AddProduct from "./pages/Payments/Product";
 import Shop from "./pages/Payments/Shop";
@@ -17,6 +16,7 @@ import Transactions from "./pages/Payments/Transactions";
 import CarpoolOverview from "./pages/Carpool/Carpool";
 import Drivers from "./pages/Carpool/Drivers";
 import PlayerRatings from "./pages/Ratings/PlayerRatings";
+import PlayerStats from "./pages/Ratings/PlayerStats";
 import TeamRequests from "./pages/Team/TeamRequests";
 import TeamResults from "./pages/Team/TeamResults";
 import ResultProfile from "./pages/Team/ResultProfile";
@@ -72,7 +72,7 @@ const App: React.FC = () => {
       <Route path="/carpool" element={<ProtectedRoute><CarpoolOverview /></ProtectedRoute>} />
       <Route path="/carpool/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
       <Route path="/ratings/players" element={<ProtectedRoute><PlayerRatings /></ProtectedRoute>} />
-      <Route path="/team" element={<ProtectedRoute> <TeamOverview /></ProtectedRoute>} />
+      <Route path="/ratings/players/:playerUid" element={<ProtectedRoute><PlayerStats /></ProtectedRoute>} />
       <Route path="/team/requests" element={<ProtectedRoute><TeamRequests /></ProtectedRoute>} />
       <Route path="/team/squad" element={<ProtectedRoute><TeamSquad /></ProtectedRoute>} />
       <Route path="/team/squad/:playerUid" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />

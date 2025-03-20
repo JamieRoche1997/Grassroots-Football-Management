@@ -35,7 +35,6 @@ const menuItems = [
     text: 'Team',
     icon: <PeopleRoundedIcon />,
     subItems: [
-      { text: 'Overview', icon: <HomeRoundedIcon />, path: '/team' },
       { text: 'Player Requests', icon: <AssignmentIndIcon />, path: '/team/requests' },
       { text: 'Squad', icon: <GroupIcon />, path: '/team/squad' },
       { text: 'Lineups', icon: <SportsSoccerIcon />, path: '/team/lineups' },

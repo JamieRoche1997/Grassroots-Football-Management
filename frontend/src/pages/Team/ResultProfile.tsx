@@ -11,6 +11,7 @@ import { getFixtureById } from '../../services/schedule_management';
 import { getEvents, addEvent, getLineups } from '../../services/match_management';
 import { saveResult } from '../../services/match_management';
 import { fetchPlayerRatings, submitPlayerRating } from '../../services/match_management';
+import { updatePlayerStats } from '../../services/player_stats';
 
 
 // Interface for match and events
@@ -154,19 +155,19 @@ export default function ResultProfile() {
 
   useEffect(() => {
     const loadRatings = async () => {
-        if (matchId && clubName && ageGroup && division) {
-            const ratings = await fetchPlayerRatings(matchId, clubName, ageGroup, division);
-            const ratingMap = ratings.reduce((map, rating) => {
-                map[rating.playerEmail] = rating.overallPerformance ?? 0;
-                return map;
-            }, {} as { [email: string]: number });
+      if (matchId && clubName && ageGroup && division) {
+        const ratings = await fetchPlayerRatings(matchId, clubName, ageGroup, division);
+        const ratingMap = ratings.reduce((map, rating) => {
+          map[rating.playerEmail] = rating.overallPerformance ?? 0;
+          return map;
+        }, {} as { [email: string]: number });
 
-            setPlayerRatings(ratingMap);
-        }
+        setPlayerRatings(ratingMap);
+      }
     };
 
     loadRatings();
-}, [matchId, clubName, ageGroup, division]);
+  }, [matchId, clubName, ageGroup, division]);
 
 
 
@@ -176,6 +177,19 @@ export default function ResultProfile() {
     try {
       await addEvent(match.matchId, clubName, ageGroup, division, newEvent);
       alert('Event added successfully!');
+
+      // ✅ Step 2: Update Player Stats based on event type
+      if (newEvent.playerEmail) {
+        await updatePlayerStats(
+          clubName,
+          ageGroup,
+          division,
+          newEvent.playerEmail,
+          playersMap[newEvent.playerEmail]?.name || "Unknown Player",  // ✅ Fetch player name
+          newEvent.type as "goal" | "assist" | "yellowCard" | "redCard"
+        );
+        console.log(`Player stats updated for ${newEvent.playerEmail}`);
+      }
 
       // Fetch latest events and update the UI
       const updatedEvents = await getEvents(match.matchId, clubName, ageGroup, division);

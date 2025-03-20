@@ -1,91 +1,96 @@
-import Grid from '@mui/material/Grid2'; // Correct Grid2 import
+import { useEffect, useState } from 'react';
+import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Copyright from '../internals/components/Copyright';
 import StatCard, { StatCardProps } from '../../../components/StatCard';
 import PlayerStatCard, { PlayerStatCardProps } from '../../../components/PlayerStatCard';
 import CalendarView from './CalendarView';
-
-const overviewData: StatCardProps[] = [
-  { 
-    title: 'Win Rate', 
-    value: '75%', 
-    interval: 'Last 30 days', 
-    trend: 'up', 
-    data: [] },
-  { 
-    title: 'Training Attendance', 
-    value: '85%', 
-    interval: 'Last 30 days', 
-    trend: 'neutral', 
-    data: [] },
-  { 
-    title: 'Pending Join Requests', 
-    value: '4', 
-    interval: 'New', 
-    trend: 'down', 
-    data: [] },
-];
-
-const performanceData: PlayerStatCardProps[] = [
-    {
-      playerName: 'Jamie Roche',
-      goals: 12,
-      assists: 2,
-      minutesPlayed: [91, 89, 75, 88, 64, 94, 55, 78, 99, 45],
-      fitnessLevel: '75%',
-    },
-    {
-      playerName: 'Kieran Stack',
-      goals: 1,
-      assists: 7,
-      minutesPlayed: [91, 89, 75, 88, 64, 94, 55, 78, 99, 45],
-      fitnessLevel: '75%',
-    },
-    {
-      playerName: 'Cathal Roche',
-      goals: 10,
-      assists: 8,
-      minutesPlayed: [91, 89, 75, 88, 64, 94, 55, 78, 99, 45],
-      fitnessLevel: '75%',
-    },
-];
+import { getJoinRequests } from '../../../services/team_management';
+import { listAllPlayerStats } from '../../../services/player_stats'; // New API call
+import { useAuth } from '../../../hooks/useAuth';
 
 export default function MainGrid() {
+  const { clubName, ageGroup, division } = useAuth();
+  const [overviewData, setOverviewData] = useState<StatCardProps[]>([]);
+  const [players, setPlayers] = useState<PlayerStatCardProps[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!clubName || !ageGroup || !division) {
+        console.log('Waiting for club data...');
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        // Fetch Pending Join Requests and Player Stats
+        const [pendingRequests, playerStats] = await Promise.all([
+          getJoinRequests(clubName, ageGroup, division),
+          listAllPlayerStats(clubName, ageGroup, division),
+        ]);
+
+        console.log('Pending Join Requests:', pendingRequests);
+        console.log('Player Stats:', playerStats);
+
+        setOverviewData([
+          { title: 'Pending Join Requests', value: `${pendingRequests.length}`, interval: 'New', trend: pendingRequests.length > 0 ? 'down' : 'neutral', data: [] },
+        ]);
+
+        // Process Players for Player Performance section
+        const playerData: PlayerStatCardProps[] = playerStats.allPlayers.map((player) => ({
+          playerName: player.playerName || 'Unknown Player',
+          goals: player.goals ?? 0,
+          assists: player.assists ?? 0,
+          yellowCards: player.yellowCards ?? 0,
+          redCards: player.redCards ?? 0,
+        }));
+
+        setPlayers(playerData);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [clubName, ageGroup, division]);
+
   return (
     <Box sx={{ width: '100%', maxWidth: { sm: '100%', md: '1700px' } }}>
       {/* Overview Section */}
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
         Overview
       </Typography>
-      <Grid
-        container
-        spacing={2}
-        columns={12}
-        sx={{ mb: (theme) => theme.spacing(2) }}
-      >
-        {overviewData.map((card, index) => (
-          <Grid key={index} size={{ xs: 12, sm: 6, lg: 4 }}>
-            <StatCard {...card} />
-          </Grid>
-        ))}
+      <Grid container spacing={2} columns={12} sx={{ mb: (theme) => theme.spacing(2) }}>
+        {loading ? (
+          <Typography>Loading...</Typography>
+        ) : (
+          overviewData.map((card, index) => (
+            <Grid key={index} item xs={12} sm={6} lg={4}>
+              <StatCard {...card} />
+            </Grid>
+          ))
+        )}
       </Grid>
 
       {/* Player Stats Section */}
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
         Player Performance
       </Typography>
-      <Grid
-        container
-        spacing={2}
-        columns={12}
-        sx={{ mb: (theme) => theme.spacing(2) }}
-      >
-        {performanceData.map((card, index) => (
-          <Grid key={index} size={{ xs: 12, sm: 6, lg: 4 }}>
-            <PlayerStatCard {...card} />
-          </Grid>
-        ))}
+      <Grid container spacing={2} columns={12} sx={{ mb: (theme) => theme.spacing(2) }}>
+        {loading ? (
+          <Typography>Loading...</Typography>
+        ) : (
+          players.map((player, index) => (
+            <Grid key={index} item xs={12} sm={6} lg={4}>
+              <PlayerStatCard {...player} />
+            </Grid>
+          ))
+        )}
       </Grid>
 
       {/* Calendar Section */}
@@ -93,7 +98,7 @@ export default function MainGrid() {
         Calendar
       </Typography>
       <Grid container spacing={2}>
-        <Grid size={{ xs: 12 }}>
+        <Grid item xs={12}>
           <CalendarView />
         </Grid>
       </Grid>

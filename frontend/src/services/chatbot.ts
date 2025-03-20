@@ -1,4 +1,5 @@
 import { auth } from './firebaseConfig';
+import { getAuthHeaders } from './getAuthHeaders';
 
 const BASE_URL = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev'; 
 
@@ -24,11 +25,10 @@ export const sendMessageToAI = async (message: string, clubName: string, ageGrou
     throw new Error('User email is missing');
   }
 
+  const headers = await getAuthHeaders();
   const response = await fetch(`${BASE_URL}/query-ai`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({
         message,
         token: idToken,

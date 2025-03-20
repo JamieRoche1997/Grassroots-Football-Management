@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "./getAuthHeaders";
+
 const playerStatsUrl = "https://grassroots-gateway-2au66zeb.nw.gateway.dev";
 
 export interface PlayerStats {
@@ -22,9 +24,10 @@ export const updatePlayerStats = async (
     playerName: string,
     eventType: "goal" | "assist" | "yellowCard" | "redCard" | "gamesPlayed"
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${playerStatsUrl}/stats/update`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ clubName, ageGroup, division, playerEmail, playerName, eventType }),
     });
 
@@ -43,8 +46,10 @@ export const getPlayerStats = async (
     division: string,
     playerEmail: string
 ): Promise<PlayerStats> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(
-        `${playerStatsUrl}/stats/get?clubName=${clubName}&ageGroup=${ageGroup}&division=${division}&playerEmail=${playerEmail}`
+        `${playerStatsUrl}/stats/get?clubName=${clubName}&ageGroup=${ageGroup}&division=${division}&playerEmail=${playerEmail}`,
+        { headers }
     );
 
     if (!response.ok) {
@@ -64,8 +69,10 @@ export const searchPlayersByName = async (
     division: string,
     playerName: string
 ): Promise<PlayerStats[]> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(
-        `${playerStatsUrl}/stats/search?clubName=${clubName}&ageGroup=${ageGroup}&division=${division}&playerName=${playerName}`
+        `${playerStatsUrl}/stats/search?clubName=${clubName}&ageGroup=${ageGroup}&division=${division}&playerName=${playerName}`,
+        { headers }
     );
 
     if (!response.ok) {
@@ -93,8 +100,10 @@ export const listAllPlayerStats = async (
     };
     allPlayers: PlayerStats[];
 }> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(
-        `${playerStatsUrl}/stats/list?clubName=${clubName}&ageGroup=${ageGroup}&division=${division}`
+        `${playerStatsUrl}/stats/list?clubName=${clubName}&ageGroup=${ageGroup}&division=${division}`,
+        { headers }
     );
 
     if (!response.ok) {

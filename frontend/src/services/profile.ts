@@ -1,3 +1,4 @@
+import { getAuthHeaders } from "./getAuthHeaders";
 const profileServiceUrl = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev';
 
 /**
@@ -20,9 +21,10 @@ export const createProfile = async (email: string, name: string, role: string, u
     division?: string;
     position?: string;
 }>> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${profileServiceUrl}/profile`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ email, name, role, userRegistered, clubName, ageGroup, division, position }),
     });
 
@@ -51,7 +53,9 @@ export const getProfile = async (email: string): Promise<Partial<{
     division?: string;
     position?: string;
 }>> => {
-    const response = await fetch(`${profileServiceUrl}/profile/${encodeURIComponent(email)}`);
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${profileServiceUrl}/profile/${encodeURIComponent(email)}`,
+        { headers });
     if (!response.ok) {
         throw new Error('Failed to fetch profile');
     }
@@ -70,9 +74,10 @@ export const updateProfile = async (
 ): Promise<void> => {
     console.log("Update Profile email: ", email);
     console.log("Update Profile updates: ", updates);
+    const headers = await getAuthHeaders();
     const response = await fetch(`${profileServiceUrl}/profile/${encodeURIComponent(email)}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(updates),
     });
 
@@ -90,8 +95,10 @@ export const updateProfile = async (
  * @returns Promise<void>
  */
 export const deleteProfile = async (email: string): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${profileServiceUrl}/profile/${encodeURIComponent(email)}`, {
         method: 'DELETE',
+        headers,
     });
 
     if (!response.ok) {

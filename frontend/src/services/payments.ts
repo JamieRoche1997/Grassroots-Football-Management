@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "./getAuthHeaders";
+
 const url = "https://grassroots-gateway-2au66zeb.nw.gateway.dev";
 
 interface ProductPayload {
@@ -11,7 +13,9 @@ interface ProductPayload {
 // ✅ Check if a club has a Stripe Express account
 export const checkStripeStatus = async (clubName: string) => {
     try {
-        const response = await fetch(`${url}/stripe/status?clubName=${clubName}`);
+        const headers = await getAuthHeaders();
+
+        const response = await fetch(`${url}/stripe/status?clubName=${clubName}`, {headers});
         if (!response.ok) {
             throw new Error("Failed to fetch Stripe status");
         }
@@ -25,9 +29,11 @@ export const checkStripeStatus = async (clubName: string) => {
 // ✅ Create a Stripe Express account for a club
 export const createStripeAccount = async (clubName: string, email: string) => {
     try {
+        const headers = await getAuthHeaders();
+        
         const response = await fetch(`${url}/stripe/connect`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ clubName, email }),
         });
 
@@ -45,11 +51,10 @@ export const createStripeAccount = async (clubName: string, email: string) => {
 // ✅ Create a new product inside a club's Stripe Express account
 export const createProduct = async (clubName: string, ageGroup: string, division: string, products: ProductPayload[]) => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`${url}/products/create`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify({ clubName, ageGroup, division, products }),
         });
 
@@ -68,7 +73,8 @@ export const createProduct = async (clubName: string, ageGroup: string, division
 export const fetchProducts = async (clubName: string, ageGroup: string, division: string) => {
     try {
         console.log('Fetching products for:', clubName, ageGroup, division);
-        const response = await fetch(`${url}/products/list?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`);
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${url}/products/list?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`, {headers});
 
         if (!response.ok) {
             throw new Error("Failed to fetch products");
@@ -104,9 +110,10 @@ interface CartItem {
 
 export const createCheckoutSession = async (clubName: string, ageGroup: string, division: string, cart: CartItem[]) => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`${url}/stripe/create-checkout-session`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({ clubName, ageGroup, division, cart }), // ✅ Ensure `priceId` is sent
         });
 
@@ -127,7 +134,8 @@ export const createCheckoutSession = async (clubName: string, ageGroup: string, 
 // ✅ Fetch a user's transaction history
 export const fetchTransactions = async (userEmail: string, clubName: string, ageGroup: string, division: string) => {
     try {
-        const response = await fetch(`${url}/transactions/list?email=${encodeURIComponent(userEmail)}&clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`);
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${url}/transactions/list?email=${encodeURIComponent(userEmail)}&clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`, {headers});
 
         if (!response.ok) {
             throw new Error("Failed to fetch transactions");
@@ -142,9 +150,10 @@ export const fetchTransactions = async (userEmail: string, clubName: string, age
 
 export const createStripeLoginLink = async (clubName: string) => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`${url}/stripe/login-link`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({ clubName }),
         });
 
@@ -168,7 +177,8 @@ export const getPayments = async (clubName: string, ageGroup: string, division: 
             division
         }).toString();
 
-        const response = await fetch(`${url}/payments?${queryParams}`);
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${url}/payments?${queryParams}`, {headers});
 
         if (!response.ok) {
             throw new Error(`Failed to fetch payments: ${response.status} ${response.statusText}`);

@@ -2,8 +2,11 @@ import Stack from '@mui/material/Stack';
 import Header from '../../components/Header';
 import Layout from '../../components/Layout';
 import MainGrid from './components/MainGrid';
+import { auth } from '../../services/firebaseConfig';
 
 export default function CoachDashboard() {
+  const user = auth.currentUser;
+  console.log('User:', user);
   return (
     <Layout>
       <Stack

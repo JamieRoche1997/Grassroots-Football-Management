@@ -2,6 +2,7 @@ import { signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopu
 import { auth } from './firebaseConfig';
 import { createProfile, getProfile, updateProfile } from './profile';
 import { updateMembership } from './membership';
+import { getAuthHeaders } from './getAuthHeaders';
 
 const url = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev'
 const googleProvider = new GoogleAuthProvider();
@@ -40,7 +41,7 @@ export const signUp = async (
                 const authResponse = await fetch(`${url}/auth/create`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, name }),
+                    body: JSON.stringify({ email, password, name, role }),
                 });
 
                 console.log("Auth Create response: ", authResponse);
@@ -56,6 +57,9 @@ export const signUp = async (
                 const ageGroup = userData.ageGroup || '';
                 const division = userData.division || '';
 
+                // Log the user in after successful sign-up
+                await signInWithEmailAndPassword(auth, email, password);
+
                 // Step 3: Update Firestore document to mark as registered
                 await updateUser(email, { uid: uid });
                 console.log("User updated");
@@ -70,9 +74,6 @@ export const signUp = async (
                     dob: userData.dob || '',
                 });
 
-                // Log the user in after successful sign-up
-                await signInWithEmailAndPassword(auth, email, password);
-
                 return;
             }
         } else {
@@ -82,10 +83,13 @@ export const signUp = async (
             const authResponse = await fetch(`${url}/auth/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password, name, role }),
             });
 
             console.log("Auth Create response: ", authResponse);
+
+            // Log the user in after successful sign-up
+            await signInWithEmailAndPassword(auth, email, password);
 
             if (!authResponse.ok) {
                 const errorData = await authResponse.json();
@@ -93,14 +97,11 @@ export const signUp = async (
             }
 
             const authData = await authResponse.json();
-            await createUser(email, authData.uid);
+            await createUser(email, authData.uid, role);
             console.log("Profile created");
 
             // Create the user in Firestore
             await createProfile(email, name, role, true);
-
-            // Log the user in after successful sign-up
-            await signInWithEmailAndPassword(auth, email, password);
         }
     } catch (error) {
         console.error('Sign-up error:', error);
@@ -129,7 +130,7 @@ export const signUpWithGoogle = async (
         const userExists = await checkUserExists(user.email);
         if (!userExists) {
             // Create the user in Firestore
-            await createUser(user.email, user.uid);
+            await createUser(user.email, user.uid, role);
             await createProfile(user.email, user.displayName || '', role, true);
 
         }
@@ -264,9 +265,10 @@ export const checkUserExists = async (email: string): Promise<boolean> => {
 export const updateUser = async (email: string, updates: Partial<{
     uid: string;
 }>): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${url}/auth/${encodeURIComponent(email)}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(updates),
     });
 
@@ -276,11 +278,12 @@ export const updateUser = async (email: string, updates: Partial<{
     }
 };
 
-export const createUser = async (email: string, uid: string): Promise<void> => {
+export const createUser = async (email: string, uid: string, role: string): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${url}/user`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, uid }),
+        headers,
+        body: JSON.stringify({ email, uid, role }),
     });
 
     if (!response.ok) {

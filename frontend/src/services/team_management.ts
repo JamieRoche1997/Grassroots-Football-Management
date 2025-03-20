@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "./getAuthHeaders";
+
 const url = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev';
 
 export interface ClubData {
@@ -18,10 +20,11 @@ export const createOrJoinClub = async (data: ClubData): Promise<void> => {
     };
 
     console.log('Formatted club data:', formattedData);
+    const headers = await getAuthHeaders();
 
     const response = await fetch(`${url}/club/create-join`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(formattedData),
     });
 
@@ -51,7 +54,10 @@ export interface Club {
 export const fetchClubs = async (filters: { clubName?: string; county?: string; ageGroup?: string; division?: string }): Promise<Club[]> => {
   try {
     const queryParams = new URLSearchParams(filters as Record<string, string>).toString();
-    const response = await fetch(`${url}/club/search?${queryParams}`);
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${url}/club/search?${queryParams}`,
+      { headers }
+    );
 
     if (!response.ok) {
       throw new Error('Failed to fetch clubs');
@@ -78,9 +84,12 @@ export const applyToJoinClub = async (
   division: string
 ): Promise<void> => {
   try {
+    const headers = await getAuthHeaders();
+    console.log('Headers:', headers);
+    console.log('Applying to join club:', { name, playerEmail, clubName, ageGroup, division });
     const response = await fetch(`${url}/club/join-request`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ name, playerEmail, clubName, ageGroup, division }),
     });
 
@@ -107,7 +116,9 @@ export interface JoinRequest {
  * @returns A list of join requests for the club.
  */
 export const getJoinRequests = async (clubName: string, ageGroup: string, division: string): Promise<JoinRequest[]> => {
-  const response = await fetch(`${url}/club/requests?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`);
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${url}/club/requests?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`, 
+    { headers });
   if (!response.ok) throw new Error('Failed to fetch join requests');
   return await response.json();
 };
@@ -118,9 +129,10 @@ export const getJoinRequests = async (clubName: string, ageGroup: string, divisi
  * @param clubName - The name of the club.
  */
 export const approveJoinRequest = async (playerEmail: string, clubName: string, ageGroup: string, division: string): Promise<void> => {
+  const headers = await getAuthHeaders();
   const response = await fetch(`${url}/club/requests/approve`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ playerEmail, clubName, ageGroup, division }),
   });
   if (!response.ok) throw new Error('Failed to approve join request');
@@ -132,9 +144,10 @@ export const approveJoinRequest = async (playerEmail: string, clubName: string, 
  * @param clubName - The name of the club.
  */
 export const rejectJoinRequest = async (playerEmail: string, clubName: string, ageGroup: string, division: string): Promise<void> => {
+  const headers = await getAuthHeaders();
   const response = await fetch(`${url}/club/requests/reject`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ playerEmail, clubName, ageGroup, division }),
   });
   if (!response.ok) throw new Error('Failed to reject join request');

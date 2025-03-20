@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "./getAuthHeaders";
+
 const url = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev';
 
 export interface FixtureData {
@@ -17,9 +19,10 @@ export interface FixtureData {
  */
 export const addFixture = async (fixture: FixtureData, clubName: string, ageGroup: string, division: string): Promise<void> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`${url}/schedule/fixture`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ ...fixture, clubName, ageGroup, division }),
         });
         if (!response.ok) {
@@ -36,8 +39,10 @@ export const addFixture = async (fixture: FixtureData, clubName: string, ageGrou
  */
 export const fetchFixturesByMonth = async (month: string, clubName: string, ageGroup: string, division: string): Promise<FixtureData[]> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(
-            `${url}/schedule/fixture?month=${encodeURIComponent(month)}&clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`
+            `${url}/schedule/fixture?month=${encodeURIComponent(month)}&clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`,
+            { headers }
         );
         if (!response.ok) {
             throw new Error('Failed to fetch fixtures');
@@ -55,8 +60,10 @@ export const fetchFixturesByMonth = async (month: string, clubName: string, ageG
  */
 export const getFixtureById = async (matchId: string, clubName: string, ageGroup: string, division: string): Promise<FixtureData> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(
-            `${url}/schedule/fixture/${matchId}?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`
+            `${url}/schedule/fixture/${matchId}?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`,
+            { headers }
         );
         if (!response.ok) {
             throw new Error('Failed to fetch fixture by ID');
@@ -73,8 +80,10 @@ export const getFixtureById = async (matchId: string, clubName: string, ageGroup
  */
 export const fetchAllFixtures = async (clubName: string, ageGroup: string, division: string): Promise<FixtureData[]> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(
-            `${url}/schedule/fixtures?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`
+            `${url}/schedule/fixtures?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`,
+            { headers }
         );
         if (!response.ok) {
             throw new Error('Failed to fetch all fixtures');
@@ -91,9 +100,10 @@ export const fetchAllFixtures = async (clubName: string, ageGroup: string, divis
  */
 export const updateFixture = async (fixture: FixtureData, clubName: string, ageGroup: string, division: string): Promise<void> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`${url}/schedule/fixture`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ ...fixture, clubName, ageGroup, division }),
         });
         if (!response.ok) {
@@ -110,9 +120,10 @@ export const updateFixture = async (fixture: FixtureData, clubName: string, ageG
  */
 export const deleteFixture = async (matchId: string, clubName: string, ageGroup: string, division: string): Promise<void> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(
             `${url}/schedule/fixture?matchId=${encodeURIComponent(matchId)}&clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`,
-            { method: 'DELETE' }
+            { method: 'DELETE', headers }
         );
         if (!response.ok) {
             throw new Error('Failed to delete fixture');
@@ -139,9 +150,10 @@ export interface TrainingData {
  */
 export const addTraining = async (training: TrainingData, clubName: string, ageGroup: string, division: string): Promise<void> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`${url}/schedule/training`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ ...training, clubName, ageGroup, division }),
         });
         if (!response.ok) {
@@ -158,8 +170,10 @@ export const addTraining = async (training: TrainingData, clubName: string, ageG
  */
 export const fetchTrainingsByMonth = async (month: string, clubName: string, ageGroup: string, division: string): Promise<TrainingData[]> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(
-            `${url}/schedule/training?month=${encodeURIComponent(month)}&clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`
+            `${url}/schedule/training?month=${encodeURIComponent(month)}&clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`,
+            { headers }
         );
         if (!response.ok) {
             throw new Error('Failed to fetch trainings');
@@ -176,8 +190,10 @@ export const fetchTrainingsByMonth = async (month: string, clubName: string, age
  */
 export const getTrainingById = async (trainingId: string, clubName: string, ageGroup: string, division: string): Promise<TrainingData> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(
-            `${url}/schedule/training/${trainingId}?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`
+            `${url}/schedule/training/${trainingId}?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`,
+            { headers }
         );
         if (!response.ok) {
             throw new Error('Failed to fetch training by ID');
@@ -194,8 +210,10 @@ export const getTrainingById = async (trainingId: string, clubName: string, ageG
  */
 export const fetchAllTrainings = async (clubName: string, ageGroup: string, division: string): Promise<TrainingData[]> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(
-            `${url}/schedule/trainings?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`
+            `${url}/schedule/trainings?clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`,
+            { headers }
         );
         if (!response.ok) {
             throw new Error('Failed to fetch all trainings');
@@ -212,9 +230,10 @@ export const fetchAllTrainings = async (clubName: string, ageGroup: string, divi
  */
 export const updateTraining = async (training: TrainingData, clubName: string, ageGroup: string, division: string): Promise<void> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`${url}/schedule/training`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ ...training, clubName, ageGroup, division }),
         });
         if (!response.ok) {
@@ -231,9 +250,10 @@ export const updateTraining = async (training: TrainingData, clubName: string, a
  */
 export const deleteTraining = async (trainingId: string, clubName: string, ageGroup: string, division: string): Promise<void> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(
             `${url}/schedule/training?trainingId=${encodeURIComponent(trainingId)}&clubName=${encodeURIComponent(clubName)}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(division)}`,
-            { method: 'DELETE' }
+            { method: 'DELETE', headers }
         );
         if (!response.ok) {
             throw new Error('Failed to delete training');

@@ -38,7 +38,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const email = currentUser.email;
           if (email) {
-            const { clubName, ageGroup, division, role} = await getProfile(email);
+            const idTokenResult = await currentUser.getIdTokenResult();
+            const role = typeof idTokenResult.claims.role === 'string' ? idTokenResult.claims.role : null;
+            console.log('User role:', role);
+            console.log('ID token result:', idTokenResult);
+
+            const { clubName, ageGroup, division} = await getProfile(email);
             const { name } = await getProfile(currentUser.email);
             setUserData({
               name,

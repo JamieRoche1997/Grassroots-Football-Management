@@ -24,11 +24,13 @@ interface Match {
 }
 
 export default function TeamResults() {
-  const { clubName, ageGroup, division, loading: authLoading } = useAuth();
+  const { clubName, ageGroup, division, loading: authLoading, role } = useAuth();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const isCoach = role === "coach";
 
   // Fetch previous matches (matches that have already been played)
   const fetchPreviousMatches = useCallback(async () => {
@@ -119,7 +121,7 @@ export default function TeamResults() {
                     transition: '0.3s',
                     '&:hover': { transform: 'scale(1.05)', boxShadow: 3 },
                   }}
-                  onClick={() => navigate(`/team/results/${encodeURIComponent(match.matchId)}`, { state: { match } })}
+                  onClick={isCoach ? () => navigate(`/team/results/${encodeURIComponent(match.matchId)}`, { state: { match } }) : undefined}
                 >
                   <CardContent sx={{ textAlign: 'center' }}>
                     <Typography variant="h6">

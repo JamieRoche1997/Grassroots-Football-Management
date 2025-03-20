@@ -35,10 +35,11 @@ import Settings from "./pages/Account/Settings";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  allowedRoles?: string[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
+  const { user, loading, role } = useAuth();
 
   if (loading) {
     return <LoadingSpinner />;
@@ -46,6 +47,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (!user) {
     return <Navigate to="/" />;
+  }
+
+  if (allowedRoles && role && !allowedRoles.includes(role)) {
+    return <Navigate to="/dashboard" />; // Redirect unauthorized users
   }
 
   return <>{children}</>;
@@ -63,8 +68,8 @@ const App: React.FC = () => {
       <Route path="/signup/player" element={<ProtectedRoute><Player /></ProtectedRoute>} />
       <Route path="/signup/parent" element={<ProtectedRoute><Parent /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/payments" element={<ProtectedRoute><PaymentsOverview /></ProtectedRoute>} />
-      <Route path="/payments/products" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
+      <Route path="/payments" element={<ProtectedRoute allowedRoles={["coach"]}><PaymentsOverview /></ProtectedRoute>} />
+      <Route path="/payments/products" element={<ProtectedRoute allowedRoles={["coach"]}><AddProduct /></ProtectedRoute>} />
       <Route path="/payments/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
       <Route path="/payments/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
       <Route path="/payments/cancel" element={<ProtectedRoute><Cancel /></ProtectedRoute>} />
@@ -73,7 +78,7 @@ const App: React.FC = () => {
       <Route path="/carpool/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
       <Route path="/ratings/players" element={<ProtectedRoute><PlayerRatings /></ProtectedRoute>} />
       <Route path="/ratings/players/:playerUid" element={<ProtectedRoute><PlayerStats /></ProtectedRoute>} />
-      <Route path="/team/requests" element={<ProtectedRoute><TeamRequests /></ProtectedRoute>} />
+      <Route path="/team/requests" element={<ProtectedRoute allowedRoles={["coach"]}><TeamRequests /></ProtectedRoute>} />
       <Route path="/team/squad" element={<ProtectedRoute><TeamSquad /></ProtectedRoute>} />
       <Route path="/team/squad/:playerUid" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
       <Route path="/team/lineups" element={<ProtectedRoute><TeamLineups /></ProtectedRoute>} />

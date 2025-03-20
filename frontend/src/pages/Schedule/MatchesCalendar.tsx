@@ -30,13 +30,15 @@ interface MatchEvent {
 }
 
 export default function MatchesCalendar() {
-  const { clubName, ageGroup, division, loading: authLoading } = useAuth();
+  const { clubName, ageGroup, division, loading: authLoading, role } = useAuth();
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());  // Track the displayed month
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newFixture, setNewFixture] = useState({ matchId: '', homeTeam: '', awayTeam: '', date: '', ageGroup: '', division: '', createdBy: '' });
+
+  const isCoach = role === 'coach';
 
   const fetchMatchData = useCallback(async (month: Date) => {
     if (authLoading) return;
@@ -48,22 +50,22 @@ export default function MatchesCalendar() {
     }
     try {
       const formattedMonth = format(month, 'yyyy-MM'); // e.g., "2025-02"
-        const matches = await fetchFixturesByMonth(formattedMonth, clubName, ageGroup, division);
-        console.log('matches:', matches);
-        const formattedEvents = matches.map((match) => ({
-          title: `${match.homeTeam} vs ${match.awayTeam}`,
-          start: new Date(match.date),
-          end: new Date(match.date),
-          matchId: match.matchId,
-          homeTeam: match.homeTeam,
-          awayTeam: match.awayTeam,
-        }));
-        setEvents(formattedEvents);
-        setError(null);
+      const matches = await fetchFixturesByMonth(formattedMonth, clubName, ageGroup, division);
+      console.log('matches:', matches);
+      const formattedEvents = matches.map((match) => ({
+        title: `${match.homeTeam} vs ${match.awayTeam}`,
+        start: new Date(match.date),
+        end: new Date(match.date),
+        matchId: match.matchId,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+      }));
+      setEvents(formattedEvents);
+      setError(null);
     } catch (error) {
       console.error('Error fetching matches:', error);
       setError('Failed to load matches. Please try again later.');
-    }finally {
+    } finally {
       setLoading(false);
     }
   }, [authLoading, clubName, ageGroup, division]);
@@ -134,9 +136,12 @@ export default function MatchesCalendar() {
         <Typography variant="h4" sx={{ mb: 2 }}>
           Match Schedule
         </Typography>
-        <Button variant="contained" sx={{ mb: 2 }} onClick={() => setOpenAddDialog(true)}>
-          Add Fixture
-        </Button>
+
+        {(isCoach) && (
+          <Button variant="contained" sx={{ mb: 2 }} onClick={() => setOpenAddDialog(true)}>
+            Add Fixture
+          </Button>
+        )}
 
         {/* Calendar View */}
         <Calendar

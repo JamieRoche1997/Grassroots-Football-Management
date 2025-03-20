@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "./getAuthHeaders";
+
 const membershipServiceUrl = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev';
 
 export const getMembershipInfo = async (
@@ -13,7 +15,9 @@ export const getMembershipInfo = async (
         email
     }).toString();
 
-    const response = await fetch(`${membershipServiceUrl}/membership?${queryParams}`);
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${membershipServiceUrl}/membership?${queryParams}`, {headers});
 
     if (response.status === 404) {
         return null;
@@ -36,7 +40,9 @@ export const getMembershipsForTeam = async (
         division,
     }).toString();
 
-    const response = await fetch(`${membershipServiceUrl}/membership/team?${queryParams}`);
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${membershipServiceUrl}/membership/team?${queryParams}`, {headers});
 
     console.log(`${membershipServiceUrl}/membership/team?${queryParams}`);
 
@@ -60,9 +66,11 @@ export const createMembership = async (membership: {
     position: string;
     userRegistered: boolean;
 }) => {
+    const headers = await getAuthHeaders();
+
     const response = await fetch(`${membershipServiceUrl}/membership`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(membership),
     });
 
@@ -84,9 +92,11 @@ export const updateMembership = async (membership: {
     role?: string;
     userRegistered?: boolean;
 }) => {
+    const headers = await getAuthHeaders();
+
     const response = await fetch(`${membershipServiceUrl}/membership`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(membership),
     });
 
@@ -108,9 +118,11 @@ export const deleteMembership = async (
         division,
         email
     }).toString();
+    const headers = await getAuthHeaders();
 
     const response = await fetch(`${membershipServiceUrl}/membership?${queryParams}`, {
         method: 'DELETE',
+        headers
     });
 
     if (!response.ok) {

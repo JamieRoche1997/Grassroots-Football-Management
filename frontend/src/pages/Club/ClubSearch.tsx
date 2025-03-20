@@ -16,7 +16,7 @@ import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
 import { fetchClubs, applyToJoinClub } from '../../services/team_management';
 import { auth } from '../../services/firebaseConfig';
-import { useAuth } from '../../hooks/useAuth';
+import { getProfile } from '../../services/profile';
 
 const Card = styled(MuiCard)(({ theme }) => ({
     display: 'flex',
@@ -95,7 +95,6 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
     const [ageGroup, setAgeGroup] = React.useState('');
     const [division, setDivision] = React.useState('');
     const [clubs, setClubs] = React.useState<Club[]>([]);
-    const { name } = useAuth();
     const navigate = useNavigate();
 
     const handleSearch = async () => {
@@ -118,15 +117,18 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
 
     const handleApply = async (club: string, ageGroup: string, division: string) => {
         try {
-            const user = auth.currentUser;
-            if (!user || !user.email) {
-                console.error('No authenticated user found');
-                return;
-            }
-            if (name && user.email) {
-                await applyToJoinClub(name, user.email, club, ageGroup, division);
+            const user = auth.currentUser
+            if (user && user.email) {
+                const userDetails = await getProfile(user.email);
+                if (userDetails.name) {
+                    await applyToJoinClub(userDetails.name, user.email, club, ageGroup, division);
+                } else {
+                    console.error('User displayName or email is null');
+                    return;
+                }
             } else {
-                console.error('User displayName or email is null');
+                console.error('No authenticated user found or email is null');
+                return;
             }
             alert(`Join request sent to ${club} for Age Group: ${ageGroup} and Division: ${division}`);
             navigate('/dashboard');

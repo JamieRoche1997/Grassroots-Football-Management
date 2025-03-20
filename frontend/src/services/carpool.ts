@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "./getAuthHeaders";
+
 const url = "https://grassroots-gateway-2au66zeb.nw.gateway.dev";
 
 // 📝 Define TypeScript Interfaces for Ride Data
@@ -26,9 +28,10 @@ interface RideRequest {
 // 🚘 Offer a Ride
 export const offerRide = async (rideData: Ride): Promise<{ message: string; ride_id: string }> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`${url}/carpool/offer`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify(rideData), 
         });
 
@@ -50,9 +53,10 @@ export const getRides = async (clubName: string, ageGroup: string, division: str
             division
         }).toString();
 
+        const headers = await getAuthHeaders();
         const response = await fetch(`${url}/carpool/rides?${queryParams}`, {
             method: "GET",
-            headers: { "Content-Type": "application/json" },
+            headers,
         });
 
         if (!response.ok) throw new Error("Failed to fetch rides");
@@ -67,9 +71,10 @@ export const getRides = async (clubName: string, ageGroup: string, division: str
 // 📩 Request a Ride
 export const requestRide = async (requestData: RideRequest, clubName: string, ageGroup: string, division: string): Promise<{ message: string }> => {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`${url}/carpool/request`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({ ...requestData, clubName, ageGroup, division }),
         });
 
@@ -87,9 +92,10 @@ export const cancelRide = async (rideId: string, clubName: string, ageGroup: str
     try {
         console.log(`Sending request to cancel ride: ${rideId}`);  // ✅ Log request
 
+        const headers = await getAuthHeaders();
         const response = await fetch(`${url}/carpool/cancel`, {
             method: "POST",  // ✅ Use POST instead of DELETE
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({ rideId, clubName, ageGroup, division })  // ✅ Pass rideId in the request body
         });
 

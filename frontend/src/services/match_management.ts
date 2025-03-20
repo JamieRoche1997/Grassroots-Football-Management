@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "./getAuthHeaders";
+
 const ratingsUrl = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev';
 
 export interface MatchResult {
@@ -22,9 +24,10 @@ export const saveLineups = async (
     homeTeamLineup: object,
     awayTeamLineup: object
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${ratingsUrl}/fixture/lineups`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ matchId, clubName, ageGroup, division, homeTeamLineup, awayTeamLineup }),
     });
     if (!response.ok) throw new Error("Failed to save lineups");
@@ -36,8 +39,11 @@ export const getLineups = async (
     ageGroup: string,
     division: string
 ): Promise<{ homeTeamLineup: object; awayTeamLineup: object }> => {
+    const headers = await getAuthHeaders();
+
     const response = await fetch(
-        `${ratingsUrl}/fixture/lineups?matchId=${matchId}&clubName=${clubName}&ageGroup=${ageGroup}&division=${division}`
+        `${ratingsUrl}/fixture/lineups?matchId=${matchId}&clubName=${clubName}&ageGroup=${ageGroup}&division=${division}`,
+        {headers}
     );
     if (!response.ok) throw new Error("Failed to fetch lineups");
     return response.json();
@@ -51,9 +57,10 @@ export const updateLineups = async (
     homeTeamLineup?: object,
     awayTeamLineup?: object
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${ratingsUrl}/fixture/lineups`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ matchId, clubName, ageGroup, division, homeTeamLineup, awayTeamLineup }),
     });
     if (!response.ok) throw new Error("Failed to update lineups");
@@ -65,9 +72,10 @@ export const deleteLineups = async (
     ageGroup: string,
     division: string
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${ratingsUrl}/fixture/lineups`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ matchId, clubName, ageGroup, division }),
     });
     if (!response.ok) throw new Error("Failed to delete lineups");
@@ -81,9 +89,10 @@ export const addEvent = async (
     division: string,
     event: object
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${ratingsUrl}/fixture/events`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ matchId, clubName, ageGroup, division, event }),
     });
     if (!response.ok) throw new Error("Failed to add event");
@@ -95,8 +104,10 @@ export const getEvents = async (
     ageGroup: string,
     division: string
 ): Promise<MatchEvent[]> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(
-        `${ratingsUrl}/fixture/events?matchId=${matchId}&clubName=${clubName}&ageGroup=${ageGroup}&division=${division}`
+        `${ratingsUrl}/fixture/events?matchId=${matchId}&clubName=${clubName}&ageGroup=${ageGroup}&division=${division}`,
+        { headers }
     );
     if (!response.ok) throw new Error("Failed to fetch events");
     return await response.json() as MatchEvent[];  // ✅ Enforce correct type
@@ -110,9 +121,10 @@ export const updateEvent = async (
     eventId: string,
     event: object
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${ratingsUrl}/fixture/events`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ matchId, clubName, ageGroup, division, eventId, event }),
     });
     if (!response.ok) throw new Error("Failed to update event");
@@ -125,9 +137,10 @@ export const deleteEvent = async (
     division: string,
     eventId: string
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${ratingsUrl}/fixture/events`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ matchId, clubName, ageGroup, division, eventId }),
     });
     if (!response.ok) throw new Error("Failed to delete event");
@@ -142,9 +155,10 @@ export const saveResult = async (
     homeScore: number,
     awayScore: number
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${ratingsUrl}/fixture/results`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ matchId, clubName, ageGroup, division, homeScore, awayScore }),
     });
     if (!response.ok) throw new Error("Failed to save result");
@@ -156,8 +170,10 @@ export const getResult = async (
     ageGroup: string,
     division: string
 ): Promise<MatchResult> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(
-        `${ratingsUrl}/fixture/results?matchId=${matchId}&clubName=${clubName}&ageGroup=${ageGroup}&division=${division}`
+        `${ratingsUrl}/fixture/results?matchId=${matchId}&clubName=${clubName}&ageGroup=${ageGroup}&division=${division}`,
+        { headers}
     );
     if (!response.ok) throw new Error("Failed to fetch result");
     return await response.json() as MatchResult;  // ✅ Enforce correct type
@@ -171,9 +187,10 @@ export const updateResult = async (
     homeScore?: number,
     awayScore?: number
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${ratingsUrl}/fixture/results`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ matchId, clubName, ageGroup, division, homeScore, awayScore }),
     });
     if (!response.ok) throw new Error("Failed to update result");
@@ -185,9 +202,10 @@ export const deleteResult = async (
     ageGroup: string,
     division: string
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${ratingsUrl}/fixture/results`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ matchId, clubName, ageGroup, division }),
     });
     if (!response.ok) throw new Error("Failed to delete result");
@@ -213,9 +231,10 @@ export const submitPlayerRating = async (
     division: string,
     ratingData: PlayerRating
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${ratingsUrl}/fixture/player`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ matchId, clubName, ageGroup, division, ...ratingData }),
     });
 
@@ -242,8 +261,11 @@ export const fetchPlayerRatings = async (
     }).toString();
 
     console.log('query:', query);
+    const headers = await getAuthHeaders();
 
-    const response = await fetch(`${ratingsUrl}/fixture/player?${query}`);
+    const response = await fetch(`${ratingsUrl}/fixture/player?${query}`,
+        { headers}
+    );
 
     if (!response.ok) {
         throw new Error("Failed to fetch player ratings");
@@ -263,9 +285,10 @@ export const updatePlayerRating = async (
     division: string,
     updatedFields: PlayerRating
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${ratingsUrl}/fixture/player`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ matchId, clubName, ageGroup, division, ...updatedFields }),
     });
 
@@ -286,9 +309,10 @@ export const deletePlayerRating = async (
     division: string,
     playerEmail: string
 ): Promise<void> => {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${ratingsUrl}/fixture/player`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ matchId, clubName, ageGroup, division, playerEmail }),
     });
 

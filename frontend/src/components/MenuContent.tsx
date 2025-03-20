@@ -1,5 +1,5 @@
-import * as React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import * as React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   List,
   ListItem,
@@ -8,71 +8,78 @@ import {
   ListItemText,
   Collapse,
   Stack,
-} from '@mui/material';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import LocalTaxiIcon from '@mui/icons-material/LocalTaxi';
-import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded';
-import PaymentIcon from '@mui/icons-material/Payment';
-import GroupIcon from '@mui/icons-material/Group';
-import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
-import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
-import SportsScoreIcon from '@mui/icons-material/SportsScore';
-import StarIcon from '@mui/icons-material/Star';
-import EuroIcon from '@mui/icons-material/Euro';
-import ReceiptIcon from '@mui/icons-material/Receipt';
+} from "@mui/material";
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import LocalTaxiIcon from "@mui/icons-material/LocalTaxi";
+import PeopleRoundedIcon from "@mui/icons-material/PeopleRounded";
+import PaymentIcon from "@mui/icons-material/Payment";
+import GroupIcon from "@mui/icons-material/Group";
+import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
+import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
+import SportsScoreIcon from "@mui/icons-material/SportsScore";
+import StarIcon from "@mui/icons-material/Star";
+import EuroIcon from "@mui/icons-material/Euro";
+import ReceiptIcon from "@mui/icons-material/Receipt";
+import { useAuth } from "../hooks/useAuth"; // Import useAuth to get the user role
 
 // Define menu items dynamically
-const menuItems = [
+const allMenuItems = [
   {
-    text: 'Dashboard',
+    text: "Dashboard",
     icon: <HomeRoundedIcon />,
-    path: '/dashboard',
+    path: "/dashboard",
+    roles: ["coach", "player", "parent"], // All roles can access
   },
   {
-    text: 'Team',
+    text: "Team",
     icon: <PeopleRoundedIcon />,
+    roles: ["coach", "player", "parent"], // All can access the team, but sub-items are restricted
     subItems: [
-      { text: 'Player Requests', icon: <AssignmentIndIcon />, path: '/team/requests' },
-      { text: 'Squad', icon: <GroupIcon />, path: '/team/squad' },
-      { text: 'Lineups', icon: <SportsSoccerIcon />, path: '/team/lineups' },
-      { text: 'Results', icon: <SportsScoreIcon />, path: '/team/results' },
+      { text: "player Requests", icon: <AssignmentIndIcon />, path: "/team/requests", roles: ["coach"] },
+      { text: "Squad", icon: <GroupIcon />, path: "/team/squad", roles: ["coach", "player", "parent"] },
+      { text: "Lineups", icon: <SportsSoccerIcon />, path: "/team/lineups", roles: ["coach"] },
+      { text: "Results", icon: <SportsScoreIcon />, path: "/team/results", roles: ["coach", "player", "parent"] },
     ],
   },
   {
-    text: 'Schedule',
+    text: "Schedule",
     icon: <CalendarMonthIcon />,
+    roles: ["coach", "player", "parent"],
     subItems: [
-      { text: 'Overview', icon: <HomeRoundedIcon />, path: '/schedule' },
-      { text: 'Matches', icon: <AssignmentIndIcon />, path: '/schedule/matches' },
-      { text: 'Training', icon: <GroupIcon />, path: '/schedule/training' },
+      { text: "Overview", icon: <HomeRoundedIcon />, path: "/schedule", roles: ["coach", "player", "parent"] },
+      { text: "Matches", icon: <AssignmentIndIcon />, path: "/schedule/matches", roles: ["coach", "player", "parent"] },
+      { text: "Training", icon: <GroupIcon />, path: "/schedule/training", roles: ["coach", "player", "parent"] },
     ],
   },
   {
-    text: 'Ratings',
+    text: "Ratings",
     icon: <StarIcon />,
+    roles: ["coach", "player", "parent"],
     subItems: [
-      { text: 'Player Ratings', icon: <AssignmentIndIcon />, path: '/ratings/players' },
+      { text: "player Ratings", icon: <AssignmentIndIcon />, path: "/ratings/players", roles: ["coach", "player", "parent"] },
     ],
   },
   {
-    text: 'Carpool',
+    text: "Carpool",
     icon: <LocalTaxiIcon />,
+    roles: ["coach", "player", "parent"],
     subItems: [
-      { text: 'Overview', icon: <HomeRoundedIcon />, path: '/carpool' },
-      { text: 'Drivers', icon: <AssignmentIndIcon />, path: '/carpool/drivers' },
+      { text: "Overview", icon: <HomeRoundedIcon />, path: "/carpool", roles: ["coach", "player", "parent"] },
+      { text: "Drivers", icon: <AssignmentIndIcon />, path: "/carpool/drivers", roles: ["coach", "player", "parent"] },
     ],
   },
   {
-    text: 'Payments',
+    text: "Payments",
     icon: <PaymentIcon />,
+    roles: ["coach", "player", "parent"], // Only coaches can access Payments
     subItems: [
-      { text: 'Overview', icon: <HomeRoundedIcon />, path: '/payments' },
-      { text: 'Products', icon: <AssignmentIndIcon />, path: '/payments/products' },
-      { text: 'Shop', icon: <EuroIcon />, path: '/payments/shop' },
-      { text: 'Transactions', icon: <ReceiptIcon />, path: '/payments/transactions' },
+      { text: "Overview", icon: <HomeRoundedIcon />, path: "/payments", roles: ["coach"] },
+      { text: "Products", icon: <AssignmentIndIcon />, path: "/payments/products", roles: ["coach"] },
+      { text: "Shop", icon: <EuroIcon />, path: "/payments/shop", roles: ["coach", "player", "parent"] },
+      { text: "Transactions", icon: <ReceiptIcon />, path: "/payments/transactions", roles: ["coach"] },
     ],
   },
 ];
@@ -80,19 +87,36 @@ const menuItems = [
 export default function MenuContent() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { role } = useAuth();
   const [openSections, setOpenSections] = React.useState<{ [key: string]: boolean }>({});
 
-  // Expand nested lists if the current path matches a sub-item
+  // Capitalize words function
+  const capitalizeWords = (text: string) => {
+    return text.replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalize first letter of each word
+  };
+
+  // Function to filter menu items based on user role
+  const getFilteredMenuItems = () => {
+    if (!role) return [];
+    return allMenuItems
+      .filter((item) => item.roles.includes(role)) // Filter top-level items
+      .map((item) => ({
+        ...item,
+        subItems: item.subItems?.filter((subItem) => subItem.roles.includes(role)), // Filter sub-items
+      }));
+  };
+
+  const filteredMenuItems = getFilteredMenuItems();
+
   React.useEffect(() => {
     const expandedSections: { [key: string]: boolean } = {};
-
-    menuItems.forEach((item) => {
+    filteredMenuItems.forEach((item) => {
       if (item.subItems?.some((subItem) => location.pathname.startsWith(subItem.path))) {
         expandedSections[item.text] = true; // Expand the section with matching sub-items
       }
     });
     setOpenSections(expandedSections);
-  }, [location.pathname]);
+  }, [location.pathname, role]);
 
   const handleToggle = (section: string) => {
     setOpenSections((prev) => ({
@@ -101,31 +125,19 @@ export default function MenuContent() {
     }));
   };
 
-  const listItemButtonStyles = {
-    px: 2,
-    py: 1.5,
-    borderRadius: 1,
-    minHeight: 48,
-    '&.Mui-selected': {
-      bgcolor: 'rgba(25, 118, 210, 0.12)',
-      color: 'primary.main',
-      fontWeight: 'bold',
-    },
-  };
-
   return (
-    <Stack sx={{ flexGrow: 1, p: 1, justifyContent: 'space-between' }}>
+    <Stack sx={{ flexGrow: 1, p: 1, justifyContent: "space-between" }}>
       <List dense>
-        {menuItems.map((item, index) => (
+        {filteredMenuItems.map((item, index) => (
           <React.Fragment key={index}>
             <ListItem disablePadding>
               <ListItemButton
-                sx={listItemButtonStyles}
+                sx={{ px: 2, py: 1.5, borderRadius: 1, minHeight: 48 }}
                 onClick={() => (item.subItems ? handleToggle(item.text) : navigate(item.path!))}
                 selected={location.pathname === item.path}
               >
                 <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
+                <ListItemText primary={capitalizeWords(item.text)} /> {/* Ensure capitalization */}
                 {item.subItems && (openSections[item.text] ? <ExpandLess /> : <ExpandMore />)}
               </ListItemButton>
             </ListItem>
@@ -135,12 +147,11 @@ export default function MenuContent() {
                   {item.subItems.map((subItem, subIndex) => (
                     <ListItemButton
                       key={subIndex}
-                      sx={listItemButtonStyles}
                       onClick={() => navigate(subItem.path)}
                       selected={location.pathname === subItem.path}
                     >
                       <ListItemIcon>{subItem.icon}</ListItemIcon>
-                      <ListItemText primary={subItem.text} />
+                      <ListItemText primary={capitalizeWords(subItem.text)} /> {/* Ensure capitalization */}
                     </ListItemButton>
                   ))}
                 </List>

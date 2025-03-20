@@ -36,7 +36,7 @@ const calculateAge = (dob: string): number => {
 };
 
 export default function TeamPlayers() {
-    const { clubName, ageGroup, division, loading: authLoading } = useAuth();
+    const { clubName, ageGroup, division, loading: authLoading, role } = useAuth();
     const [players, setPlayers] = useState<Player[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -48,6 +48,8 @@ export default function TeamPlayers() {
     const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
     const navigate = useNavigate();
     const uid = Math.random().toString(36).substr(2, 9);
+
+    const isCoach = role === "coach";
 
     // Fetch players and club info
     const fetchClubAndPlayers = useCallback(async () => {
@@ -117,7 +119,8 @@ export default function TeamPlayers() {
 
             await createUser(
                 newPlayer.email,
-                uid
+                uid,
+                'player'
             );
 
             await createProfile(
@@ -179,8 +182,8 @@ export default function TeamPlayers() {
                         console.error('Club information is incomplete.');
                     }
                 })
-            );      
-            
+            );
+
             await Promise.all(
                 selectedPlayers.map(async (playerEmail) => {
                     if (clubName && ageGroup && division) {
@@ -188,13 +191,14 @@ export default function TeamPlayers() {
                             playerEmail, {
                             clubName: "",
                             ageGroup: "",
-                            division: ""},
+                            division: ""
+                        },
                         );
                     } else {
                         console.error('Club information is incomplete.');
                     }
                 })
-            );  
+            );
 
             alert(`Successfully removed players: ${selectedPlayers.join(', ')}`);
 
@@ -237,9 +241,11 @@ export default function TeamPlayers() {
                     Players in {clubName} ({ageGroup}, {division})
                 </Typography>
 
-                <Button variant="contained" color="primary" sx={{ width: 200, mb: 3, mr: 2 }} onClick={() => setAddPlayerOpen(true)}>
-                    ➕ Add Player
-                </Button>
+                {isCoach && (
+                    <Button variant="contained" color="primary" sx={{ width: 200, mb: 3, mr: 2 }} onClick={() => setAddPlayerOpen(true)}>
+                        ➕ Add Player
+                    </Button>
+                )}
 
                 {/* Add Player Modal */}
                 <Dialog
@@ -321,9 +327,11 @@ export default function TeamPlayers() {
                     </DialogActions>
                 </Dialog>
 
-                <Button variant="contained" color="primary" sx={{ width: 200, mb: 3, mr: 2 }} onClick={() => setRemovePlayerOpen(true)}>
-                    ❌ Remove Players
-                </Button>
+                {isCoach && (
+                    <Button variant="contained" color="primary" sx={{ width: 200, mb: 3, mr: 2 }} onClick={() => setRemovePlayerOpen(true)}>
+                        ❌ Remove Players
+                    </Button>
+                )}
 
                 {/* Remove Player Modal */}
                 <Dialog

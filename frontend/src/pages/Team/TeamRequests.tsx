@@ -92,7 +92,7 @@ export default function TeamRequests() {
         userRegistered: true // Set to true or false based on your logic
       });
 
-      await updateProfile(playerEmail, { club: clubName, ageGroup, division });
+      await updateProfile(playerEmail, { clubName, ageGroup, division });
       await approveJoinRequest(playerEmail, clubName, ageGroup, division);
       alert(`Player ${playerEmail} approved.`);
       setJoinRequests((prev) => prev.filter((req) => req.playerEmail !== playerEmail));

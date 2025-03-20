@@ -29,7 +29,7 @@ interface TrainingEvent {
 }
 
 export default function TrainingCalendar() {
-  const { clubName, ageGroup, division, loading: authLoading } = useAuth();
+  const { clubName, ageGroup, division, loading: authLoading, role } = useAuth();
   const [events, setEvents] = useState<TrainingEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [openAddDialog, setOpenAddDialog] = useState(false);
@@ -37,10 +37,12 @@ export default function TrainingCalendar() {
   const [error, setError] = useState<string | null>(null);
   const [newTraining, setNewTraining] = useState({ date: '', location: '', notes: '', createdBy: '' });
 
+  const isCoach = role === 'coach';
+
   const fetchTrainingData = useCallback(async (baseDate: Date) => {
     if (authLoading) return;
 
-    if ( !clubName || !ageGroup || !division) {
+    if (!clubName || !ageGroup || !division) {
       setError('Age group or division is missing.');
       setLoading(false);
       return;
@@ -52,21 +54,21 @@ export default function TrainingCalendar() {
         format(addMonths(baseDate, 1), 'yyyy-MM'),
       ];
 
-        const allTrainings = await Promise.all(months.map((month) => fetchTrainingsByMonth(month, clubName, ageGroup, division)));
-        console.log('allTrainings:', allTrainings);
-        const formattedEvents = allTrainings.flat().map((training) => ({
-          title: `Training at ${training.location}`,
-          start: new Date(training.date),
-          end: new Date(training.date),
-          trainingId: training.trainingId,
-          location: training.location,
-        }));
-        setEvents(formattedEvents);
-        setError(null);
-      } catch (error) {
+      const allTrainings = await Promise.all(months.map((month) => fetchTrainingsByMonth(month, clubName, ageGroup, division)));
+      console.log('allTrainings:', allTrainings);
+      const formattedEvents = allTrainings.flat().map((training) => ({
+        title: `Training at ${training.location}`,
+        start: new Date(training.date),
+        end: new Date(training.date),
+        trainingId: training.trainingId,
+        location: training.location,
+      }));
+      setEvents(formattedEvents);
+      setError(null);
+    } catch (error) {
       console.error('Error fetching trainings:', error);
       setError('Failed to load trainings. Please try again later.');
-    }finally {
+    } finally {
       setLoading(false);
     }
   }, [authLoading, clubName, ageGroup, division]);
@@ -137,9 +139,12 @@ export default function TrainingCalendar() {
         <Typography variant="h4" sx={{ mb: 2 }}>
           Training Schedule
         </Typography>
-        <Button variant="contained" sx={{ mb: 2 }} onClick={() => setOpenAddDialog(true)}>
-          Add Training
-        </Button>
+
+        {(isCoach) && (
+          <Button variant="contained" sx={{ mb: 2 }} onClick={() => setOpenAddDialog(true)}>
+            Add Training
+          </Button>
+        )}
 
         <Calendar
           localizer={localizer}

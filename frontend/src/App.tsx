@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import SignInSide from "./pages/SignIn/SignInSide";
 import SignUp from "./pages/SignUp/SignUp";
 import HomePage from "./pages/Home/HomePage";
-import Dashboard from "./pages/Dashboard/CoachDashboard";
+import Dashboard from "./pages/Dashboard/Dashboard";
 import Coach from "./pages/SignUp/Coach";
 import Player from "./pages/SignUp/Player";
 import Parent from "./pages/SignUp/Parent";
@@ -25,7 +25,6 @@ import ClubSearch from "./pages/Club/ClubSearch";
 import { useAuth } from "./hooks/useAuth";
 import LoadingSpinner from "./components/LoadingSpinner";
 import TeamSquad from "./pages/Team/TeamSquad";
-import PlayerProfile from "./pages/Team/PlayerProfile";
 import TeamLineups from "./pages/Team/TeamLineups";
 import MatchesCalendar from "./pages/Schedule/MatchesCalendar";
 import TrainingCalendar from "./pages/Schedule/TrainingCalendar";
@@ -80,7 +79,6 @@ const App: React.FC = () => {
       <Route path="/ratings/players/:playerUid" element={<ProtectedRoute><PlayerStats /></ProtectedRoute>} />
       <Route path="/team/requests" element={<ProtectedRoute allowedRoles={["coach"]}><TeamRequests /></ProtectedRoute>} />
       <Route path="/team/squad" element={<ProtectedRoute><TeamSquad /></ProtectedRoute>} />
-      <Route path="/team/squad/:playerUid" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
       <Route path="/team/lineups" element={<ProtectedRoute><TeamLineups /></ProtectedRoute>} />
       <Route path="/team/results" element={<ProtectedRoute><TeamResults /></ProtectedRoute>} />
       <Route path="/team/results/:matchId" element={<ProtectedRoute><ResultProfile /></ProtectedRoute>} />

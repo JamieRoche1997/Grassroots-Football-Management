@@ -138,7 +138,7 @@ export default function TeamRequests() {
       <Header />
       <Box>
         <Typography variant="h4" sx={{ mb: 2 }}>
-          Player Requests for {clubName} ({ageGroup}, {division})
+          Player Requests
         </Typography>
 
         <Paper sx={{ width: '100%', overflow: 'hidden', mt: 3 }}>

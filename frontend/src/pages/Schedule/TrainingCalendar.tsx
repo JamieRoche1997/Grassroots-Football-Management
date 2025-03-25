@@ -7,9 +7,31 @@ import { useEffect, useState } from 'react';
 import Header from '../../components/Header';
 import Layout from '../../components/Layout';
 import { fetchTrainingsByMonth, addTraining } from '../../services/schedule_management';
-import { Box, Button, Typography, Dialog, DialogContent, DialogActions, TextField } from '@mui/material';
+import { Box, Button, Typography, Dialog, DialogContent, DialogActions, TextField, 
+  Stack, DialogTitle } from '@mui/material';
+import { SportsSoccer, Add } from '@mui/icons-material';
+import { styled, alpha, useTheme } from '@mui/material/styles';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/LoadingSpinner';
+
+// Styled Components - Same as Match Calendar
+const CalendarContainer = styled(Box)(({ theme }) => ({
+  '& .rbc-calendar': {
+    backgroundColor: alpha(theme.palette.background.paper, 0.9),
+    backdropFilter: 'blur(12px)',
+    borderRadius: 12,
+    padding: theme.spacing(2),
+    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+    minHeight: 600,
+  },
+  '& .rbc-event': {
+    backgroundColor: theme.palette.primary.main,
+    borderRadius: 4,
+  },
+  '& .rbc-today': {
+    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+  },
+}));
 
 const locales = { 'en-US': enUS };
 const localizer = dateFnsLocalizer({
@@ -26,16 +48,25 @@ interface TrainingEvent {
   end: Date;
   trainingId: string;
   location: string;
+  notes?: string;
 }
 
 export default function TrainingCalendar() {
+  const theme = useTheme();
   const { clubName, ageGroup, division, loading: authLoading, role } = useAuth();
   const [events, setEvents] = useState<TrainingEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [newTraining, setNewTraining] = useState({ date: '', location: '', notes: '', createdBy: '' });
+  const [newTraining, setNewTraining] = useState({ 
+    date: '', 
+    location: '', 
+    notes: '', 
+    createdBy: '',
+    ageGroup: '',
+    division: ''
+  });
 
   const isCoach = role === 'coach';
 
@@ -54,14 +85,19 @@ export default function TrainingCalendar() {
         format(addMonths(baseDate, 1), 'yyyy-MM'),
       ];
 
-      const allTrainings = await Promise.all(months.map((month) => fetchTrainingsByMonth(month, clubName, ageGroup, division)));
-      console.log('allTrainings:', allTrainings);
+      const allTrainings = await Promise.all(
+        months.map((month) => fetchTrainingsByMonth(month, clubName, ageGroup, division))
+      );
+      
       const formattedEvents = allTrainings.flat().map((training) => ({
-        title: `Training at ${training.location}`,
+        title: training.notes 
+          ? `Training (${training.notes})` 
+          : 'Training',
         start: new Date(training.date),
         end: new Date(training.date),
         trainingId: training.trainingId,
         location: training.location,
+        notes: training.notes,
       }));
       setEvents(formattedEvents);
       setError(null);
@@ -94,7 +130,7 @@ export default function TrainingCalendar() {
         ...newTraining,
         ageGroup,
         division,
-        trainingId: '', // Generate or assign a unique ID here
+        trainingId: new Date().toISOString(), // Generate a unique ID
       };
 
       if (clubName && ageGroup && division) {
@@ -105,6 +141,7 @@ export default function TrainingCalendar() {
       alert('Training session added successfully!');
       fetchTrainingData(currentDate);
       setOpenAddDialog(false);
+      setNewTraining({ date: '', location: '', notes: '', createdBy: '', ageGroup: '', division: '' });
     } catch (error) {
       console.error('Error adding training session:', error);
     }
@@ -135,57 +172,124 @@ export default function TrainingCalendar() {
   return (
     <Layout>
       <Header />
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" sx={{ mb: 2 }}>
-          Training Schedule
-        </Typography>
+      <Box sx={{ 
+        px: { xs: 2, md: 4 }, 
+        py: 3,
+        maxWidth: 1400,
+        mx: 'auto'
+      }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <SportsSoccer sx={{ 
+              fontSize: 40,
+              color: 'primary.main',
+              p: 1,
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              borderRadius: '50%'
+            }} />
+            <Box>
+              <Typography variant="h4" fontWeight={700}>
+                Training Schedule
+              </Typography>
+            </Box>
+          </Stack>
 
-        {(isCoach) && (
-          <Button variant="contained" sx={{ mb: 2 }} onClick={() => setOpenAddDialog(true)}>
-            Add Training
-          </Button>
-        )}
-
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: 500 }}
-          onNavigate={handleNavigate}
-        />
-
-        <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)}>
-          <DialogContent>
-            <TextField
-              placeholder="Select Date and Time"
-              type="datetime-local"
-              fullWidth
-              sx={{ mb: 2 }}
-              value={newTraining.date}
-              onChange={(e) => setNewTraining({ ...newTraining, date: e.target.value })}
-            />
-
-            <TextField
-              placeholder="Enter Location"
-              fullWidth
-              sx={{ mb: 2 }}
-              value={newTraining.location}
-              onChange={(e) => setNewTraining({ ...newTraining, location: e.target.value })}
-            />
-
-            <TextField
-              placeholder="Additional Notes"
-              fullWidth
-              value={newTraining.notes}
-              onChange={(e) => setNewTraining({ ...newTraining, notes: e.target.value })}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleAddTraining} variant="contained">
-              Add
+          {isCoach && (
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => setOpenAddDialog(true)}
+              sx={{ borderRadius: 2 }}
+            >
+              Add Training
             </Button>
+          )}
+        </Stack>
+
+        <CalendarContainer>
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            onNavigate={handleNavigate}
+            components={{
+              event: ({ event }) => (
+                <Box sx={{ p: 0.5 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {event.title}
+                  </Typography>
+                  <Typography variant="caption">
+                    {format(event.start, 'h:mm a')}
+                    {event.location && ` • ${event.location}`}
+                  </Typography>
+                </Box>
+              ),
+            }}
+          />
+        </CalendarContainer>
+
+        {/* Add Training Dialog */}
+        <Dialog 
+          open={openAddDialog} 
+          onClose={() => setOpenAddDialog(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 4,
+              bgcolor: alpha(theme.palette.background.paper, 0.9),
+              backdropFilter: 'blur(12px)',
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            bgcolor: 'primary.main', 
+            color: 'primary.contrastText',
+            fontWeight: 600
+          }}>
+            Add New Training
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
+            <Stack spacing={3} sx={{ mt: 1 }}>
+              <TextField
+                label="Date & Time"
+                type="datetime-local"
+                fullWidth
+                value={newTraining.date}
+                onChange={(e) => setNewTraining({ ...newTraining, date: e.target.value })}
+              />
+              <TextField
+                label="Location"
+                fullWidth
+                value={newTraining.location}
+                onChange={(e) => setNewTraining({ ...newTraining, location: e.target.value })}
+              />
+              <TextField
+                label="Notes"
+                fullWidth
+                multiline
+                rows={3}
+                value={newTraining.notes}
+                onChange={(e) => setNewTraining({ ...newTraining, notes: e.target.value })}
+              />
+              <TextField
+                label="Created By"
+                fullWidth
+                value={newTraining.createdBy}
+                onChange={(e) => setNewTraining({ ...newTraining, createdBy: e.target.value })}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
             <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
+            <Button 
+              variant="contained" 
+              onClick={handleAddTraining}
+              disabled={!newTraining.date || !newTraining.location}
+            >
+              Add Training
+            </Button>
           </DialogActions>
         </Dialog>
       </Box>

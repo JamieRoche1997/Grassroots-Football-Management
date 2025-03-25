@@ -7,9 +7,31 @@ import { useEffect, useState } from 'react';
 import Header from '../../components/Header';
 import Layout from '../../components/Layout';
 import { fetchFixturesByMonth, addFixture } from '../../services/schedule_management';
-import { Box, Button, Typography, Dialog, DialogContent, DialogActions, TextField } from '@mui/material';
+import { Box, Button, Typography, Dialog, DialogContent, DialogActions, TextField,
+  Stack, DialogTitle } from '@mui/material';
+import { SportsSoccer, Add } from '@mui/icons-material';
+import { styled, alpha, useTheme } from '@mui/material/styles';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/LoadingSpinner';
+
+// Styled Components
+const CalendarContainer = styled(Box)(({ theme }) => ({
+  '& .rbc-calendar': {
+    backgroundColor: alpha(theme.palette.background.paper, 0.9),
+    backdropFilter: 'blur(12px)',
+    borderRadius: 12,
+    padding: theme.spacing(2),
+    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+    minHeight: 600,
+  },
+  '& .rbc-event': {
+    backgroundColor: theme.palette.primary.main,
+    borderRadius: 4,
+  },
+  '& .rbc-today': {
+    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+  },
+}));
 
 const locales = { 'en-US': enUS };
 const localizer = dateFnsLocalizer({
@@ -27,9 +49,11 @@ interface MatchEvent {
   matchId: string;
   homeTeam: string;
   awayTeam: string;
+  isHomeGame: boolean;
 }
 
 export default function MatchesCalendar() {
+  const theme = useTheme();
   const { clubName, ageGroup, division, loading: authLoading, role } = useAuth();
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());  // Track the displayed month
@@ -42,23 +66,26 @@ export default function MatchesCalendar() {
 
   const fetchMatchData = useCallback(async (month: Date) => {
     if (authLoading) return;
-
+  
     if (!clubName || !ageGroup || !division) {
       setError('Age group or division is missing.');
       setLoading(false);
       return;
     }
     try {
-      const formattedMonth = format(month, 'yyyy-MM'); // e.g., "2025-02"
+      const formattedMonth = format(month, 'yyyy-MM');
       const matches = await fetchFixturesByMonth(formattedMonth, clubName, ageGroup, division);
       console.log('matches:', matches);
       const formattedEvents = matches.map((match) => ({
-        title: `${match.homeTeam} vs ${match.awayTeam}`,
+        title: match.homeTeam === clubName 
+          ? `${match.awayTeam} (H)` 
+          : `${match.homeTeam} (A)`,
         start: new Date(match.date),
         end: new Date(match.date),
         matchId: match.matchId,
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
+        isHomeGame: match.homeTeam === clubName, // Add this to identify home/away
       }));
       setEvents(formattedEvents);
       setError(null);
@@ -108,6 +135,7 @@ export default function MatchesCalendar() {
   };
 
   if (authLoading || loading) {
+  
     return (
       <Layout>
         <Header />
@@ -132,68 +160,121 @@ export default function MatchesCalendar() {
   return (
     <Layout>
       <Header />
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" sx={{ mb: 2 }}>
-          Match Schedule
-        </Typography>
+      <Box sx={{ 
+        px: { xs: 2, md: 4 }, 
+        py: 3,
+        maxWidth: 1400,
+        mx: 'auto'
+      }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <SportsSoccer sx={{ 
+              fontSize: 40,
+              color: 'primary.main',
+              p: 1,
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              borderRadius: '50%'
+            }} />
+            <Box>
+              <Typography variant="h4" fontWeight={700}>
+                Match Schedule
+              </Typography>
+            </Box>
+          </Stack>
 
-        {(isCoach) && (
-          <Button variant="contained" sx={{ mb: 2 }} onClick={() => setOpenAddDialog(true)}>
-            Add Fixture
-          </Button>
-        )}
+          {isCoach && (
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => setOpenAddDialog(true)}
+              sx={{ borderRadius: 2 }}
+            >
+              Add Fixture
+            </Button>
+          )}
+        </Stack>
 
-        {/* Calendar View */}
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: 500 }}
-          onNavigate={handleNavigate}  // Track navigation changes
-        />
+        <CalendarContainer>
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            onNavigate={handleNavigate}
+            components={{
+              event: ({ event }) => (
+                <Box sx={{ p: 0.5 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {event.title}
+                  </Typography>
+                  <Typography variant="caption">
+                    {format(event.start, 'h:mm a')}
+                  </Typography>
+                </Box>
+              ),
+            }}
+          />
+        </CalendarContainer>
 
         {/* Add Fixture Dialog */}
-        <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)}>
-          <DialogContent>
-            <TextField
-              placeholder="Enter Home Team"
-              fullWidth
-              sx={{ mb: 2 }}
-              value={newFixture.homeTeam}
-              onChange={(e) => setNewFixture({ ...newFixture, homeTeam: e.target.value })}
-            />
-
-            <TextField
-              placeholder="Enter Away Team"
-              fullWidth
-              sx={{ mb: 2 }}
-              value={newFixture.awayTeam}
-              onChange={(e) => setNewFixture({ ...newFixture, awayTeam: e.target.value })}
-            />
-
-            <TextField
-              placeholder="Select Date and Time"
-              type="datetime-local"
-              fullWidth
-              sx={{ mb: 2 }}
-              value={newFixture.date}
-              onChange={(e) => setNewFixture({ ...newFixture, date: e.target.value })}
-            />
-
-            <TextField
-              placeholder="Enter Creator's Name or Email"
-              fullWidth
-              value={newFixture.createdBy}
-              onChange={(e) => setNewFixture({ ...newFixture, createdBy: e.target.value })}
-            />
-
+        <Dialog 
+          open={openAddDialog} 
+          onClose={() => setOpenAddDialog(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 4,
+              bgcolor: alpha(theme.palette.background.paper, 0.9),
+              backdropFilter: 'blur(12px)',
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            bgcolor: 'primary.main', 
+            color: 'primary.contrastText',
+            fontWeight: 600
+          }}>
+            Add New Fixture
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
+            <Stack spacing={3} sx={{ mt: 1 }}>
+              <TextField
+                label="Home Team"
+                fullWidth
+                value={newFixture.homeTeam}
+                onChange={(e) => setNewFixture({ ...newFixture, homeTeam: e.target.value })}
+              />
+              <TextField
+                label="Away Team"
+                fullWidth
+                value={newFixture.awayTeam}
+                onChange={(e) => setNewFixture({ ...newFixture, awayTeam: e.target.value })}
+              />
+              <TextField
+                label="Date & Time"
+                type="datetime-local"
+                fullWidth
+                value={newFixture.date}
+                onChange={(e) => setNewFixture({ ...newFixture, date: e.target.value })}
+              />
+              <TextField
+                label="Created By"
+                fullWidth
+                value={newFixture.createdBy}
+                onChange={(e) => setNewFixture({ ...newFixture, createdBy: e.target.value })}
+              />
+            </Stack>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleAddFixture} variant="contained">
-              Add
-            </Button>
+          <DialogActions sx={{ p: 2 }}>
             <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
+            <Button 
+              variant="contained" 
+              onClick={handleAddFixture}
+              disabled={!newFixture.homeTeam || !newFixture.awayTeam || !newFixture.date}
+            >
+              Add Fixture
+            </Button>
           </DialogActions>
         </Dialog>
       </Box>

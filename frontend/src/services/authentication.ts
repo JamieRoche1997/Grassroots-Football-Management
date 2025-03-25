@@ -292,6 +292,26 @@ export const createUser = async (email: string, uid: string, role: string): Prom
     }
 };
 
+
+export const createUserPre = async (email: string, uid: string, role: string): Promise<void> => {
+    const headers = await getAuthHeaders();
+    console.log("Create User email: ", email);
+    console.log("Create User uid: ", uid);
+    console.log("Create User role: ", role);
+    console.log("Create User headers: ", headers);
+    const response = await fetch(`${url}/user/pre-register`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ email, uid, role }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create user');
+    }
+};
+
+
 export const getUser = async (email: string): Promise<Partial<{ 
     email: string;
     uid: string;

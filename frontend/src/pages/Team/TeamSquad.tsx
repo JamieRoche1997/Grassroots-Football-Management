@@ -1,17 +1,55 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useNavigate } from "react-router-dom";
 import {
-    Avatar, Box, Card, CardContent, Typography, Button, Grid2 as Grid, Select, MenuItem, FormControl, InputLabel,
-    Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, List, ListItem, ListItemText, ListItemIcon, TextField
+    Avatar, Box, Card, CardContent, Typography, Button, Grid2 as Grid, Select, MenuItem, FormControl,
+    Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, List, ListItem, ListItemText,
+    ListItemIcon, TextField, Stack, Chip, useTheme, styled, alpha, InputLabel
 } from '@mui/material';
-import { createProfile } from '../../services/profile';
+import {
+    FilterList,
+    SportsSoccer,
+    Add,
+    Delete,
+    Person,
+    Group,
+} from '@mui/icons-material';
 import Layout from '../../components/Layout';
 import Header from '../../components/Header';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { checkUserExists, createUser } from '../../services/authentication';
+import { checkUserExists, createUserPre } from '../../services/authentication';
+import { createProfile } from '../../services/profile';
 import { createMembership, getMembershipsForTeam, deleteMembership } from '../../services/membership';
 import { updateProfile } from '../../services/profile';
+
+// Styled Components
+const PlayerCard = styled(Card)(({ theme }) => ({
+    borderRadius: 12,
+    transition: 'all 0.3s ease',
+    boxShadow: theme.shadows[2],
+    '&:hover': {
+        transform: 'translateY(-4px)',
+        boxShadow: theme.shadows[6],
+        backgroundColor: alpha(theme.palette.primary.main, 0.05)
+    }
+}));
+
+const PositionChip = styled(Chip)(({ theme }) => ({
+    fontWeight: 600,
+    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+    color: theme.palette.primary.main
+}));
+
+const FilterButton = styled(Button)(({ theme }) => ({
+    borderRadius: 20,
+    textTransform: 'none',
+    padding: '6px 16px',
+    transition: 'all 0.2s',
+    '&.MuiButton-contained': {
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.primary.contrastText
+    }
+}));
 
 // Player Interface
 interface Player {
@@ -20,10 +58,9 @@ interface Player {
     dob: string;
     position: string;
     uid: string;
-    image?: string; // Optional profile picture
+    image?: string;
 }
 
-// Function to calculate age from dob
 const calculateAge = (dob: string): number => {
     const birthDate = new Date(dob);
     const today = new Date();
@@ -36,22 +73,22 @@ const calculateAge = (dob: string): number => {
 };
 
 export default function TeamPlayers() {
+    const theme = useTheme();
+    const navigate = useNavigate();
     const { clubName, ageGroup, division, loading: authLoading, role } = useAuth();
     const [players, setPlayers] = useState<Player[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedFilter, setSelectedFilter] = useState<string | null>('All');
-    const [sortOption, setSortOption] = useState<string>('name');
+    const [selectedFilter, setSelectedFilter] = useState<string>('All');
+    const [sortOption, setSortOption] = useState('name');
     const [addPlayerOpen, setAddPlayerOpen] = useState(false);
     const [newPlayer, setNewPlayer] = useState({ name: '', email: '', position: '', dob: '', uid: '' });
     const [removePlayerOpen, setRemovePlayerOpen] = useState(false);
     const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
-    const navigate = useNavigate();
     const uid = Math.random().toString(36).substr(2, 9);
 
     const isCoach = role === "coach";
 
-    // Fetch players and club info
     const fetchClubAndPlayers = useCallback(async () => {
         if (authLoading) return;
 
@@ -63,9 +100,7 @@ export default function TeamPlayers() {
                 return;
             }
 
-            // Fetch players
             const playersData = await getMembershipsForTeam(clubName, ageGroup, division);
-            console.log('Players:', playersData);
             setPlayers(playersData);
             setError(null);
         } catch (error) {
@@ -76,13 +111,16 @@ export default function TeamPlayers() {
         }
     }, [authLoading, clubName, ageGroup, division]);
 
+    const handlePlayerClick = (playerUid: string, playerEmail: string) => {
+        navigate(`/ratings/players/${playerUid}`, { state: { playerEmail } });
+    };
+
     useEffect(() => {
         if (!authLoading) {
             fetchClubAndPlayers();
         }
     }, [fetchClubAndPlayers, authLoading]);
 
-    // Handle sorting logic
     const sortedPlayers = useMemo(() => {
         return [...players].sort((a, b) => {
             if (sortOption === 'name') return a.name.localeCompare(b.name);
@@ -91,13 +129,11 @@ export default function TeamPlayers() {
         });
     }, [players, sortOption]);
 
-    // Filter players based on selected position
     const filteredPlayers = useMemo(() => {
-        if (selectedFilter === 'All' || !selectedFilter) return sortedPlayers;
+        if (selectedFilter === 'All') return sortedPlayers;
         return sortedPlayers.filter(player => player.position.toLowerCase() === selectedFilter.toLowerCase());
     }, [sortedPlayers, selectedFilter]);
 
-    // Handle selecting players for removal 
     const togglePlayerSelection = (playerEmail: string) => {
         setSelectedPlayers((prev) =>
             prev.includes(playerEmail) ? prev.filter((email) => email !== playerEmail) : [...prev, playerEmail]
@@ -117,12 +153,7 @@ export default function TeamPlayers() {
                 return;
             }
 
-            await createUser(
-                newPlayer.email,
-                uid,
-                'player'
-            );
-
+            await createUserPre(newPlayer.email, uid, 'player');
             await createProfile(
                 newPlayer.email,
                 newPlayer.name,
@@ -149,8 +180,6 @@ export default function TeamPlayers() {
             alert('Player added successfully!');
             setAddPlayerOpen(false);
             setNewPlayer({ name: '', email: '', position: '', dob: '', uid: '' });
-
-            // Refresh players list
             fetchClubAndPlayers();
         } catch (error) {
             console.error('Error adding player:', error);
@@ -158,7 +187,6 @@ export default function TeamPlayers() {
         }
     };
 
-    // Handle removing players (Placeholder API Call)
     const handleRemovePlayers = async () => {
         if (selectedPlayers.length === 0) {
             alert('Select players to remove.');
@@ -166,43 +194,20 @@ export default function TeamPlayers() {
         }
 
         try {
-            console.log('Removing players:', selectedPlayers);
-
-            // Now update each player's profile in Firestore to remove club info
             await Promise.all(
                 selectedPlayers.map(async (playerEmail) => {
                     if (clubName && ageGroup && division) {
-                        await deleteMembership(
-                            clubName,
-                            ageGroup,
-                            division,
-                            playerEmail
-                        );
-                    } else {
-                        console.error('Club information is incomplete.');
-                    }
-                })
-            );
-
-            await Promise.all(
-                selectedPlayers.map(async (playerEmail) => {
-                    if (clubName && ageGroup && division) {
-                        await updateProfile(
-                            playerEmail, {
+                        await deleteMembership(clubName, ageGroup, division, playerEmail);
+                        await updateProfile(playerEmail, {
                             clubName: "",
                             ageGroup: "",
                             division: ""
-                        },
-                        );
-                    } else {
-                        console.error('Club information is incomplete.');
+                        });
                     }
                 })
             );
 
             alert(`Successfully removed players: ${selectedPlayers.join(', ')}`);
-
-            // Refresh the players list after removal
             fetchClubAndPlayers();
             setRemovePlayerOpen(false);
             setSelectedPlayers([]);
@@ -212,12 +217,13 @@ export default function TeamPlayers() {
         }
     };
 
-
     if (authLoading || loading) {
         return (
             <Layout>
                 <Header />
-                <LoadingSpinner />
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+                    <LoadingSpinner />
+                </Box>
             </Layout>
         );
     }
@@ -226,7 +232,7 @@ export default function TeamPlayers() {
         return (
             <Layout>
                 <Header />
-                <Box>
+                <Box sx={{ p: 3 }}>
                     <Typography color="error" variant="h6">{error}</Typography>
                 </Box>
             </Layout>
@@ -236,281 +242,284 @@ export default function TeamPlayers() {
     return (
         <Layout>
             <Header />
-            <Box>
-                <Typography variant="h4" sx={{ mb: 2 }}>
-                    Players in {clubName} ({ageGroup}, {division})
-                </Typography>
+            <Box sx={{
+                px: { xs: 2, md: 4 },
+                py: 3,
+                maxWidth: 1400,
+                mx: 'auto'
+            }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                        <Group sx={{
+                            fontSize: 40,
+                            color: 'primary.main',
+                            p: 1,
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            borderRadius: '50%'
+                        }} />
+                        <Box>
+                            <Typography variant="h4" fontWeight={700}>
+                                Team Squad
+                            </Typography>
+                            <Typography variant="body1" color="text.secondary">
+                                {ageGroup} {division} • {clubName}
+                            </Typography>
+                        </Box>
+                    </Stack>
 
-                {isCoach && (
-                    <Button variant="contained" color="primary" sx={{ width: 200, mb: 3, mr: 2 }} onClick={() => setAddPlayerOpen(true)}>
-                        ➕ Add Player
-                    </Button>
-                )}
+                    {isCoach && (
+                        <Stack direction="row" spacing={2}>
+                            <Button
+                                variant="contained"
+                                startIcon={<Add />}
+                                onClick={() => setAddPlayerOpen(true)}
+                                sx={{ borderRadius: 2 }}
+                            >
+                                Add Player
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                startIcon={<Delete />}
+                                onClick={() => setRemovePlayerOpen(true)}
+                                sx={{ borderRadius: 2 }}
+                                color="error"
+                            >
+                                Remove Players
+                            </Button>
+                        </Stack>
+                    )}
+                </Stack>
 
-                {/* Add Player Modal */}
+                {/* Filters */}
+                <Card sx={{ mb: 4, p: 2, borderRadius: 3 }}>
+                    <CardContent>
+                        <Stack direction="row" alignItems="center" spacing={2} sx={{ flexWrap: 'wrap' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+                                <FilterList color="action" sx={{ mr: 1 }} />
+                                <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                                    Filter:
+                                </Typography>
+                            </Box>
+
+                            {['All', 'Goalkeeper', 'Defender', 'Midfielder', 'Forward'].map((position) => (
+                                <FilterButton
+                                    key={position}
+                                    onClick={() => setSelectedFilter(position)}
+                                    variant={selectedFilter === position ? "contained" : "outlined"}
+                                >
+                                    {position}
+                                </FilterButton>
+                            ))}
+
+                            <FormControl size="small" sx={{ minWidth: 120, ml: 'auto' }}>
+                                <Select
+                                    value={sortOption}
+                                    onChange={(e) => setSortOption(e.target.value)}
+                                >
+                                    <MenuItem value="name">Sort by Name</MenuItem>
+                                    <MenuItem value="age">Sort by Age</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Stack>
+                    </CardContent>
+                </Card>
+
+                {/* Players Grid */}
+                <Grid container spacing={3}>
+                    {filteredPlayers.length === 0 ? (
+                        <Grid size={{ xs: 12 }}>
+                            <Box sx={{
+                                textAlign: 'center',
+                                py: 6,
+                                border: `1px dashed ${theme.palette.divider}`,
+                                borderRadius: 2
+                            }}>
+                                <SportsSoccer color="disabled" sx={{ fontSize: 60, mb: 2 }} />
+                                <Typography variant="h6" color="text.secondary">
+                                    No players found
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                    {selectedFilter === 'All' ?
+                                        'No players in the squad yet' :
+                                        `No ${selectedFilter.toLowerCase()}s in the squad`}
+                                </Typography>
+                            </Box>
+                        </Grid>
+                    ) : (
+                        filteredPlayers.map((player) => (
+                            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={player.email}>
+                                <PlayerCard
+                                    onClick={() => handlePlayerClick(player.uid, player.email)}
+                                    sx={{ cursor: 'pointer', height: '100%' }}    >
+                                    <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                        <Avatar
+                                            src={player.image}
+                                            sx={{
+                                                width: 80,
+                                                height: 80,
+                                                mx: 'auto',
+                                                mb: 2,
+                                                bgcolor: alpha(theme.palette.primary.main, 0.2),
+                                                color: theme.palette.primary.main,
+                                                fontSize: 32
+                                            }}
+                                        >
+                                            {player.name.charAt(0)}
+                                        </Avatar>
+
+                                        <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                            {player.name}
+                                        </Typography>
+
+                                        <PositionChip
+                                            label={player.position}
+                                            size="small"
+                                            sx={{ mb: 2 }}
+                                        />
+
+                                        <Typography variant="body1" color="text.secondary">
+                                            Age: {calculateAge(player.dob)}
+                                        </Typography>
+                                    </CardContent>
+                                </PlayerCard>
+                            </Grid>
+                        ))
+                    )}
+                </Grid>
+
+                {/* Add Player Dialog */}
                 <Dialog
                     open={addPlayerOpen}
                     onClose={() => setAddPlayerOpen(false)}
                     maxWidth="sm"
                     fullWidth
-                    slotProps={{
-                        paper: {
-                            sx: {
-                                borderRadius: 20,
-                            },
+                    PaperProps={{
+                        sx: {
+                            borderRadius: 4,
                         },
                     }}
                 >
-                    <DialogTitle
-                        sx={{
-                            bgcolor: 'primary.main',
-                            color: 'primary.contrastText',
-                            fontWeight: 'bold',
-                            textAlign: 'center',
-                            fontSize: '1.25rem',
-                            py: 1.5
-                        }}
-                    >
+                    <DialogTitle sx={{
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        fontWeight: 600
+                    }}>
+                        <Person sx={{ mr: 1, verticalAlign: 'middle' }} />
                         Add New Player
                     </DialogTitle>
-
                     <DialogContent sx={{ p: 3 }}>
-                        <Box component="form" noValidate autoComplete="off" sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Stack spacing={3} sx={{ mt: 1 }}>
                             <TextField
-                                placeholder="Player Name"
+                                label="Full Name"
                                 fullWidth
                                 value={newPlayer.name}
                                 onChange={(e) => setNewPlayer({ ...newPlayer, name: e.target.value })}
                             />
-
                             <TextField
-                                placeholder="Player Email"
+                                label="Email"
                                 fullWidth
                                 type="email"
                                 value={newPlayer.email}
                                 onChange={(e) => setNewPlayer({ ...newPlayer, email: e.target.value })}
                             />
-
                             <FormControl fullWidth>
+                                <InputLabel>Position</InputLabel>
                                 <Select
-                                    displayEmpty
                                     value={newPlayer.position}
                                     onChange={(e) => setNewPlayer({ ...newPlayer, position: e.target.value })}
+                                    label="Position"
                                 >
-                                    <MenuItem value="" disabled>
-                                        Select Position
-                                    </MenuItem>
                                     <MenuItem value="Goalkeeper">Goalkeeper</MenuItem>
                                     <MenuItem value="Defender">Defender</MenuItem>
                                     <MenuItem value="Midfielder">Midfielder</MenuItem>
                                     <MenuItem value="Forward">Forward</MenuItem>
                                 </Select>
                             </FormControl>
-                        </Box>
+                        </Stack>
                     </DialogContent>
-
-                    <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setAddPlayerOpen(false)}>Cancel</Button>
                         <Button
-                            onClick={() => setAddPlayerOpen(false)}
-                            variant="outlined"
-                            sx={{ textTransform: 'none' }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleAddPlayer}
                             variant="contained"
-                            sx={{ textTransform: 'none' }}
+                            onClick={handleAddPlayer}
+                            disabled={!newPlayer.name || !newPlayer.email || !newPlayer.position}
                         >
                             Add Player
                         </Button>
                     </DialogActions>
                 </Dialog>
 
-                {isCoach && (
-                    <Button variant="contained" color="primary" sx={{ width: 200, mb: 3, mr: 2 }} onClick={() => setRemovePlayerOpen(true)}>
-                        ❌ Remove Players
-                    </Button>
-                )}
-
-                {/* Remove Player Modal */}
+                {/* Remove Player Dialog */}
                 <Dialog
                     open={removePlayerOpen}
                     onClose={() => setRemovePlayerOpen(false)}
                     maxWidth="sm"
                     fullWidth
-                    slotProps={{
-                        paper: {
-                            sx: {
-                                borderRadius: 20,
-                            },
+                    PaperProps={{
+                        sx: {
+                            borderRadius: 4,
                         },
                     }}
                 >
-                    <DialogTitle
-                        sx={{
-                            bgcolor: 'error.main',
-                            color: 'error.contrastText',
-                            fontWeight: 'bold',
-                            textAlign: 'center',
-                            fontSize: '1.25rem',
-                            py: 1.5
-                        }}
-                    >
-
+                    <DialogTitle sx={{
+                        bgcolor: 'error.main',
+                        color: 'error.contrastText',
+                        fontWeight: 600
+                    }}>
+                        <Delete sx={{ mr: 1, verticalAlign: 'middle' }} />
                         Remove Players
                     </DialogTitle>
-
                     <DialogContent sx={{ p: 3 }}>
-                        <Box component="form" noValidate autoComplete="off" sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-                                Select players to remove from the squad:
-                            </Typography>
-
-                            <List dense disablePadding>
-                                {players.map((player) => (
-                                    <ListItem
-                                        key={player.email}
-                                        component="div"
-                                        onClick={() => togglePlayerSelection(player.email)}
-                                        sx={{
-                                            cursor: 'pointer',
-                                            borderBottom: '1px solid',
-                                            borderColor: 'divider',
-                                            '&:hover': { bgcolor: 'action.hover' },
-                                            py: 1,
-                                        }}
-                                    >
-                                        <ListItemIcon>
-                                            <Checkbox
-                                                checked={selectedPlayers.includes(player.email)}
-                                                color="error"
-                                            />
-                                        </ListItemIcon>
-                                        <ListItemText
-                                            primary={
-                                                <Typography variant="body1" fontWeight={selectedPlayers.includes(player.email) ? 'bold' : 'normal'}>
-                                                    {player.name || "Unknown Player"}
-                                                </Typography>
-                                            }
-                                            secondary={player.position}
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            Select players to remove from the squad:
+                        </Typography>
+                        <List dense>
+                            {players.map((player) => (
+                                <ListItem
+                                    key={player.email}
+                                    sx={{
+                                        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                                        '&:hover': { backgroundColor: alpha(theme.palette.action.hover, 0.1) }
+                                    }}
+                                >
+                                    <ListItemIcon>
+                                        <Checkbox
+                                            edge="start"
+                                            checked={selectedPlayers.includes(player.email)}
+                                            onChange={() => togglePlayerSelection(player.email)}
+                                            color="error"
                                         />
-                                    </ListItem>
-                                ))}
-                            </List>
-                        </Box>
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary={player.name}
+                                        secondary={
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <PositionChip
+                                                    label={player.position}
+                                                    size="small"
+                                                />
+                                                <Typography variant="caption">
+                                                    Age: {calculateAge(player.dob)}
+                                                </Typography>
+                                            </Box>
+                                        }
+                                    />
+                                </ListItem>
+                            ))}
+                        </List>
                     </DialogContent>
-
-                    <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setRemovePlayerOpen(false)}>Cancel</Button>
                         <Button
-                            onClick={() => setRemovePlayerOpen(false)}
-                            variant="outlined"
-                            sx={{ textTransform: 'none' }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleRemovePlayers}
                             variant="contained"
                             color="error"
-                            sx={{ textTransform: 'none' }}
+                            onClick={handleRemovePlayers}
+                            disabled={selectedPlayers.length === 0}
                         >
-                            Confirm Remove
+                            Remove Selected
                         </Button>
                     </DialogActions>
                 </Dialog>
-
-                {/* Position Filter Buttons */}
-                <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-                    {['All', 'Goalkeeper', 'Defender', 'Midfielder', 'Forward'].map((position) => (
-                        <Button
-                            key={position}
-                            variant={selectedFilter === position ? "contained" : "outlined"}
-                            color="primary"
-                            onClick={() => setSelectedFilter(position)}
-                        >
-                            {position}
-                        </Button>
-                    ))}
-                    <FormControl size="small" sx={{ minWidth: 150 }}>
-                        <InputLabel id="sort-label">Sort by</InputLabel>
-                        <Select
-                            labelId="sort-label"
-                            id="sort-select"
-                            value={sortOption}
-                            onChange={(e) => setSortOption(e.target.value)}
-                        >
-                            <MenuItem value="name">Name</MenuItem>
-                            <MenuItem value="age">Age</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                </Box>
-
-                {/* Players Grid */}
-                <Grid container spacing={3}>
-                    {filteredPlayers.length === 0 ? (
-                        <Typography variant="h6" color="textSecondary">
-                            No players match the selected filters.
-                        </Typography>
-                    ) : (
-                        filteredPlayers.map((player, index) => (
-                            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={index}>
-                                <Card
-                                    sx={{
-                                        p: 2,
-                                        cursor: 'pointer',
-                                        transition: '0.1s',
-                                        '&:hover': { transform: 'scale(1.1)', boxShadow: 3 },
-                                    }}
-                                    onClick={() =>
-                                        navigate(`/team/squad/${encodeURIComponent(player.uid)}`, {
-                                            state: { player },
-                                        })
-                                    }
-                                >
-                                    <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <Box>
-                                            <Typography variant="h6">{player.name}</Typography>
-                                            <Typography variant="body2">
-                                                Position: {player.position}
-                                            </Typography>
-                                            <Typography variant="body2">
-                                                Age: {calculateAge(player.dob)}
-                                            </Typography>
-                                        </Box>
-
-                                        {/* Player Image or Initials */}
-                                        {player.image ? (
-                                            <Avatar
-                                                src={player.image}
-                                                sx={{ width: 60, height: 60, ml: 2 }}
-                                                alt={player.name}
-                                            />
-                                        ) : (
-                                            <Avatar
-                                                sx={{
-                                                    width: 60,
-                                                    height: 60,
-                                                    fontSize: 20,
-                                                    fontWeight: 'bold',
-                                                    bgcolor: 'primary.main',
-                                                    color: 'primary.contrastText',
-                                                    ml: 2
-                                                }}
-                                            >
-                                                {player.name
-                                                    .split(' ')
-                                                    .map((name) => name[0])
-                                                    .join('')}
-                                            </Avatar>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </Grid>
-                        ))
-                    )}
-                </Grid>
             </Box>
         </Layout>
     );

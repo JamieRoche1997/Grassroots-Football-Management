@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 import {
     Stack,
     Typography,
@@ -8,7 +8,12 @@ import {
     Grid2 as Grid,
     CircularProgress,
     Rating,
-    Box
+    Box,
+    Avatar,
+    Chip,
+    useTheme,
+    styled,
+    alpha
 } from "@mui/material";
 import Header from "../../components/Header";
 import Layout from "../../components/Layout";
@@ -16,19 +21,48 @@ import { fetchPlayerRatings, PlayerRating } from "../../services/match_managemen
 import { getMembershipsForTeam } from "../../services/membership";
 import { fetchAllFixtures } from "../../services/schedule_management";
 import { useAuth } from "../../hooks/useAuth";
+import { Star, EmojiEvents } from "@mui/icons-material";
+
+// Styled Components
+const StyledCard = styled(Card)(({ theme }) => ({
+    borderRadius: 12,
+    transition: 'all 0.3s ease',
+    boxShadow: theme.shadows[2],
+    '&:hover': {
+        transform: 'translateY(-4px)',
+        boxShadow: theme.shadows[6],
+        backgroundColor: alpha(theme.palette.primary.main, 0.05)
+    }
+}));
+
+const PositionChip = styled(Chip)(({ theme }) => ({
+    fontWeight: 600,
+    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+    color: theme.palette.primary.main
+}));
+
+const RatingContainer = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing(1),
+    marginTop: theme.spacing(1)
+}));
 
 export default function PlayerRatingsDisplay() {
+    const theme = useTheme();
     const { clubName, ageGroup, division } = useAuth();
-    const navigate = useNavigate();  // ✅ Use react-router navigation
+    const navigate = useNavigate();
     const [players, setPlayers] = useState<PlayerWithRating[]>([]);
     const [loading, setLoading] = useState(true);
 
     interface PlayerWithRating {
         playerEmail: string;
         playerName: string;
-        playerUid: string;  // ✅ Ensure we have a UID for navigation
+        playerUid: string;
         position: string;
         averageRating: number;
+        ratingCount: number;
     }
 
     useEffect(() => {
@@ -41,7 +75,6 @@ export default function PlayerRatingsDisplay() {
 
                 const ratingsByPlayer: { [email: string]: number[] } = {};
 
-                // Collect all ratings across matches
                 for (const fixture of fixtures) {
                     const ratings: PlayerRating[] = await fetchPlayerRatings(fixture.matchId, clubName, ageGroup, division);
                     for (const rating of ratings) {
@@ -61,13 +94,15 @@ export default function PlayerRatingsDisplay() {
                     return {
                         playerEmail: player.email,
                         playerName: player.name,
-                        playerUid: player.uid,  // ✅ Ensure UID is present
+                        playerUid: player.uid,
                         position: player.position,
                         averageRating: averageRating,
+                        ratingCount: allRatings.length
                     };
                 });
 
-                setPlayers(playersWithRatings);
+                // Sort players by rating (highest first)
+                setPlayers(playersWithRatings.sort((a, b) => b.averageRating - a.averageRating));
             } catch (error) {
                 console.error("Error fetching player ratings:", error);
             } finally {
@@ -79,51 +114,116 @@ export default function PlayerRatingsDisplay() {
     }, [clubName, ageGroup, division]);
 
     const handlePlayerClick = (playerUid: string, playerEmail: string) => {
-        navigate(`/ratings/players/${playerUid}`, { state: { playerEmail } });  // ✅ Pass email via state
-    };    
+        navigate(`/ratings/players/${playerUid}`, { state: { playerEmail } });
+    };
+
+    const getRatingColor = (rating: number) => {
+        if (rating >= 8) return theme.palette.success.main;
+        if (rating >= 6) return theme.palette.warning.main;
+        return theme.palette.error.main;
+    };
 
     return (
         <Layout>
-            <Stack spacing={2} sx={{ alignItems: "center", pb: 5, mt: { xs: 8, md: 0 } }}>
-                <Header />
-                <Typography component="h2" variant="h5">
-                    Player Ratings Overview
-                </Typography>
+            <Header />
+            <Box sx={{
+                px: { xs: 2, md: 4 },
+                py: 3,
+                maxWidth: 1400,
+                mx: 'auto'
+            }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                        <EmojiEvents sx={{
+                            fontSize: 40,
+                            color: 'primary.main',
+                            p: 1,
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            borderRadius: '50%'
+                        }} />
+                        <Box>
+                            <Typography variant="h4" fontWeight={700}>
+                                Player Ratings
+                            </Typography>
+                        </Box>
+                    </Stack>
+                </Stack>
 
                 {loading ? (
-                    <CircularProgress />
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+                        <CircularProgress size={60} />
+                    </Box>
                 ) : (
-                    <Grid container spacing={3} sx={{ width: "100%", maxWidth: "1200px" }}>
+                    <Grid container spacing={3}>
                         {players.map((player) => (
-                            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={player.playerEmail}>
-                                {/* ✅ Wrap the card in Box and use onClick */}
-                                <Box onClick={() => handlePlayerClick(player.playerUid, player.playerEmail)} sx={{ cursor: "pointer" }}>
-                                    <Card variant="outlined" sx={{ textAlign: "center", p: 2, borderRadius: 2, "&:hover": { backgroundColor: "lightgray" } }}>
-                                        <CardContent>
-                                            <Typography variant="h6" fontWeight="bold">
-                                                {player.playerName}
-                                            </Typography>
-                                            <Typography variant="body2" color="textSecondary">
-                                                Position: {player.position}
-                                            </Typography>
-                                            <Rating
-                                                value={player.averageRating / 2} // Convert 10 scale to 5 stars
-                                                precision={0.5} // Allow half stars
-                                                readOnly
-                                                sx={{ mt: 1 }}
-                                            />
+                            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3}} key={player.playerEmail}>
+                                <StyledCard
+                                    onClick={() => handlePlayerClick(player.playerUid, player.playerEmail)}
+                                    sx={{ cursor: 'pointer', height: '100%' }}
+                                >
+                                    <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                        <Avatar
+                                            sx={{
+                                                width: 80,
+                                                height: 80,
+                                                mx: 'auto',
+                                                mb: 2,
+                                                bgcolor: alpha(theme.palette.primary.main, 0.2),
+                                                color: theme.palette.primary.main,
+                                                fontSize: 32
+                                            }}
+                                        >
+                                            {player.playerName.charAt(0)}
+                                        </Avatar>
 
-                                            <Typography variant="body2" color="textSecondary">
-                                                Average Rating: {player.averageRating.toFixed(1)} / 10
+                                        <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                            {player.playerName}
+                                        </Typography>
+
+                                        <PositionChip
+                                            label={player.position}
+                                            size="small"
+                                            sx={{ mb: 2 }}
+                                        />
+
+                                        <RatingContainer>
+                                            <Rating
+                                                value={player.averageRating / 2}
+                                                precision={0.5}
+                                                readOnly
+                                                emptyIcon={<Star style={{ opacity: 0.5 }} />}
+                                            />
+                                            <Typography
+                                                variant="body1"
+                                                fontWeight={600}
+                                                color={getRatingColor(player.averageRating)}
+                                            >
+                                                {player.averageRating.toFixed(1)}
                                             </Typography>
-                                        </CardContent>
-                                    </Card>
-                                </Box>
+                                        </RatingContainer>
+
+                                        <Typography variant="caption" color="text.secondary">
+                                            {player.ratingCount} {player.ratingCount === 1 ? 'rating' : 'ratings'}
+                                        </Typography>
+
+                                        {player.averageRating >= 8 && (
+                                            <Box sx={{ mt: 1 }}>
+                                                <Chip
+                                                    icon={<EmojiEvents fontSize="small" />}
+                                                    label="Top Performer"
+                                                    size="small"
+                                                    color="success"
+                                                    variant="outlined"
+                                                />
+                                            </Box>
+                                        )}
+                                    </CardContent>
+                                </StyledCard>
                             </Grid>
                         ))}
                     </Grid>
                 )}
-            </Stack>
+            </Box>
         </Layout>
     );
 }

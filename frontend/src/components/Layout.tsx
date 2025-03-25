@@ -10,7 +10,7 @@ import {
   dataGridCustomizations,
   datePickersCustomizations,
   treeViewCustomizations,
-} from '../components/theme/customizations'; 
+} from '../components/shared-theme/customizations'; 
 import Chatbot from './Chatbot';
 
 const xThemeComponents = {

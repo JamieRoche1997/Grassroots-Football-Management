@@ -13,17 +13,52 @@ import {
   Grid2 as Grid,
   Switch,
   FormControl,
+  InputLabel,
   Select,
   MenuItem,
   Snackbar,
-  Alert
+  Alert,
+  Chip,
+  Avatar,
+  Divider,
+  useTheme,
+  styled,
+  Stack
 } from "@mui/material";
-import { DriveEta, People, LocationOn, AccessTime, SportsSoccer } from "@mui/icons-material";
+import {
+  DriveEta,
+  AccessTime,
+  SportsSoccer,
+  Event,
+  Person,
+  DirectionsCar,
+  Close,
+  Check
+} from "@mui/icons-material";
+import { alpha } from "@mui/material/styles";
 import Layout from "../../components/Layout";
 import Header from "../../components/Header";
 import { getRides, offerRide, requestRide } from "../../services/carpool";
 import { fetchFixturesByMonth, FixtureData } from "../../services/schedule_management";
 import { useAuth } from "../../hooks/useAuth";
+
+// Styled Components
+const MatchCard = styled(Card)(({ theme }) => ({
+  borderRadius: 12,
+  transition: 'all 0.3s ease',
+  cursor: 'pointer',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: theme.shadows[6],
+    backgroundColor: alpha(theme.palette.primary.main, 0.05)
+  }
+}));
+
+const RideCard = styled(Card)(({ theme }) => ({
+  borderRadius: 12,
+  marginBottom: theme.spacing(2),
+  borderLeft: `4px solid ${theme.palette.primary.main}`
+}));
 
 interface Ride {
   clubName: string;
@@ -43,31 +78,35 @@ interface Ride {
 }
 
 export default function CarpoolOverview() {
+  const theme = useTheme();
   const { user, clubName, ageGroup, division } = useAuth();
-  const [isDriver, setIsDriver] = useState<boolean>(false);
-  const [offerRideOpen, setOfferRideOpen] = useState<boolean>(false);
-  const [seatsAvailable, setSeatsAvailable] = useState<number>(3);
-  const [departureLocation, setDepartureLocation] = useState<string>("");
-  const [departureTime, setDepartureTime] = useState<string>("");
-  const [pickupStops, setPickupStops] = useState<string>("Yes");
+  const [isDriver, setIsDriver] = useState(false);
+  const [offerRideOpen, setOfferRideOpen] = useState(false);
+  const [seatsAvailable, setSeatsAvailable] = useState(3);
+  const [departureLocation, setDepartureLocation] = useState("");
+  const [departureTime, setDepartureTime] = useState("");
+  const [pickupStops, setPickupStops] = useState("Yes");
   const [matches, setMatches] = useState<FixtureData[]>([]);
-  const [selectedMatch, setSelectedMatch] = useState<string>("");
+  const [selectedMatch, setSelectedMatch] = useState("");
   const [availableRides, setAvailableRides] = useState<Ride[]>([]);
   const [rideRequests, setRideRequests] = useState<string[]>([]);
   const [matchRides, setMatchRides] = useState<Ride[]>([]);
-  const [rideDialogOpen, setRideDialogOpen] = useState<boolean>(false);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
+  const [rideDialogOpen, setRideDialogOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error"
+  });
 
-  // Fetch All Future Matches
+  // Fetch matches and rides
   useEffect(() => {
-    async function loadMatches() {
+    const fetchData = async () => {
       try {
+        // Fetch matches
         const futureMonths = [...Array(6)].map((_, i) => {
           const futureDate = new Date();
           futureDate.setMonth(new Date().getMonth() + i);
-          return futureDate.toISOString().slice(0, 7); // Format as "YYYY-MM"
+          return futureDate.toISOString().slice(0, 7);
         });
 
         let allMatches: FixtureData[] = [];
@@ -76,234 +115,358 @@ export default function CarpoolOverview() {
           allMatches = [...allMatches, ...fetchedMatches];
         }
 
-        // Filter only future matches
-        const futureMatches = allMatches.filter(match => new Date(match.date) >= new Date());
-        setMatches(futureMatches);
-      } catch (error) {
-        console.error("Error fetching matches:", error);
-      }
-    }
+        setMatches(allMatches.filter(match => new Date(match.date) >= new Date()));
 
-    if (clubName && ageGroup && division) {
-      loadMatches();
-    }
-  }, [clubName, ageGroup, division]);
-
-  // Fetch available rides from backend on component mount
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const rides = await getRides(clubName!, ageGroup!, division!); // Fetch rides from backend
-        const ridesWithDetails = rides.map(ride => ({
+        // Fetch rides
+        const rides = await getRides(clubName!, ageGroup!, division!);
+        setAvailableRides(rides.map(ride => ({
           ...ride,
           matchDetails: ride.matchDetails || "Unknown Match"
-        }));
-        setAvailableRides(ridesWithDetails);
+        })));
       } catch (error) {
-        console.error("Error fetching rides:", error);
+        console.error("Error fetching data:", error);
+        setSnackbar({
+          open: true,
+          message: "Failed to load data",
+          severity: "error"
+        });
       }
+    };
+
+    if (clubName && ageGroup && division) {
+      fetchData();
     }
-    fetchData();
   }, [clubName, ageGroup, division]);
 
-  // Toggle Driver Mode
-  const handleToggleDriver = () => {
-    setIsDriver(!isDriver);
-  };
+  const handleToggleDriver = () => setIsDriver(!isDriver);
 
-  // Handle Match Click
   const handleMatchClick = (match: FixtureData) => {
-    const ridesForMatch = availableRides.filter((ride) => ride.matchId === match.matchId);
+    const ridesForMatch = availableRides.filter(ride => ride.matchId === match.matchId);
     setSelectedMatch(match.matchId);
     setMatchRides(ridesForMatch);
     setRideDialogOpen(true);
   };
 
-  // Handle Ride Request
   const handleRequestRide = async (rideId: string) => {
     try {
-      if (user?.displayName) {
+      const ride = availableRides.find(r => r.id === rideId);
 
-        if (user?.displayName === availableRides.find(ride => ride.id === rideId)?.driverName) {
-          setSnackbarMessage("You cannot request a ride from yourself!");
-          setSnackbarSeverity("error");
-          setSnackbarOpen(true);
-          return;
-        }
-        // If the user has already requested a ride, show a message
-        if (availableRides.find(ride => ride.id === rideId)?.passengers.includes(user?.displayName)) {
-          setSnackbarMessage("You have already requested a ride for this match!");
-          setSnackbarSeverity("error");
-          setSnackbarOpen(true);
-          return;
-        }
-        await requestRide({ userName: user.displayName, ride_id: rideId }, clubName!, ageGroup!, division!);
+      if (!user?.displayName || !ride) return;
 
-        setRideRequests([...rideRequests, rideId]);
-
-        setSnackbarMessage("Ride request sent successfully!");
-        setSnackbarSeverity("success");
-        setSnackbarOpen(true);
-      } else {
-        throw new Error("User display name is not available");
+      if (user.displayName === ride.driverName) {
+        setSnackbar({
+          open: true,
+          message: "You cannot request a ride from yourself!",
+          severity: "error"
+        });
+        return;
       }
+
+      if (ride.passengers.includes(user.displayName)) {
+        setSnackbar({
+          open: true,
+          message: "You've already requested this ride!",
+          severity: "error"
+        });
+        return;
+      }
+
+      await requestRide({
+        userName: user.displayName,
+        ride_id: rideId
+      }, clubName!, ageGroup!, division!);
+
+      setRideRequests([...rideRequests, rideId]);
+      setSnackbar({
+        open: true,
+        message: "Ride request sent successfully!",
+        severity: "success"
+      });
     } catch (error) {
       console.error("Error requesting ride:", error);
-      setSnackbarMessage("Failed to request ride. Please try again.");
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      setSnackbar({
+        open: true,
+        message: "Failed to request ride",
+        severity: "error"
+      });
     }
   };
 
-  // To close the Snackbar
-  const handleCloseSnackbar = () => {
-    setSnackbarOpen(false);
-  };
-
-  // ✅ Modify handleOfferRide to include matchId
   const handleOfferRide = async () => {
     if (!departureLocation || !departureTime || !selectedMatch) {
-      alert("Please enter all details and select a match before offering a ride.");
+      setSnackbar({
+        open: true,
+        message: "Please fill all required fields",
+        severity: "error"
+      });
       return;
     }
 
     try {
-      const matchInfo = matches.find((match) => match.matchId === selectedMatch);
+      const matchInfo = matches.find(match => match.matchId === selectedMatch);
+      const opponentTeam = matchInfo?.homeTeam === clubName
+        ? matchInfo.awayTeam
+        : matchInfo?.homeTeam;
 
       const newRide: Ride = {
         clubName: clubName || "",
         ageGroup: ageGroup || "",
         division: division || "",
-        id: "",
-        matchId: matchInfo?.matchId || "",
+        id: Date.now().toString(),
+        matchId: selectedMatch,
         driverName: user?.displayName || "Unknown Driver",
-        driverEmail: user?.email || "Unknown Email",
-        driverPhone: user?.phoneNumber || "Unknown Phone",
+        driverEmail: user?.email || "",
+        driverPhone: user?.phoneNumber || "",
         seats: seatsAvailable,
         location: departureLocation,
         pickup: pickupStops,
         passengers: [],
         time: departureTime,
-        matchDetails: matchInfo ? `${matchInfo.homeTeam} vs ${matchInfo.awayTeam} - ${matchInfo.date}` : "Unknown Match",
+        matchDetails: matchInfo
+          ? `${opponentTeam} - ${new Date(matchInfo.date).toLocaleDateString()}`
+          : "Unknown Match",
       };
 
-      console.log("Offering ride:", newRide);
-      await offerRide(newRide); // ✅ Call API with matchId
-      const rides = await getRides(clubName!, ageGroup!, division!); // Fetch updated rides
-      setAvailableRides(rides);
+      await offerRide(newRide);
+      const updatedRides = await getRides(clubName!, ageGroup!, division!);
+      setAvailableRides(updatedRides);
       setOfferRideOpen(false);
+      setSnackbar({
+        open: true,
+        message: "Ride offered successfully!",
+        severity: "success"
+      });
     } catch (error) {
       console.error("Error offering ride:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to offer ride",
+        severity: "error"
+      });
     }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
   };
 
   return (
     <Layout>
       <Header />
+
       <Snackbar
-        open={snackbarOpen}
+        open={snackbar.open}
         autoHideDuration={4000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
-          {snackbarMessage}
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
         </Alert>
       </Snackbar>
 
-      <Box sx={{ maxWidth: 900, margin: "auto", mt: 4 }}>
-        <Typography variant="h3" sx={{ textAlign: "center", fontWeight: "bold", mb: 2 }}>
-          🚗 Carpool
-        </Typography>
+      <Box sx={{
+        maxWidth: 1200,
+        margin: 'auto',
+        px: { xs: 2, md: 4 },
+        py: 3
+      }}>
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          mb: 4,
+          gap: 2
+        }}>
+          <DirectionsCar sx={{
+            fontSize: 40,
+            color: 'primary.main',
+            p: 1,
+            bgcolor: alpha(theme.palette.primary.main, 0.1),
+            borderRadius: '50%'
+          }} />
+          <Typography variant="h4" fontWeight={700}>
+            Team Carpool
+          </Typography>
+        </Box>
 
-        {/* Driver Toggle */}
-        <Card sx={{ mb: 3, p: 2, boxShadow: 3, borderRadius: 2 }}>
-          <CardContent sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <DriveEta sx={{ fontSize: 40, mr: 2 }} />
-              <Typography variant="h6">Are you driving?</Typography>
+        {/* Driver Mode Toggle */}
+        <Card sx={{ mb: 4, p: 2, borderRadius: 3 }}>
+          <CardContent sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <DriveEta color="primary" sx={{ fontSize: 32 }} />
+              <Box>
+                <Typography variant="h6">Driver Mode</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {isDriver ? "You're offering rides" : "You're looking for rides"}
+                </Typography>
+              </Box>
             </Box>
-            <Switch checked={isDriver} onChange={handleToggleDriver} />
+            <Switch
+              checked={isDriver}
+              onChange={handleToggleDriver}
+              color="primary"
+            />
           </CardContent>
 
           {isDriver && (
-            <CardContent sx={{ display: "flex", justifyContent: "center" }}>
-              <Button variant="contained" onClick={() => setOfferRideOpen(true)}>
-                🚘 Offer Ride
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Button
+                variant="contained"
+                startIcon={<Person />}
+                onClick={() => setOfferRideOpen(true)}
+                sx={{ borderRadius: 2 }}
+              >
+                Offer a Ride
               </Button>
             </CardContent>
           )}
         </Card>
 
-        {/* Upcoming Matches as Clickable Cards */}
+        {/* Upcoming Matches */}
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+          <Event sx={{ verticalAlign: 'middle', mr: 1 }} />
+          Upcoming Matches
+        </Typography>
+
         <Grid container spacing={3}>
           {matches.map((match) => {
             const opponentTeam = match.homeTeam === clubName ? match.awayTeam : match.homeTeam;
+            const matchDate = new Date(match.date);
+            const formattedDate = matchDate.toLocaleDateString();
+            const formattedTime = matchDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
             return (
-              <Grid size={{ xs: 12, sm: 6 }} key={match.matchId}>
-                <Card
-                  sx={{
-                    p: 2,
-                    borderRadius: 2,
-                    boxShadow: 3,
-                    transition: "0.3s",
-                    cursor: "pointer",
-                    "&:hover": { transform: "scale(1.05)", boxShadow: 6 },
-                  }}
-                  onClick={() => handleMatchClick(match)}
-                >
+              <Grid size={{ xs: 12, sm: 6, md: 4}} key={match.matchId}>
+                <MatchCard onClick={() => handleMatchClick(match)}>
                   <CardContent>
-                    <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                      <SportsSoccer sx={{ verticalAlign: "middle", mr: 1 }} />
-                      {opponentTeam} - {new Date(match.date).toLocaleDateString()}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      🕒 {new Date(match.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <SportsSoccer color="primary" sx={{ mr: 1 }} />
+                      <Typography variant="subtitle1" fontWeight={600}>
+                        vs {opponentTeam}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                      <Chip
+                        icon={<AccessTime fontSize="small" />}
+                        label={formattedTime}
+                        size="small"
+                        variant="outlined"
+                      />
+                      <Chip
+                        icon={<Event fontSize="small" />}
+                        label={formattedDate}
+                        size="small"
+                        variant="outlined"
+                      />
+                    </Box>
                   </CardContent>
-                </Card>
+                </MatchCard>
               </Grid>
             );
           })}
         </Grid>
 
-        {/* Rides Modal for Selected Match */}
-        <Dialog open={rideDialogOpen} onClose={() => setRideDialogOpen(false)}>
-          <DialogTitle>
-            Available Rides for {matches.find(match => match.matchId === selectedMatch)?.homeTeam} vs {matches.find(match => match.matchId === selectedMatch)?.awayTeam}
+        {/* Rides Dialog */}
+        <Dialog
+          open={rideDialogOpen}
+          onClose={() => setRideDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
+            fontWeight: 600
+          }}>
+            <DirectionsCar sx={{ mr: 1, verticalAlign: 'middle' }} />
+            Available Rides
           </DialogTitle>
-          <DialogContent>
+
+          <DialogContent sx={{ p: 3 }}>
             {matchRides.length === 0 ? (
-              <Typography>No rides available for this match.</Typography>
+              <Box sx={{
+                textAlign: 'center',
+                py: 4,
+                color: 'text.secondary'
+              }}>
+                <Typography variant="h6">No rides available</Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  Be the first to offer a ride for this match!
+                </Typography>
+              </Box>
             ) : (
               matchRides.map((ride) => (
-                <Card key={ride.id} sx={{ mb: 2, p: 2, borderRadius: 2, boxShadow: 3 }}>
-                  <Typography variant="h6">{ride.driverName}</Typography>
-                  <Typography variant="body2">
-                    <People sx={{ verticalAlign: "middle", fontSize: 18, mr: 1 }} />
-                    {ride.seats} Seats Available
-                  </Typography>
-                  <Typography variant="body2">
-                    <LocationOn sx={{ verticalAlign: "middle", fontSize: 18, mr: 1 }} />
-                    Departs from: <strong>{ride.location}</strong>
-                  </Typography>
-                  <Typography variant="body2">
-                    <AccessTime sx={{ verticalAlign: "middle", fontSize: 18, mr: 1 }} />
-                    Leaves at: <strong>{ride.time}</strong>
-                  </Typography>
-                  <Typography variant="body2">
-                    🚦 Pickup Stops: <strong>{ride.pickup}</strong>
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => handleRequestRide(ride.id)}
-                    disabled={ride.seats === 0}
-                    sx={{ mt: 1 }}
-                  >
-                    {ride.seats === 0 ? "Full" : "Request Ride"}
-                  </Button>
-                </Card>
+                <RideCard key={ride.id}>
+                  <CardContent>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      mb: 2
+                    }}>
+                      <Avatar sx={{ bgcolor: 'primary.main' }}>
+                        {ride.driverName.charAt(0)}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {ride.driverName}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {ride.seats} seat{ride.seats !== 1 ? 's' : ''} available
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Divider sx={{ my: 2 }} />
+
+                    <Box sx={{ display: 'flex', gap: 3 }}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Departure
+                        </Typography>
+                        <Typography>{ride.location}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Time
+                        </Typography>
+                        <Typography>{ride.time}</Typography>
+                      </Box>
+                    </Box>
+
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Pickup Stops
+                      </Typography>
+                      <Typography>
+                        {ride.pickup === "Yes" ? (
+                          <Check color="success" sx={{ verticalAlign: 'middle' }} />
+                        ) : (
+                          <Close color="error" sx={{ verticalAlign: 'middle' }} />
+                        )}
+                      </Typography>
+                    </Box>
+
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      onClick={() => handleRequestRide(ride.id)}
+                      disabled={ride.seats === 0}
+                      sx={{ mt: 2 }}
+                    >
+                      {ride.seats === 0 ? 'No seats available' : 'Request Ride'}
+                    </Button>
+                  </CardContent>
+                </RideCard>
               ))
             )}
           </DialogContent>
@@ -313,94 +476,90 @@ export default function CarpoolOverview() {
         </Dialog>
 
         {/* Offer Ride Dialog */}
-        <Dialog open={offerRideOpen} onClose={() => setOfferRideOpen(false)}>
-          <DialogTitle>Offer a Ride</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2">Enter your ride details below:</Typography>
+        <Dialog
+          open={offerRideOpen}
+          onClose={() => setOfferRideOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
+            fontWeight: 600
+          }}>
+            <Person sx={{ mr: 1, verticalAlign: 'middle' }} />
+            Offer a Ride
+          </DialogTitle>
 
-            {/* Match Selection */}
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              🏆 Select Match:
-            </Typography>
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <Select
-                value={selectedMatch}
-                onChange={(e) => setSelectedMatch(e.target.value)}
-                displayEmpty
-              >
-                <MenuItem value="" disabled>Select a Match</MenuItem>
-                {matches.length === 0 ? (
-                  <MenuItem disabled>No upcoming matches available</MenuItem>
-                ) : (
-                  matches.map((match) => {
-                    // Determine the opponent team
-                    const opponentTeam = match.homeTeam === clubName ? match.awayTeam : match.homeTeam;
-
+          <DialogContent sx={{ mt: 3 }}>
+            <Stack spacing={3}>
+              <FormControl fullWidth>
+                <Select
+                  value={selectedMatch}
+                  onChange={(e) => setSelectedMatch(e.target.value)}
+                  label="Select Match"
+                >
+                  {matches.map((match) => {
+                    const opponentTeam = match.homeTeam === clubName
+                      ? match.awayTeam
+                      : match.homeTeam;
                     return (
-                      <MenuItem key={match.matchId} value={match.matchId}>
-                        {opponentTeam} - {match.date}
+                      <MenuItem
+                        key={match.matchId}
+                        value={match.matchId}
+                      >
+                        {opponentTeam} - {new Date(match.date).toLocaleDateString()}
                       </MenuItem>
                     );
-                  })
-                )}
-              </Select>
-            </FormControl>
+                  })}
+                </Select>
+              </FormControl>
 
+              <TextField
+                placeholder="Number of seats available"
+                type="number"
+                value={seatsAvailable}
+                onChange={(e) => setSeatsAvailable(Number(e.target.value))}
+              />
 
-            {/* Seats Available */}
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              🚗 Seats Available:
-            </Typography>
-            <TextField
-              fullWidth
-              type="number"
-              value={seatsAvailable}
-              onChange={(e) => setSeatsAvailable(Number(e.target.value))}
-              sx={{ mt: 2 }}
-            />
+              <TextField
+                placeholder="Departure Location"
+                value={departureLocation}
+                onChange={(e) => setDepartureLocation(e.target.value)}
+              />
 
-            {/* Departure Location */}
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              📍 Departure Location:
-            </Typography>
-            <TextField
-              fullWidth
-              value={departureLocation}
-              onChange={(e) => setDepartureLocation(e.target.value)}
-              sx={{ mt: 2 }}
-            />
+              <TextField
+                placeholder="Departure Time"
+                type="time"
+                value={departureTime}
+                onChange={(e) => setDepartureTime(e.target.value)}
+              />
 
-            {/* Departure Time */}
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              🕒 Departure Time:
-            </Typography>
-            <TextField
-              fullWidth
-              type="time"
-              value={departureTime}
-              onChange={(e) => setDepartureTime(e.target.value)}
-              sx={{ mt: 2 }}
-            />
-
-            {/* Pickup Stops */}
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              🚦 Pickup Stops:
-            </Typography>
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <Select value={pickupStops} onChange={(e) => setPickupStops(e.target.value)}>
-                <MenuItem value="Yes">Yes</MenuItem>
-                <MenuItem value="No">No</MenuItem>
-              </Select>
-            </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>Pickup Stops</InputLabel>
+                <Select
+                  value={pickupStops}
+                  onChange={(e) => setPickupStops(e.target.value)}
+                  label="Pickup Stops"
+                >
+                  <MenuItem value="Yes">Yes</MenuItem>
+                  <MenuItem value="No">No</MenuItem>
+                </Select>
+              </FormControl>
+            </Stack>
           </DialogContent>
-          <DialogActions>
+
+          <DialogActions sx={{ p: 2 }}>
             <Button onClick={() => setOfferRideOpen(false)}>Cancel</Button>
-            <Button variant="contained" onClick={handleOfferRide}>
+            <Button
+              variant="contained"
+              onClick={handleOfferRide}
+              disabled={!selectedMatch || !departureLocation || !departureTime}
+            >
               Confirm Ride
             </Button>
           </DialogActions>
         </Dialog>
-
       </Box>
     </Layout>
   );

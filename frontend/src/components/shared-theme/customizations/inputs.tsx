@@ -11,8 +11,6 @@ import { gray, brand } from '../themePrimitives';
 export const inputsCustomizations: Components<Theme> = {
   MuiButtonBase: {
     defaultProps: {
-      disableTouchRipple: true,
-      disableRipple: true,
     },
     styleOverrides: {
       root: ({ theme }) => ({
@@ -310,7 +308,6 @@ export const inputsCustomizations: Components<Theme> = {
   },
   MuiCheckbox: {
     defaultProps: {
-      disableRipple: true,
       icon: (
         <CheckBoxOutlineBlankRoundedIcon sx={{ color: 'hsla(210, 0%, 0%, 0.0)' }} />
       ),

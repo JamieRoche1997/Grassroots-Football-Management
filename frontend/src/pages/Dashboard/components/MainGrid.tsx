@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import Grid from '@mui/material/Grid';
+import Divider from '@mui/material/Divider';
+import { Grid2 as Grid } from '@mui/material';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Copyright from '../internals/components/Copyright';
 import StatCard, { StatCardProps } from '../../../components/StatCard';
 import PlayerStatCard, { PlayerStatCardProps } from '../../../components/PlayerStatCard';
 import CalendarView from './CalendarView';
@@ -36,7 +36,7 @@ export default function MainGrid() {
         console.log('Player Stats:', playerStats);
 
         setOverviewData([
-          { title: 'Pending Join Requests', value: `${pendingRequests.length}`, interval: 'New', trend: pendingRequests.length > 0 ? 'down' : 'neutral', data: [] },
+          { title: 'Pending Join Requests', value: `${pendingRequests.length}`, interval: 'New' },
         ]);
 
         // Process Players for Player Performance section
@@ -61,21 +61,17 @@ export default function MainGrid() {
 
   return (
     <Box sx={{ width: '100%', maxWidth: { sm: '100%', md: '1700px' } }}>
-      {/* Overview Section */}
+      {/* Calendar Section */}
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
-        Overview
+        Calendar
       </Typography>
-      <Grid container spacing={2} columns={12} sx={{ mb: (theme) => theme.spacing(2) }}>
-        {loading ? (
-          <Typography>Loading...</Typography>
-        ) : (
-          overviewData.map((card, index) => (
-            <Grid key={index} item xs={12} sm={6} lg={4}>
-              <StatCard {...card} />
-            </Grid>
-          ))
-        )}
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12 }}>
+          <CalendarView />
+        </Grid>
       </Grid>
+
+      <Divider sx={{ my: 4 }} />
 
       {/* Player Stats Section */}
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
@@ -86,25 +82,28 @@ export default function MainGrid() {
           <Typography>Loading...</Typography>
         ) : (
           players.map((player, index) => (
-            <Grid key={index} item xs={12} sm={6} lg={4}>
+            <Grid key={index} size={{ xs: 12, sm: 6, lg: 4 }}>
               <PlayerStatCard {...player} />
             </Grid>
           ))
         )}
       </Grid>
 
-      {/* Calendar Section */}
-      <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
-        Calendar
-      </Typography>
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          <CalendarView />
-        </Grid>
-      </Grid>
 
-      {/* Footer */}
-      <Copyright sx={{ my: 4 }} />
+      <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
+        Join Requests
+      </Typography>
+      <Grid container spacing={2} columns={12} sx={{ mb: (theme) => theme.spacing(2) }}>
+        {loading ? (
+          <Typography>Loading...</Typography>
+        ) : (
+          overviewData.map((card, index) => (
+            <Grid key={index} size={{ xs: 12, sm: 6, lg: 4 }}>
+              <StatCard {...card} />
+            </Grid>
+          ))
+        )}
+      </Grid>
     </Box>
   );
 }

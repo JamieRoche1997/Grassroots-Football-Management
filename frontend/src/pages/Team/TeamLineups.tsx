@@ -13,12 +13,16 @@ import {
   Chip,
   Tooltip,
   Paper,
-  Stack,
   Alert,
   useTheme,
   useMediaQuery,
+  Grid2 as Grid,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import { alpha } from '@mui/material/styles';
 import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import SaveIcon from '@mui/icons-material/Save';
@@ -181,41 +185,41 @@ export default function TeamLineups() {
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedFormation, setSelectedFormation] = useState<keyof typeof formations>('4-4-2');
   const [assignedPlayers, setAssignedPlayers] = useState<{ [position: string]: string }>({});
-  const [substitutes, setSubstitutes] = useState<string[]>([]); 
+  const [substitutes, setSubstitutes] = useState<string[]>([]);
   const [strategyNotes, setStrategyNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const assignedPlayerEmails = new Set(Object.values(assignedPlayers)); 
+  const assignedPlayerEmails = new Set(Object.values(assignedPlayers));
   const availableSubstitutes = players.filter(player => !assignedPlayerEmails.has(player.email));
 
   useEffect(() => {
     const fetchAllMatchesForYear = async () => {
       if (authLoading) return;
-  
+
       if (!clubName || !ageGroup || !division) {
-          setError('Club information is incomplete.');
-          setLoading(false);
-          return;
+        setError('Club information is incomplete.');
+        setLoading(false);
+        return;
       }
-  
+
       try {
-          const allMatches = await fetchAllFixtures(clubName, ageGroup, division);
-          setMatches(allMatches);
-          setError(null);
+        const allMatches = await fetchAllFixtures(clubName, ageGroup, division);
+        setMatches(allMatches);
+        setError(null);
       } catch (error) {
-          console.error('Error fetching matches:', error);
-          setError('Failed to load matches. Please try again later.');
+        console.error('Error fetching matches:', error);
+        setError('Failed to load matches. Please try again later.');
       } finally {
-          setLoading(false);
+        setLoading(false);
       }
-  };  
-  
+    };
+
     fetchAllMatchesForYear();
   }, [authLoading, clubName, ageGroup, division]);
-  
-  
+
+
   useEffect(() => {
     const fetchPlayersForMatch = async () => {
       if (authLoading) return;
@@ -264,42 +268,42 @@ export default function TeamLineups() {
 
   const handleSaveMatchData = async () => {
     if (!selectedMatch) {
-        alert('Please select a match before saving.');
-        return;
+      alert('Please select a match before saving.');
+      return;
     }
 
     const isHomeTeam = selectedMatch.homeTeam === clubName;
     const isAwayTeam = selectedMatch.awayTeam === clubName;
 
     if (!isHomeTeam && !isAwayTeam) {
-        alert("You are not a coach for either team in this match.");
-        return;
+      alert("You are not a coach for either team in this match.");
+      return;
     }
 
     const lineup = {
-        ...assignedPlayers,
-        ...substitutes.reduce((acc, playerEmail, index) => {
-            acc[`Sub${index + 1}`] = playerEmail;
-            return acc;
-        }, {} as { [key: string]: string }),
+      ...assignedPlayers,
+      ...substitutes.reduce((acc, playerEmail, index) => {
+        acc[`Sub${index + 1}`] = playerEmail;
+        return acc;
+      }, {} as { [key: string]: string }),
     };
 
     try {
-        console.log('Saving lineups:', lineup);
+      console.log('Saving lineups:', lineup);
 
-        if (isHomeTeam && clubName && ageGroup && division) {
-            await saveLineups(selectedMatch.matchId, clubName, ageGroup, division, lineup, {});
-        } else if (isAwayTeam && clubName && ageGroup && division) {
-            await saveLineups(selectedMatch.matchId, clubName, ageGroup, division, {}, lineup);
-        }
+      if (isHomeTeam && clubName && ageGroup && division) {
+        await saveLineups(selectedMatch.matchId, clubName, ageGroup, division, lineup, {});
+      } else if (isAwayTeam && clubName && ageGroup && division) {
+        await saveLineups(selectedMatch.matchId, clubName, ageGroup, division, {}, lineup);
+      }
 
-        alert('Lineup saved successfully!');
-        setSaveSuccess(true);
+      alert('Lineup saved successfully!');
+      setSaveSuccess(true);
     } catch (error) {
-        console.error('Error saving lineup:', error);
-        alert('Failed to save lineup. Please try again.');
+      console.error('Error saving lineup:', error);
+      alert('Failed to save lineup. Please try again.');
     }
-};
+  };
 
 
   if (authLoading || loading) {
@@ -348,11 +352,22 @@ export default function TeamLineups() {
           </Alert>
         )}
 
-        <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+        <Paper elevation={2} sx={{
+          p: 3, mb: 4, borderRadius: 2,
+          backgroundColor: alpha(theme.palette.background.paper, 0.8),
+          backdropFilter: 'blur(12px)',
+          border: '1px solid',
+          borderColor: alpha(theme.palette.divider, 0.1),
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: theme.shadows[6],
+          },
+        }}>
           <Typography variant="h6" fontWeight={500} sx={{ mb: 2 }}>
             Match Details
           </Typography>
-          
+
           <Select
             fullWidth
             displayEmpty
@@ -365,9 +380,9 @@ export default function TeamLineups() {
               <MenuItem key={match.matchId} value={match.matchId}>
                 <Box sx={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="body1">{match.homeTeam} vs {match.awayTeam}</Typography>
-                  <Chip 
-                    size="small" 
-                    label={format(new Date(match.date), 'MMM d, yyyy')} 
+                  <Chip
+                    size="small"
+                    label={format(new Date(match.date), 'MMM d, yyyy')}
                     sx={{ ml: 2 }}
                   />
                 </Box>
@@ -392,12 +407,21 @@ export default function TeamLineups() {
         </Paper>
 
         {/* Field and lineup visualization */}
-        <Paper 
-          elevation={3} 
+        <Paper
+          elevation={3}
           sx={{
             mb: 4,
             overflow: 'hidden',
             borderRadius: 2,
+            backgroundColor: alpha(theme.palette.background.paper, 0.8),
+            backdropFilter: 'blur(12px)',
+            border: '1px solid',
+            borderColor: alpha(theme.palette.divider, 0.1),
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: theme.shadows[6],
+            },
           }}
         >
           <Box
@@ -457,21 +481,21 @@ export default function TeamLineups() {
                           },
                         }}
                       >
-                        <Typography variant="subtitle2" fontWeight={600} sx={{ 
+                        <Typography variant="subtitle2" fontWeight={600} sx={{
                           color: 'primary.main',
                           mb: 0.5
                         }}>
                           {position}
                         </Typography>
-                        
+
                         <Select
                           fullWidth
                           displayEmpty
                           value={assignedPlayers[positionKey] || ""}
                           onChange={(e) => handlePlayerAssign(positionKey, e.target.value)}
                           size={isMobile ? "small" : "medium"}
-                          sx={{ 
-                            '.MuiOutlinedInput-notchedOutline': { 
+                          sx={{
+                            '.MuiOutlinedInput-notchedOutline': {
                               borderColor: assignedPlayer ? 'transparent' : 'inherit',
                             },
                             backgroundColor: assignedPlayer ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
@@ -509,48 +533,108 @@ export default function TeamLineups() {
         </Paper>
 
         {/* Substitutes Selection */}
-        <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-          <Typography variant="h6" fontWeight={500} sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+                {/* Substitutes Selection */}
+                <Paper
+          elevation={2}
+          sx={{
+            p: 3,
+            mb: 4,
+            borderRadius: 2,
+            backgroundColor: alpha(theme.palette.background.paper, 0.8),
+            backdropFilter: 'blur(12px)',
+            border: '1px solid',
+            borderColor: alpha(theme.palette.divider, 0.1),
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: theme.shadows[6],
+            },
+          }}
+        >
+          <Typography
+            variant="h6"
+            fontWeight={500}
+            sx={{ mb: 2, display: 'flex', alignItems: 'center' }}
+          >
             Substitutes ({substitutes.length}/10)
           </Typography>
-          
-          {substitutes.length > 0 && (
-            <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 3 }}>
-              {substitutes.map((playerEmail) => (
-                <Chip
-                  key={playerEmail}
-                  label={getPlayerName(playerEmail)}
-                  onDelete={() => handleRemoveSubstitute(playerEmail)}
-                  color="primary"
-                  variant="outlined"
-                  deleteIcon={<PersonRemoveIcon />}
-                  sx={{ mb: 1 }}
-                />
-              ))}
-            </Stack>
+
+          {/* List of Substitutes */}
+          {substitutes.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              No substitutes added yet.
+            </Typography>
+          ) : (
+            <Paper variant="outlined" sx={{ mb: 3 }}>
+              <List disablePadding>
+                {substitutes.map((playerEmail) => (
+                  <ListItem
+                    key={playerEmail}
+                    secondaryAction={
+                      <IconButton
+                        edge="end"
+                        aria-label="remove"
+                        onClick={() => handleRemoveSubstitute(playerEmail)}
+                      >
+                        <PersonRemoveIcon />
+                      </IconButton>
+                    }
+                  >
+                    <ListItemText primary={getPlayerName(playerEmail)} />
+                  </ListItem>
+                ))}
+              </List>
+            </Paper>
           )}
-          
+
           <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
             Available Players
           </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {availableSubstitutes.map((player) => (
-              <Chip
-                key={player.email}
-                label={player.name}
-                onClick={() => handleAddSubstitute(player.email)}
-                icon={<PersonAddIcon />}
-                disabled={substitutes.length >= 10}
-                variant="outlined"
-                clickable
-                sx={{ mb: 1 }}
-              />
-            ))}
-          </Box>
+
+          {/* List of Available Players */}
+          {availableSubstitutes.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              No available players to add.
+            </Typography>
+          ) : (
+            <Paper variant="outlined">
+              <List disablePadding>
+                {availableSubstitutes.map((player) => (
+                  <ListItem
+                    key={player.email}
+                    secondaryAction={
+                      <IconButton
+                        edge="end"
+                        aria-label="add"
+                        onClick={() => handleAddSubstitute(player.email)}
+                        disabled={substitutes.length >= 10}
+                      >
+                        <PersonAddIcon />
+                      </IconButton>
+                    }
+                  >
+                    <ListItemText primary={player.name} />
+                  </ListItem>
+                ))}
+              </List>
+            </Paper>
+          )}
         </Paper>
 
+
         {/* Strategy Notes */}
-        <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+        <Paper elevation={2} sx={{
+          p: 3, borderRadius: 2,
+          backgroundColor: alpha(theme.palette.background.paper, 0.8),
+          backdropFilter: 'blur(12px)',
+          border: '1px solid',
+          borderColor: alpha(theme.palette.divider, 0.1),
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: theme.shadows[6],
+          },
+        }}>
           <Typography variant="h6" fontWeight={500} sx={{ mb: 2 }}>
             Strategy Notes
           </Typography>
@@ -567,13 +651,13 @@ export default function TeamLineups() {
           {/* Tool top but change the colour of the test to white */}
           <Tooltip title={!selectedMatch ? "Please select a match first" : ""} >
             <span>
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 size="large"
                 onClick={handleSaveMatchData}
                 disabled={!selectedMatch}
                 startIcon={<SaveIcon />}
-                sx={{ 
+                sx={{
                   mt: 3,
                   px: 4,
                   py: 1.5,

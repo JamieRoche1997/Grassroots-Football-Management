@@ -18,6 +18,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { createMembership } from '../../services/membership';
 import { getProfile, updateProfile } from '../../services/profile';
 import { getUser } from '../../services/authentication';
+import { addPlayerFCMToken } from '../../services/notifications';
 interface JoinRequest {
   id: string;
   playerEmail: string;
@@ -94,6 +95,7 @@ export default function TeamRequests() {
 
       await updateProfile(playerEmail, { clubName, ageGroup, division });
       await approveJoinRequest(playerEmail, clubName, ageGroup, division);
+      await addPlayerFCMToken(playerEmail, clubName, ageGroup, division);
       alert(`Player ${playerEmail} approved.`);
       setJoinRequests((prev) => prev.filter((req) => req.playerEmail !== playerEmail));
     } catch (error) {

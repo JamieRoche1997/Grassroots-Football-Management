@@ -263,3 +263,86 @@ export const deleteTraining = async (trainingId: string, clubName: string, ageGr
         throw error;
     }
 };
+
+export const updateFixtureAvailability = async (
+    matchId: string,
+    email: string,
+    clubName: string,
+    ageGroup: string,
+    division: string,
+    available: boolean
+  ) => {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${url}/schedule/fixture/availability`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ email, clubName, ageGroup, division, available, matchId }),
+    });
+    if (!res.ok) throw new Error("Failed to update availability");
+  };
+  
+
+  export const updateTrainingAvailability = async (
+    trainingId: string,
+    email: string,
+    clubName: string,
+    ageGroup: string,
+    division: string,
+    available: boolean
+  ) => {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${url}/schedule/training/availability`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ email, clubName, ageGroup, division, available, trainingId }),
+    });
+    if (!res.ok) throw new Error("Failed to update availability");
+  };
+  
+  export const fetchFixtureAvailability = async (
+    matchId: string,
+    clubName: string,
+    ageGroup: string,
+    division: string
+  ) => {
+    const headers = await getAuthHeaders();
+    const queryParams = new URLSearchParams({
+      matchId,
+      clubName,
+      ageGroup,
+      division,
+    }).toString();
+  
+    const res = await fetch(`${url}/schedule/fixture/availability?${queryParams}`, {
+      method: "GET",
+      headers,
+    });
+  
+    const data = await res.json();
+    return data.availability;
+  };
+  
+  export const fetchTrainingAvailability = async (
+    trainingId: string,
+    clubName: string,
+    ageGroup: string,
+    division: string
+  ) => {
+    const headers = await getAuthHeaders();
+    const queryParams = new URLSearchParams({
+      trainingId,
+      clubName,
+      ageGroup,
+      division,
+    }).toString();
+  
+    const res = await fetch(`${url}/schedule/training/availability?${queryParams}`, {
+      method: "GET",
+      headers,
+    });
+  
+    const data = await res.json();
+    return data.availability;
+  };
+  
+  

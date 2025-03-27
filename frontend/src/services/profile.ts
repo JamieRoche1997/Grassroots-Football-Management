@@ -53,9 +53,7 @@ export const getProfile = async (email: string): Promise<Partial<{
     division?: string;
     position?: string;
 }>> => {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${profileServiceUrl}/profile/${encodeURIComponent(email)}`,
-        { headers });
+    const response = await fetch(`${profileServiceUrl}/profile/${encodeURIComponent(email)}`);
     if (!response.ok) {
         throw new Error('Failed to fetch profile');
     }

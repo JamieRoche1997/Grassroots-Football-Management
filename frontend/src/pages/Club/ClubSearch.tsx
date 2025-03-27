@@ -131,7 +131,7 @@ export default function ClubSearch(props: { disableCustomTheme?: boolean }) {
                 return;
             }
             alert(`Join request sent to ${club} for Age Group: ${ageGroup} and Division: ${division}`);
-            navigate('/dashboard');
+            navigate('/permissions');
         } catch (error) {
             console.error('Error applying to join club:', error);
         }

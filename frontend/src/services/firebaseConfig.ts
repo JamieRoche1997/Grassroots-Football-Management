@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getMessaging, getToken } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAs6zkFlX6Ff_Y6yPzUeHGTTN0QsDhE21w",
@@ -16,3 +17,27 @@ const app = initializeApp(firebaseConfig);
 
 // Export Firebase services
 export const auth = getAuth(app);
+
+// Messaging (FCM)
+export const messaging = getMessaging(app);
+
+// Request notification permission and get token
+export const requestNotificationPermission = async (): Promise<string | null> => {
+  try {
+    const permission = await Notification.requestPermission();
+
+    if (permission === 'granted') {
+      const token = await getToken(messaging, {
+        vapidKey: "BIr3C03TtOqREssbKTPzNE8EYXdsNBNzSmGQzX65RfQrnrJRozU1bo7spWQU34P8Ha5bQh_ROaX_B9jZ21xO_80",
+      });
+
+      return token;
+    } else {
+      console.log("Notification permission denied.");
+    }
+  } catch (error) {
+    console.error("FCM permission error:", error);
+  }
+
+  return null;
+};

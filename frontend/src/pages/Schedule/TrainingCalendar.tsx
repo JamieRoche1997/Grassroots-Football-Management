@@ -13,6 +13,7 @@ import { SportsSoccer, Add } from '@mui/icons-material';
 import { styled, alpha, useTheme } from '@mui/material/styles';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useNavigate } from 'react-router-dom';
 
 // Styled Components - Same as Match Calendar
 const CalendarContainer = styled(Box)(({ theme }) => ({
@@ -67,6 +68,7 @@ export default function TrainingCalendar() {
     ageGroup: '',
     division: ''
   });
+  const navigate = useNavigate();
 
   const isCoach = role === 'coach';
 
@@ -213,6 +215,10 @@ export default function TrainingCalendar() {
             startAccessor="start"
             endAccessor="end"
             onNavigate={handleNavigate}
+            onSelectEvent={(event: TrainingEvent) =>
+              navigate(`/schedule/training/${event.trainingId}`, { state: { training: event } })
+            }
+            
             components={{
               event: ({ event }) => (
                 <Box sx={{ p: 0.5 }}>
@@ -235,12 +241,14 @@ export default function TrainingCalendar() {
           onClose={() => setOpenAddDialog(false)}
           maxWidth="sm"
           fullWidth
-          PaperProps={{
-            sx: {
-              borderRadius: 4,
-              bgcolor: alpha(theme.palette.background.paper, 0.9),
-              backdropFilter: 'blur(12px)',
-            }
+          slotProps={{
+            paper: {
+              sx: {
+                borderRadius: 4,
+                bgcolor: alpha(theme.palette.background.paper, 0.9),
+                backdropFilter: 'blur(12px)',
+              },
+            },
           }}
         >
           <DialogTitle sx={{ 
@@ -253,7 +261,6 @@ export default function TrainingCalendar() {
           <DialogContent sx={{ p: 3 }}>
             <Stack spacing={3} sx={{ mt: 1 }}>
               <TextField
-                label="Date & Time"
                 type="datetime-local"
                 fullWidth
                 value={newTraining.date}
@@ -268,8 +275,6 @@ export default function TrainingCalendar() {
               <TextField
                 label="Notes"
                 fullWidth
-                multiline
-                rows={3}
                 value={newTraining.notes}
                 onChange={(e) => setNewTraining({ ...newTraining, notes: e.target.value })}
               />

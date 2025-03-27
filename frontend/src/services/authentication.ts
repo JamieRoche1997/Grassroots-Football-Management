@@ -27,7 +27,6 @@ export const signUp = async (
         if (userExists) {
             // Fetch user document to check if they were pre-created by a coach
             const userData = await getProfile(email);
-            console.log("Membership data: ", userData);
 
             if (!userData) {
                 throw new Error('Failed to fetch user data.');
@@ -71,7 +70,6 @@ export const signUp = async (
                     clubName: clubName,
                     ageGroup: ageGroup,
                     division: division,
-                    dob: userData.dob || '',
                 });
 
                 return;
@@ -264,6 +262,7 @@ export const checkUserExists = async (email: string): Promise<boolean> => {
 
 export const updateUser = async (email: string, updates: Partial<{
     uid: string;
+    fcmToken: string;
 }>): Promise<void> => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${url}/auth/${encodeURIComponent(email)}`, {
@@ -315,6 +314,8 @@ export const createUserPre = async (email: string, uid: string, role: string): P
 export const getUser = async (email: string): Promise<Partial<{ 
     email: string;
     uid: string;
+    role: string;
+    fcmToken: string;
 }>> => {
     const response = await fetch(`${url}/auth/${encodeURIComponent(email)}`);
     if (!response.ok) {

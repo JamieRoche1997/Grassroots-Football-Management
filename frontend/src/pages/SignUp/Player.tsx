@@ -15,6 +15,7 @@ import { styled } from '@mui/material/styles';
 import AppTheme from '../../components/shared-theme/AppTheme';
 import ColorModeSelect from '../../components/shared-theme/ColorModeSelect';
 import { getProfile, updateProfile } from '../../services/profile';
+import { updateMembership } from '../../services/membership';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -94,7 +95,14 @@ export default function PlayerRegistration(props: { disableCustomTheme?: boolean
 
       if (membershipInfo.clubName && membershipInfo.ageGroup && membershipInfo.division) {
         // If user already belongs to a club, skip club search
-        navigate('/dashboard');
+        await updateMembership({
+          email,
+          clubName: membershipInfo.clubName,
+          ageGroup: membershipInfo.ageGroup,
+          division: membershipInfo.division,
+          dob: membershipInfo.dob,
+        });
+        navigate('/permissions');
       } else {
         // If no club assigned, go to club search
         navigate('/club-search');

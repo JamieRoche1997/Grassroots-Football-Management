@@ -146,7 +146,7 @@ export default function Coach(props: { disableCustomTheme?: boolean }) {
 
             console.log('Club created or joined successfully.');
 
-            navigate('/dashboard');
+            navigate('/permissions');
         } catch (error) {
             console.error('Error during profile update:', error);
         }

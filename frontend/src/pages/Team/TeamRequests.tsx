@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   Button,
   Typography,
@@ -9,16 +9,20 @@ import {
   TableRow,
   TableCell,
   Paper,
-} from '@mui/material';
-import { getJoinRequests, approveJoinRequest, rejectJoinRequest } from '../../services/team_management';
-import Layout from '../../components/Layout';
-import Header from '../../components/Header';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import { useAuth } from '../../hooks/useAuth';
-import { createMembership } from '../../services/membership';
-import { getProfile, updateProfile } from '../../services/profile';
-import { getUser } from '../../services/authentication';
-import { addPlayerFCMToken } from '../../services/notifications';
+} from "@mui/material";
+import {
+  getJoinRequests,
+  approveJoinRequest,
+  rejectJoinRequest,
+} from "../../services/team_management";
+import Layout from "../../components/Layout";
+import Header from "../../components/Header";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import { useAuth } from "../../hooks/useAuth";
+import { createMembership } from "../../services/membership";
+import { getProfile, updateProfile } from "../../services/profile";
+import { getUser } from "../../services/authentication";
+import { addPlayerFCMToken } from "../../services/notifications";
 interface JoinRequest {
   id: string;
   playerEmail: string;
@@ -41,7 +45,7 @@ export default function TeamRequests() {
       if (authLoading) return;
 
       if (!clubName || !ageGroup || !division) {
-        setError('Club information is incomplete.');
+        setError("Club information is incomplete.");
         setLoading(false);
         return;
       }
@@ -59,8 +63,8 @@ export default function TeamRequests() {
         );
         setError(null);
       } catch (error) {
-        console.error('Error fetching join requests:', error);
-        setError('Failed to load join requests. Please try again later.');
+        console.error("Error fetching join requests:", error);
+        setError("Failed to load join requests. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -75,31 +79,32 @@ export default function TeamRequests() {
     if (!clubName || !ageGroup || !division) return;
 
     try {
-
       const profile = await getProfile(playerEmail);
       const user = await getUser(playerEmail);
       const position = profile.position;
 
       await createMembership({
         email: playerEmail,
-        name: profile.name || '', // Add appropriate value for name
-        dob: profile.dob || '', // Add appropriate value for dob
-        uid: user.uid || '', // Add appropriate value for uid
+        name: profile.name || "", 
+        dob: profile.dob || "", 
+        uid: user.uid || "", 
         clubName: clubName,
         ageGroup: ageGroup,
         division: division,
-        role: 'player',
-        position: position || '', // Ensure position is a string
-        userRegistered: true // Set to true or false based on your logic
+        role: "player",
+        position: position || "", 
+        userRegistered: true, 
       });
 
       await updateProfile(playerEmail, { clubName, ageGroup, division });
       await approveJoinRequest(playerEmail, clubName, ageGroup, division);
       await addPlayerFCMToken(playerEmail, clubName, ageGroup, division);
       alert(`Player ${playerEmail} approved.`);
-      setJoinRequests((prev) => prev.filter((req) => req.playerEmail !== playerEmail));
+      setJoinRequests((prev) =>
+        prev.filter((req) => req.playerEmail !== playerEmail)
+      );
     } catch (error) {
-      console.error('Error approving request:', error);
+      console.error("Error approving request:", error);
     }
   };
 
@@ -109,9 +114,11 @@ export default function TeamRequests() {
     try {
       await rejectJoinRequest(playerEmail, clubName, ageGroup, division);
       alert(`Player ${playerEmail} rejected.`);
-      setJoinRequests((prev) => prev.filter((req) => req.playerEmail !== playerEmail));
+      setJoinRequests((prev) =>
+        prev.filter((req) => req.playerEmail !== playerEmail)
+      );
     } catch (error) {
-      console.error('Error rejecting request:', error);
+      console.error("Error rejecting request:", error);
     }
   };
 
@@ -129,7 +136,9 @@ export default function TeamRequests() {
       <Layout>
         <Header />
         <Box sx={{ p: 3 }}>
-          <Typography color="error" variant="h6">{error}</Typography>
+          <Typography color="error" variant="h6">
+            {error}
+          </Typography>
         </Box>
       </Layout>
     );
@@ -143,7 +152,7 @@ export default function TeamRequests() {
           Player Requests
         </Typography>
 
-        <Paper sx={{ width: '100%', overflow: 'hidden', mt: 3 }}>
+        <Paper sx={{ width: "100%", overflow: "hidden", mt: 3 }}>
           <Table>
             <TableHead>
               <TableRow>

@@ -11,13 +11,13 @@ import {
   Avatar,
   Divider,
   Skeleton,
-  useTheme
+  useTheme,
 } from "@mui/material";
 import {
   CheckCircleOutline as AvailableIcon,
   CancelOutlined as UnavailableIcon,
   CalendarToday as DateIcon,
-  SportsSoccer as TeamIcon
+  SportsSoccer as TeamIcon,
 } from "@mui/icons-material";
 import Layout from "../../components/Layout";
 import Header from "../../components/Header";
@@ -37,7 +37,7 @@ interface Match {
 interface AvailabilityEntry {
   email: string;
   available: boolean;
-  avatar?: string; // Optional avatar URL if available in your data
+  avatar?: string;
 }
 
 export default function MatchDetails() {
@@ -52,7 +52,7 @@ export default function MatchDetails() {
 
   const loadAvailability = useCallback(async () => {
     if (!matchId || !clubName || !ageGroup || !division) return;
-    
+
     setIsLoading(true);
     try {
       const data = await fetchFixtureAvailability(
@@ -71,7 +71,7 @@ export default function MatchDetails() {
 
   const handleRSVP = async (isAvailable: boolean) => {
     if (!user?.email || !matchId || !clubName || !ageGroup || !division) return;
-    
+
     setIsSubmitting(true);
     try {
       await updateFixtureAvailability(
@@ -97,25 +97,25 @@ export default function MatchDetails() {
   const availablePlayers = availability.filter((a) => a.available);
   const unavailablePlayers = availability.filter((a) => !a.available);
 
-  const renderPlayerList = (players: AvailabilityEntry[], emptyMessage: string) => {
+  const renderPlayerList = (
+    players: AvailabilityEntry[],
+    emptyMessage: string
+  ) => {
     if (isLoading) {
-      return Array(3).fill(0).map((_, idx) => (
-        <Skeleton key={idx} variant="text" width="60%" sx={{ my: 0.5 }} />
-      ));
+      return Array(3)
+        .fill(0)
+        .map((_, idx) => (
+          <Skeleton key={idx} variant="text" width="60%" sx={{ my: 0.5 }} />
+        ));
     }
 
     return players.length > 0 ? (
       players.map((player) => (
         <Box key={player.email} display="flex" alignItems="center" py={1}>
-          <Avatar 
-            src={player.avatar} 
-            sx={{ width: 32, height: 32, mr: 2 }}
-          >
+          <Avatar src={player.avatar} sx={{ width: 32, height: 32, mr: 2 }}>
             {player.email.charAt(0).toUpperCase()}
           </Avatar>
-          <Typography variant="body1">
-            {player.email}
-          </Typography>
+          <Typography variant="body1">{player.email}</Typography>
         </Box>
       ))
     ) : (
@@ -128,20 +128,22 @@ export default function MatchDetails() {
   return (
     <Layout>
       <Header />
-      
-      <Box sx={{ 
-        maxWidth: 1000, 
-        mx: "auto", 
-        px: { xs: 2, md: 4 }, 
-        py: 4 
-      }}>
+
+      <Box
+        sx={{
+          maxWidth: 1000,
+          mx: "auto",
+          px: { xs: 2, md: 4 },
+          py: 4,
+        }}
+      >
         {/* Match Details Section */}
         {match && (
           <Card sx={{ mb: 4, boxShadow: theme.shadows[3] }}>
             <CardContent>
-              <Typography 
-                variant="h5" 
-                fontWeight={600} 
+              <Typography
+                variant="h5"
+                fontWeight={600}
                 gutterBottom
                 display="flex"
                 alignItems="center"
@@ -149,7 +151,7 @@ export default function MatchDetails() {
                 <DateIcon color="primary" sx={{ mr: 1 }} />
                 Match Details
               </Typography>
-              
+
               <Stack spacing={1.5} mt={2}>
                 <Box display="flex" alignItems="center">
                   <Chip
@@ -162,7 +164,7 @@ export default function MatchDetails() {
                     sx={{ mr: 2 }}
                   />
                 </Box>
-                
+
                 <Box display="flex" alignItems="center" flexWrap="wrap" gap={2}>
                   <Chip
                     label={`Home: ${match.homeTeam}`}
@@ -186,7 +188,7 @@ export default function MatchDetails() {
         <Typography variant="h6" fontWeight={600} mb={2}>
           Mark Your Availability
         </Typography>
-        
+
         <Stack direction="row" spacing={2} mb={4}>
           <Button
             variant="contained"
@@ -195,11 +197,11 @@ export default function MatchDetails() {
             startIcon={<AvailableIcon />}
             onClick={() => handleRSVP(true)}
             disabled={isSubmitting || isLoading}
-            sx={{ 
+            sx={{
               flex: 1,
               py: 1.5,
               fontWeight: 600,
-              borderRadius: 2
+              borderRadius: 2,
             }}
           >
             I'm Available
@@ -211,11 +213,11 @@ export default function MatchDetails() {
             startIcon={<UnavailableIcon />}
             onClick={() => handleRSVP(false)}
             disabled={isSubmitting || isLoading}
-            sx={{ 
+            sx={{
               flex: 1,
               py: 1.5,
               fontWeight: 600,
-              borderRadius: 2
+              borderRadius: 2,
             }}
           >
             Not Available
@@ -226,8 +228,8 @@ export default function MatchDetails() {
         <Box display="grid" gridTemplateColumns={{ md: "1fr 1fr" }} gap={4}>
           <Card elevation={3} sx={{ borderRadius: 2 }}>
             <CardContent>
-              <Typography 
-                variant="h6" 
+              <Typography
+                variant="h6"
                 gutterBottom
                 display="flex"
                 alignItems="center"
@@ -236,20 +238,17 @@ export default function MatchDetails() {
                 <AvailableIcon color="success" sx={{ mr: 1 }} />
                 Available Players ({availablePlayers.length})
               </Typography>
-              
+
               <Divider sx={{ my: 2 }} />
-              
-              {renderPlayerList(
-                availablePlayers, 
-                "No players available yet."
-              )}
+
+              {renderPlayerList(availablePlayers, "No players available yet.")}
             </CardContent>
           </Card>
 
           <Card elevation={3} sx={{ borderRadius: 2 }}>
             <CardContent>
-              <Typography 
-                variant="h6" 
+              <Typography
+                variant="h6"
                 gutterBottom
                 display="flex"
                 alignItems="center"
@@ -258,11 +257,11 @@ export default function MatchDetails() {
                 <UnavailableIcon color="error" sx={{ mr: 1 }} />
                 Unavailable Players ({unavailablePlayers.length})
               </Typography>
-              
+
               <Divider sx={{ my: 2 }} />
-              
+
               {renderPlayerList(
-                unavailablePlayers, 
+                unavailablePlayers,
                 "No players marked as unavailable."
               )}
             </CardContent>

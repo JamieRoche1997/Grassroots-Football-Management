@@ -120,7 +120,7 @@ export default function MatchesCalendar() {
           matchId: match.matchId,
           homeTeam: match.homeTeam,
           awayTeam: match.awayTeam,
-          isHomeGame: match.homeTeam === clubName, // Add this to identify home/away
+          isHomeGame: match.homeTeam === clubName,
         }));
         setEvents(formattedEvents);
         setError(null);
@@ -261,9 +261,10 @@ export default function MatchesCalendar() {
             endAccessor="end"
             onNavigate={handleNavigate}
             onSelectEvent={(event: MatchEvent) =>
-              navigate(`/schedule/matches/${event.matchId}`, { state: { match: event } })
+              navigate(`/schedule/matches/${event.matchId}`, {
+                state: { match: event },
+              })
             }
-            
             components={{
               event: ({ event }) => (
                 <Box sx={{ p: 0.5 }}>

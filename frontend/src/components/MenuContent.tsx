@@ -38,10 +38,30 @@ const allMenuItems = [
     icon: <PeopleRoundedIcon />,
     roles: ["coach", "player", "parent"], // All can access the team, but sub-items are restricted
     subItems: [
-      { text: "player Requests", icon: <AssignmentIndIcon />, path: "/team/requests", roles: ["coach"] },
-      { text: "Squad", icon: <GroupIcon />, path: "/team/squad", roles: ["coach", "player", "parent"] },
-      { text: "Lineups", icon: <SportsSoccerIcon />, path: "/team/lineups", roles: ["coach"] },
-      { text: "Results", icon: <SportsScoreIcon />, path: "/team/results", roles: ["coach", "player", "parent"] },
+      {
+        text: "player Requests",
+        icon: <AssignmentIndIcon />,
+        path: "/team/requests",
+        roles: ["coach"],
+      },
+      {
+        text: "Squad",
+        icon: <GroupIcon />,
+        path: "/team/squad",
+        roles: ["coach", "player", "parent"],
+      },
+      {
+        text: "Lineups",
+        icon: <SportsSoccerIcon />,
+        path: "/team/lineups",
+        roles: ["coach"],
+      },
+      {
+        text: "Results",
+        icon: <SportsScoreIcon />,
+        path: "/team/results",
+        roles: ["coach", "player", "parent"],
+      },
     ],
   },
   {
@@ -49,9 +69,24 @@ const allMenuItems = [
     icon: <CalendarMonthIcon />,
     roles: ["coach", "player", "parent"],
     subItems: [
-      { text: "Overview", icon: <HomeRoundedIcon />, path: "/schedule", roles: ["coach", "player", "parent"] },
-      { text: "Matches", icon: <AssignmentIndIcon />, path: "/schedule/matches", roles: ["coach", "player", "parent"] },
-      { text: "Training", icon: <GroupIcon />, path: "/schedule/training", roles: ["coach", "player", "parent"] },
+      {
+        text: "Overview",
+        icon: <HomeRoundedIcon />,
+        path: "/schedule",
+        roles: ["coach", "player", "parent"],
+      },
+      {
+        text: "Matches",
+        icon: <AssignmentIndIcon />,
+        path: "/schedule/matches",
+        roles: ["coach", "player", "parent"],
+      },
+      {
+        text: "Training",
+        icon: <GroupIcon />,
+        path: "/schedule/training",
+        roles: ["coach", "player", "parent"],
+      },
     ],
   },
   {
@@ -59,7 +94,12 @@ const allMenuItems = [
     icon: <StarIcon />,
     roles: ["coach", "player", "parent"],
     subItems: [
-      { text: "player Ratings", icon: <AssignmentIndIcon />, path: "/ratings/players", roles: ["coach", "player", "parent"] },
+      {
+        text: "player Ratings",
+        icon: <AssignmentIndIcon />,
+        path: "/ratings/players",
+        roles: ["coach", "player", "parent"],
+      },
     ],
   },
   {
@@ -67,8 +107,18 @@ const allMenuItems = [
     icon: <LocalTaxiIcon />,
     roles: ["coach", "player", "parent"],
     subItems: [
-      { text: "Overview", icon: <HomeRoundedIcon />, path: "/carpool", roles: ["coach", "player", "parent"] },
-      { text: "Drivers", icon: <AssignmentIndIcon />, path: "/carpool/drivers", roles: ["coach", "player", "parent"] },
+      {
+        text: "Overview",
+        icon: <HomeRoundedIcon />,
+        path: "/carpool",
+        roles: ["coach", "player", "parent"],
+      },
+      {
+        text: "Drivers",
+        icon: <AssignmentIndIcon />,
+        path: "/carpool/drivers",
+        roles: ["coach", "player", "parent"],
+      },
     ],
   },
   {
@@ -76,10 +126,30 @@ const allMenuItems = [
     icon: <PaymentIcon />,
     roles: ["coach", "player", "parent"], // Only coaches can access Payments
     subItems: [
-      { text: "Overview", icon: <HomeRoundedIcon />, path: "/payments", roles: ["coach"] },
-      { text: "Products", icon: <AssignmentIndIcon />, path: "/payments/products", roles: ["coach"] },
-      { text: "Shop", icon: <EuroIcon />, path: "/payments/shop", roles: ["coach", "player", "parent"] },
-      { text: "Transactions", icon: <ReceiptIcon />, path: "/payments/transactions", roles: ["coach"] },
+      {
+        text: "Overview",
+        icon: <HomeRoundedIcon />,
+        path: "/payments",
+        roles: ["coach"],
+      },
+      {
+        text: "Products",
+        icon: <AssignmentIndIcon />,
+        path: "/payments/products",
+        roles: ["coach"],
+      },
+      {
+        text: "Shop",
+        icon: <EuroIcon />,
+        path: "/payments/shop",
+        roles: ["coach", "player", "parent"],
+      },
+      {
+        text: "Transactions",
+        icon: <ReceiptIcon />,
+        path: "/payments/transactions",
+        roles: ["coach"],
+      },
     ],
   },
 ];
@@ -88,11 +158,13 @@ export default function MenuContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const { role } = useAuth();
-  const [openSections, setOpenSections] = React.useState<{ [key: string]: boolean }>({});
+  const [openSections, setOpenSections] = React.useState<{
+    [key: string]: boolean;
+  }>({});
 
   // Capitalize words function
   const capitalizeWords = (text: string) => {
-    return text.replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalize first letter of each word
+    return text.replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalise first letter of each word
   };
 
   // Function to filter menu items based on user role
@@ -102,7 +174,9 @@ export default function MenuContent() {
       .filter((item) => item.roles.includes(role)) // Filter top-level items
       .map((item) => ({
         ...item,
-        subItems: item.subItems?.filter((subItem) => subItem.roles.includes(role)), // Filter sub-items
+        subItems: item.subItems?.filter((subItem) =>
+          subItem.roles.includes(role)
+        ), // Filter sub-items
       }));
   };
 
@@ -111,7 +185,11 @@ export default function MenuContent() {
   React.useEffect(() => {
     const expandedSections: { [key: string]: boolean } = {};
     filteredMenuItems.forEach((item) => {
-      if (item.subItems?.some((subItem) => location.pathname.startsWith(subItem.path))) {
+      if (
+        item.subItems?.some((subItem) =>
+          location.pathname.startsWith(subItem.path)
+        )
+      ) {
         expandedSections[item.text] = true; // Expand the section with matching sub-items
       }
     });
@@ -133,16 +211,24 @@ export default function MenuContent() {
             <ListItem disablePadding>
               <ListItemButton
                 sx={{ px: 2, py: 1.5, borderRadius: 1, minHeight: 48 }}
-                onClick={() => (item.subItems ? handleToggle(item.text) : navigate(item.path!))}
+                onClick={() =>
+                  item.subItems ? handleToggle(item.text) : navigate(item.path!)
+                }
                 selected={location.pathname === item.path}
               >
                 <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={capitalizeWords(item.text)} /> {/* Ensure capitalization */}
-                {item.subItems && (openSections[item.text] ? <ExpandLess /> : <ExpandMore />)}
+                <ListItemText primary={capitalizeWords(item.text)} />{" "}
+                {/* Ensure capitalization */}
+                {item.subItems &&
+                  (openSections[item.text] ? <ExpandLess /> : <ExpandMore />)}
               </ListItemButton>
             </ListItem>
             {item.subItems && (
-              <Collapse in={openSections[item.text]} timeout="auto" unmountOnExit>
+              <Collapse
+                in={openSections[item.text]}
+                timeout="auto"
+                unmountOnExit
+              >
                 <List component="div" disablePadding>
                   {item.subItems.map((subItem, subIndex) => (
                     <ListItemButton
@@ -151,7 +237,10 @@ export default function MenuContent() {
                       selected={location.pathname === subItem.path}
                     >
                       <ListItemIcon>{subItem.icon}</ListItemIcon>
-                      <ListItemText primary={capitalizeWords(subItem.text)} /> {/* Ensure capitalization */}
+                      <ListItemText
+                        primary={capitalizeWords(subItem.text)}
+                      />{" "}
+                      {/* Ensure capitalization */}
                     </ListItemButton>
                   ))}
                 </List>

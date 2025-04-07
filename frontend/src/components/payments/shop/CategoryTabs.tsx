@@ -14,7 +14,10 @@ const categories = [
   { label: "Other", value: "other" },
 ];
 
-export default function CategoryTabs({ selectedCategory, setSelectedCategory }: CategoryTabsProps) {
+export default function CategoryTabs({
+  selectedCategory,
+  setSelectedCategory,
+}: CategoryTabsProps) {
   return (
     <Box sx={{ mb: 3 }}>
       <Tabs
@@ -26,7 +29,11 @@ export default function CategoryTabs({ selectedCategory, setSelectedCategory }: 
         sx={{ borderBottom: 1, borderColor: "divider" }}
       >
         {categories.map((category) => (
-          <Tab key={category.value} label={category.label} value={category.value} />
+          <Tab
+            key={category.value}
+            label={category.label}
+            value={category.value}
+          />
         ))}
       </Tabs>
     </Box>

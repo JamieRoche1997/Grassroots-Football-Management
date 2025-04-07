@@ -1,14 +1,18 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '../services/firebaseConfig';
-import { getProfile } from '../services/profile';
-import { AuthContext, AuthContextType } from './AuthContextObject';
+import React, { useEffect, useState, useCallback } from "react";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { auth } from "../services/firebaseConfig";
+import { getProfile } from "../services/profile";
+import { AuthContext, AuthContextType } from "./AuthContextObject";
 
 // AuthProvider component
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userData, setUserDataState] = useState<Omit<AuthContextType, 'user' | 'loading'>>({
+  const [userData, setUserDataState] = useState<
+    Omit<AuthContextType, "user" | "loading">
+  >({
     uid: null,
     email: null,
     name: null,
@@ -39,11 +43,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const email = currentUser.email;
           if (email) {
             const idTokenResult = await currentUser.getIdTokenResult();
-            const role = typeof idTokenResult.claims.role === 'string' ? idTokenResult.claims.role : null;
-            console.log('User role:', role);
-            console.log('ID token result:', idTokenResult);
+            const role =
+              typeof idTokenResult.claims.role === "string"
+                ? idTokenResult.claims.role
+                : null;
 
-            const { clubName, ageGroup, division} = await getProfile(email);
+            const { clubName, ageGroup, division } = await getProfile(email);
             const { name } = await getProfile(currentUser.email);
             setUserData({
               name,
@@ -57,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
           }
         } catch (error) {
-          console.error('Error retrieving user data:', error);
+          console.error("Error retrieving user data:", error);
         }
       } else {
         setUser(null);
@@ -76,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => unsubscribe();
-  }, [setUserData]); // ✅ Remove `user` from the dependency array
+  }, [setUserData]); 
 
   return (
     <AuthContext.Provider value={{ user, loading, ...userData, setUserData }}>

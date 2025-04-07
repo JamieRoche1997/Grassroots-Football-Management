@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Product } from '../pages/Payments/Shop';
+import { useState, useEffect, useCallback } from "react";
+import { Product } from "../pages/Payments/Shop";
 
 interface CartItem {
   product: Product;
@@ -9,15 +9,14 @@ interface CartItem {
 export function useCart() {
   const [cart, setCart] = useState<CartItem[]>(() => {
     // Attempt to load from localStorage at init
-    const storedCart = typeof window !== 'undefined'
-      ? localStorage.getItem('SHOP_CART')
-      : null;
+    const storedCart =
+      typeof window !== "undefined" ? localStorage.getItem("SHOP_CART") : null;
     return storedCart ? JSON.parse(storedCart) : [];
   });
 
   // Persist cart in localStorage every time it changes
   useEffect(() => {
-    localStorage.setItem('SHOP_CART', JSON.stringify(cart));
+    localStorage.setItem("SHOP_CART", JSON.stringify(cart));
   }, [cart]);
 
   const addToCart = (product: Product) => {
@@ -56,9 +55,9 @@ export function useCart() {
   };
 
   const clearCart = useCallback(() => {
-    setCart([]); // ✅ Clear cart state
-    localStorage.removeItem("SHOP_CART"); // ✅ Remove from localStorage
-  }, []); // ✅ Memoized to prevent re-creation
+    setCart([]); // Clear cart state
+    localStorage.removeItem("SHOP_CART"); // Remove from localStorage
+  }, []); // Memoized to prevent re-creation
 
   const getTotalPrice = (): string => {
     const total = cart.reduce((acc, item) => {
@@ -78,6 +77,6 @@ export function useCart() {
     removeItemCompletely,
     clearCart,
     getTotalPrice,
-    getTotalItems
+    getTotalItems,
   };
 }

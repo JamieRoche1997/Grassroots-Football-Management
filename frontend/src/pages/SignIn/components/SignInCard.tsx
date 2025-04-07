@@ -1,45 +1,49 @@
-import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import MuiCard from '@mui/material/Card';
-import Checkbox from '@mui/material/Checkbox';
-import Divider from '@mui/material/Divider';
-import FormLabel from '@mui/material/FormLabel';
-import FormControl from '@mui/material/FormControl';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Link from '@mui/material/Link';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import { styled } from '@mui/material/styles';
-import ForgotPassword from './ForgotPassword';
-import { GoogleIcon } from './CustomIcons';
-import { signIn, verifyIdToken, signInWithGoogle } from '../../../services/authentication';
+import * as React from "react";
+import { useNavigate } from "react-router-dom";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import MuiCard from "@mui/material/Card";
+import Checkbox from "@mui/material/Checkbox";
+import Divider from "@mui/material/Divider";
+import FormLabel from "@mui/material/FormLabel";
+import FormControl from "@mui/material/FormControl";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Link from "@mui/material/Link";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import { styled } from "@mui/material/styles";
+import ForgotPassword from "./ForgotPassword";
+import { GoogleIcon } from "./CustomIcons";
+import {
+  signIn,
+  verifyIdToken,
+  signInWithGoogle,
+} from "../../../services/authentication";
 
 const Card = styled(MuiCard)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignSelf: 'center',
-  width: '100%',
+  display: "flex",
+  flexDirection: "column",
+  alignSelf: "center",
+  width: "100%",
   padding: theme.spacing(4),
   gap: theme.spacing(2),
   boxShadow:
-    'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
-  [theme.breakpoints.up('sm')]: {
-    width: '450px',
+    "hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px",
+  [theme.breakpoints.up("sm")]: {
+    width: "450px",
   },
-  ...theme.applyStyles('dark', {
+  ...theme.applyStyles("dark", {
     boxShadow:
-      'hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px',
+      "hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px",
   }),
 }));
 
 export default function SignInCard() {
   const navigate = useNavigate();
   const [emailError, setEmailError] = React.useState(false);
-  const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
+  const [emailErrorMessage, setEmailErrorMessage] = React.useState("");
   const [passwordError, setPasswordError] = React.useState(false);
-  const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
+  const [passwordErrorMessage, setPasswordErrorMessage] = React.useState("");
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -51,27 +55,27 @@ export default function SignInCard() {
   };
 
   const validateInputs = () => {
-    const email = document.getElementById('email') as HTMLInputElement;
-    const password = document.getElementById('password') as HTMLInputElement;
+    const email = document.getElementById("email") as HTMLInputElement;
+    const password = document.getElementById("password") as HTMLInputElement;
 
     let isValid = true;
 
     if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
       setEmailError(true);
-      setEmailErrorMessage('Please enter a valid email address.');
+      setEmailErrorMessage("Please enter a valid email address.");
       isValid = false;
     } else {
       setEmailError(false);
-      setEmailErrorMessage('');
+      setEmailErrorMessage("");
     }
 
     if (!password.value || password.value.length < 6) {
       setPasswordError(true);
-      setPasswordErrorMessage('Password must be at least 6 characters long.');
+      setPasswordErrorMessage("Password must be at least 6 characters long.");
       isValid = false;
     } else {
       setPasswordError(false);
-      setPasswordErrorMessage('');
+      setPasswordErrorMessage("");
     }
 
     return isValid;
@@ -85,8 +89,8 @@ export default function SignInCard() {
     }
 
     const data = new FormData(event.currentTarget);
-    const email = data.get('email') as string;
-    const password = data.get('password') as string;
+    const email = data.get("email") as string;
+    const password = data.get("password") as string;
 
     try {
       // Step 1: Sign in the user and get the ID token
@@ -96,14 +100,17 @@ export default function SignInCard() {
       await verifyIdToken(idToken);
 
       // Step 3: Redirect the user to the dashboard or home page
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (error) {
-      console.error('Sign-in error:', error);
+      console.error("Sign-in error:", error);
       const firebaseError = error as { code: string };
-      if (firebaseError.code === 'auth/user-not-found' || firebaseError.code === 'auth/wrong-password') {
-        alert('Invalid email or password.');
+      if (
+        firebaseError.code === "auth/user-not-found" ||
+        firebaseError.code === "auth/wrong-password"
+      ) {
+        alert("Invalid email or password.");
       } else {
-        alert('Sign-in failed. Please try again.');
+        alert("Sign-in failed. Please try again.");
       }
     }
   };
@@ -113,18 +120,17 @@ export default function SignInCard() {
       await signInWithGoogle();
       navigate(`/dashboard`);
     } catch (error) {
-      console.error('Error during Google Sign-In:', error);
+      console.error("Error during Google Sign-In:", error);
     }
   };
 
   return (
     <Card variant="outlined">
-      <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-      </Box>
+      <Box sx={{ display: { xs: "flex", md: "none" } }}></Box>
       <Typography
         component="h1"
         variant="h4"
-        sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
+        sx={{ width: "100%", fontSize: "clamp(2rem, 10vw, 2.15rem)" }}
       >
         Sign in
       </Typography>
@@ -132,7 +138,7 @@ export default function SignInCard() {
         component="form"
         onSubmit={handleSubmit} // Attach handleSubmit to form onSubmit
         noValidate
-        sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 2 }}
+        sx={{ display: "flex", flexDirection: "column", width: "100%", gap: 2 }}
       >
         <FormControl>
           <FormLabel htmlFor="email">Email</FormLabel>
@@ -147,18 +153,18 @@ export default function SignInCard() {
             required
             fullWidth
             variant="outlined"
-            color={emailError ? 'error' : 'primary'}
+            color={emailError ? "error" : "primary"}
           />
         </FormControl>
         <FormControl>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <FormLabel htmlFor="password">Password</FormLabel>
             <Link
               component="button"
               type="button"
               onClick={handleClickOpen}
               variant="body2"
-              sx={{ alignSelf: 'baseline' }}
+              sx={{ alignSelf: "baseline" }}
             >
               Forgot your password?
             </Link>
@@ -173,7 +179,7 @@ export default function SignInCard() {
             required
             fullWidth
             variant="outlined"
-            color={passwordError ? 'error' : 'primary'}
+            color={passwordError ? "error" : "primary"}
           />
         </FormControl>
         <FormControlLabel
@@ -184,13 +190,13 @@ export default function SignInCard() {
         <Button type="submit" fullWidth variant="contained">
           Sign in
         </Button>
-        <Typography sx={{ textAlign: 'center' }}>
-          Don&apos;t have an account?{' '}
+        <Typography sx={{ textAlign: "center" }}>
+          Don&apos;t have an account?{" "}
           <span>
             <Link
               href="/material-ui/getting-started/templates/sign-in/"
               variant="body2"
-              sx={{ alignSelf: 'center' }}
+              sx={{ alignSelf: "center" }}
             >
               Sign up
             </Link>
@@ -198,7 +204,7 @@ export default function SignInCard() {
         </Typography>
       </Box>
       <Divider>or</Divider>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <Button
           fullWidth
           variant="outlined"

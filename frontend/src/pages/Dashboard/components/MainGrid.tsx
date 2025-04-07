@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react';
-import Divider from '@mui/material/Divider';
-import { Grid2 as Grid } from '@mui/material';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import StatCard, { StatCardProps } from '../../../components/StatCard';
-import PlayerStatCard, { PlayerStatCardProps } from '../../../components/PlayerStatCard';
-import CalendarView from './CalendarView';
-import { getJoinRequests } from '../../../services/team_management';
-import { listAllPlayerStats } from '../../../services/player_stats'; // New API call
-import { useAuth } from '../../../hooks/useAuth';
+import { useEffect, useState } from "react";
+import Divider from "@mui/material/Divider";
+import { Grid2 as Grid } from "@mui/material";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import StatCard, { StatCardProps } from "../../../components/StatCard";
+import PlayerStatCard, {
+  PlayerStatCardProps,
+} from "../../../components/PlayerStatCard";
+import CalendarView from "./CalendarView";
+import { getJoinRequests } from "../../../services/team_management";
+import { listAllPlayerStats } from "../../../services/player_stats"; // New API call
+import { useAuth } from "../../../hooks/useAuth";
 
 export default function MainGrid() {
   const { clubName, ageGroup, division } = useAuth();
@@ -19,7 +21,6 @@ export default function MainGrid() {
   useEffect(() => {
     const loadStats = async () => {
       if (!clubName || !ageGroup || !division) {
-        console.log('Waiting for club data...');
         return;
       }
 
@@ -32,25 +33,28 @@ export default function MainGrid() {
           listAllPlayerStats(clubName, ageGroup, division),
         ]);
 
-        console.log('Pending Join Requests:', pendingRequests);
-        console.log('Player Stats:', playerStats);
-
         setOverviewData([
-          { title: 'Pending Join Requests', value: `${pendingRequests.length}`, interval: 'New' },
+          {
+            title: "Pending Join Requests",
+            value: `${pendingRequests.length}`,
+            interval: "New",
+          },
         ]);
 
         // Process Players for Player Performance section
-        const playerData: PlayerStatCardProps[] = playerStats.allPlayers.map((player) => ({
-          playerName: player.playerName || 'Unknown Player',
-          goals: player.goals ?? 0,
-          assists: player.assists ?? 0,
-          yellowCards: player.yellowCards ?? 0,
-          redCards: player.redCards ?? 0,
-        }));
+        const playerData: PlayerStatCardProps[] = playerStats.allPlayers.map(
+          (player) => ({
+            playerName: player.playerName || "Unknown Player",
+            goals: player.goals ?? 0,
+            assists: player.assists ?? 0,
+            yellowCards: player.yellowCards ?? 0,
+            redCards: player.redCards ?? 0,
+          })
+        );
 
         setPlayers(playerData);
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        console.error("Error fetching stats:", error);
       } finally {
         setLoading(false);
       }
@@ -60,7 +64,7 @@ export default function MainGrid() {
   }, [clubName, ageGroup, division]);
 
   return (
-    <Box sx={{ width: '100%', maxWidth: { sm: '100%', md: '1700px' } }}>
+    <Box sx={{ width: "100%", maxWidth: { sm: "100%", md: "1700px" } }}>
       {/* Calendar Section */}
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
         Calendar
@@ -77,7 +81,12 @@ export default function MainGrid() {
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
         Player Performance
       </Typography>
-      <Grid container spacing={2} columns={12} sx={{ mb: (theme) => theme.spacing(2) }}>
+      <Grid
+        container
+        spacing={2}
+        columns={12}
+        sx={{ mb: (theme) => theme.spacing(2) }}
+      >
         {loading ? (
           <Typography>Loading...</Typography>
         ) : (
@@ -89,11 +98,15 @@ export default function MainGrid() {
         )}
       </Grid>
 
-
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
         Join Requests
       </Typography>
-      <Grid container spacing={2} columns={12} sx={{ mb: (theme) => theme.spacing(2) }}>
+      <Grid
+        container
+        spacing={2}
+        columns={12}
+        sx={{ mb: (theme) => theme.spacing(2) }}
+      >
         {loading ? (
           <Typography>Loading...</Typography>
         ) : (

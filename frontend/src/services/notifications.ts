@@ -2,7 +2,7 @@ import { requestNotificationPermission } from "./firebaseConfig";
 import { updateUser, getUser } from "./authentication";
 import { getAuthHeaders } from "./getAuthHeaders";
 
-const url = 'https://grassroots-gateway-2au66zeb.nw.gateway.dev';
+const url = "https://grassroots-gateway-2au66zeb.nw.gateway.dev";
 
 export const handleAllowNotifications = async (email: string) => {
   const token = await requestNotificationPermission();
@@ -28,12 +28,12 @@ export const addPlayerFCMToken = async (
   const fcmToken = user.fcmToken;
 
   const response = await fetch(`${url}/add-fcm-token`, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: JSON.stringify({ email, clubName, ageGroup, division, fcmToken }),
   });
 
-  if (!response.ok) throw new Error('Failed to add player FCM token');
+  if (!response.ok) throw new Error("Failed to add player FCM token");
 };
 
 /**
@@ -47,14 +47,14 @@ export const getUnreadNotifications = async (
 ): Promise<{ id: string; title: string; body: string; read: boolean }[]> => {
   const headers = await getAuthHeaders();
   const response = await fetch(`${url}/notifications/unread`, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: JSON.stringify({ email, clubName, ageGroup, division }),
   });
 
   if (!response.ok) {
     const data = await response.json();
-    throw new Error(data.error || 'Failed to fetch notifications');
+    throw new Error(data.error || "Failed to fetch notifications");
   }
 
   const data = await response.json();
@@ -74,17 +74,22 @@ export const markNotificationAsRead = async (
   const headers = await getAuthHeaders();
 
   const response = await fetch(`${url}/notifications/mark-read`, {
-    method: 'POST',
+    method: "POST",
     headers,
-    body: JSON.stringify({ email, clubName, ageGroup, division, notificationId }),
+    body: JSON.stringify({
+      email,
+      clubName,
+      ageGroup,
+      division,
+      notificationId,
+    }),
   });
 
   if (!response.ok) {
     const data = await response.json();
-    throw new Error(data.error || 'Failed to mark notification as read');
+    throw new Error(data.error || "Failed to mark notification as read");
   }
 };
-
 
 /**
  * Fetch all notifications (read and unread) for a player.
@@ -108,14 +113,14 @@ export const getAllNotifications = async (
   const headers = await getAuthHeaders();
 
   const response = await fetch(`${url}/notifications/all`, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: JSON.stringify({ email, clubName, ageGroup, division }),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || 'Failed to fetch notifications');
+    throw new Error(error.error || "Failed to fetch notifications");
   }
 
   const data = await response.json();

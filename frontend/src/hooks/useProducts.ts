@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { fetchProducts } from '../services/payments';
-import { Product } from '../pages/Payments/Shop';
+import { useState, useEffect } from "react";
+import { fetchProducts } from "../services/payments";
+import { Product } from "../pages/Payments/Shop";
 
 export function useProducts(
   clubName: string | undefined,
@@ -22,12 +22,11 @@ export function useProducts(
         setLoading(true);
         setError(null);
         const data = await fetchProducts(clubName, ageGroup, division);
-        console.log(data);
         // Adjust based on how your fetchProducts returns data
         setProducts(data.products);
       } catch (err) {
-        setError('Error loading products. Please try again.');
-        console.error('Error fetching products:', err);
+        setError("Error loading products. Please try again.");
+        console.error("Error fetching products:", err);
       } finally {
         setLoading(false);
       }

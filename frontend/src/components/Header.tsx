@@ -16,7 +16,14 @@ export default function Header() {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notifications, setNotifications] = useState<
-    { id: string; title: string; body: string; read: boolean; type?: string; relatedId?: string }[]
+    {
+      id: string;
+      title: string;
+      body: string;
+      read: boolean;
+      type?: string;
+      relatedId?: string;
+    }[]
   >([]);
   const open = Boolean(anchorEl);
 
@@ -33,8 +40,6 @@ export default function Header() {
         division
       );
 
-      console.log("Fetched notifications:", fetched);
-
       setNotifications(
         fetched.map((notification) => ({
           id: notification.id,
@@ -46,8 +51,8 @@ export default function Header() {
             notification.body ||
             "",
           read: notification.read || false,
-          type: notification.type,           
-          relatedId: notification.relatedId
+          type: notification.type,
+          relatedId: notification.relatedId,
         }))
       );
     } catch (error) {
@@ -69,7 +74,11 @@ export default function Header() {
     setAnchorEl(null);
   };
 
-  const handleNotificationClick = async (id: string, type?: string, relatedId?: string) => {
+  const handleNotificationClick = async (
+    id: string,
+    type?: string,
+    relatedId?: string
+  ) => {
     try {
       if (!user?.email || !clubName || !ageGroup || !division) return;
 
@@ -83,13 +92,9 @@ export default function Header() {
 
       // Update just the read flag
       setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === id ? { ...n, read: true } : n
-        )
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
       );
 
-      console.log("relatedId:", relatedId);
-      console.log("type:", type);
       if (type === "match" && relatedId) {
         navigate(`/schedule/matches/${relatedId}`);
       } else if (type === "training" && relatedId) {
@@ -141,7 +146,9 @@ export default function Header() {
             notifications.map((n) => (
               <MenuItem
                 key={n.id}
-                onClick={() => !n.read && handleNotificationClick(n.id, n.type, n.relatedId)}
+                onClick={() =>
+                  !n.read && handleNotificationClick(n.id, n.type, n.relatedId)
+                }
                 sx={{ display: "flex", alignItems: "center", gap: 1 }}
               >
                 <Checkbox checked={n.read} disabled size="small" />

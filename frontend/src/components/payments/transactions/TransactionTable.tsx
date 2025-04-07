@@ -1,4 +1,17 @@
-import { Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, Chip, Box, useMediaQuery, Stack, Typography } from "@mui/material";
+import {
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  TableContainer,
+  Paper,
+  Chip,
+  Box,
+  useMediaQuery,
+  Stack,
+  Typography,
+} from "@mui/material";
 import TransactionDetails from "./TransactionDetails";
 import { PurchasedItem } from "../../../hooks/useTransactions";
 import { useTheme } from "@mui/material/styles";
@@ -27,19 +40,26 @@ const getStatusColor = (status: string) => {
   }
 };
 
-export default function TransactionTable({ transactions }: TransactionTableProps) {
+export default function TransactionTable({
+  transactions,
+}: TransactionTableProps) {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm")); // ✅ Detect mobile screens
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm")); // Detect mobile screens
 
   return (
     <Box>
       {isMobile ? (
-        // ✅ Mobile View: Card Layout
+        // Mobile View: Card Layout
         <Stack spacing={2}>
           {transactions.map((tx, index) => (
             <Paper key={index} sx={{ p: 2, borderRadius: 2, boxShadow: 2 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                <Chip label={tx.status.charAt(0).toUpperCase() + tx.status.slice(1)} color={getStatusColor(tx.status)} />
+              <Box
+                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+              >
+                <Chip
+                  label={tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
+                  color={getStatusColor(tx.status)}
+                />
                 <Typography variant="body2" sx={{ fontWeight: "bold" }}>
                   €{tx.amount.toFixed(2)}
                 </Typography>
@@ -61,22 +81,36 @@ export default function TransactionTable({ transactions }: TransactionTableProps
           ))}
         </Stack>
       ) : (
-        // ✅ Desktop View: Table Layout
-        <TableContainer component={Paper} sx={{ overflowX: "auto" }}> {/* ✅ Enable horizontal scrolling */}
+        // Desktop View: Table Layout
+        <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+          {" "}
+          {/* Enable horizontal scrolling */}
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell><strong>Date</strong></TableCell>
-                <TableCell><strong>Item</strong></TableCell>
-                <TableCell><strong>Amount</strong></TableCell>
-                <TableCell><strong>Status</strong></TableCell>
-                <TableCell><strong>Details</strong></TableCell>
+                <TableCell>
+                  <strong>Date</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Item</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Amount</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Status</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Details</strong>
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {transactions.map((tx, index) => (
                 <TableRow key={index}>
-                  <TableCell>{new Date(tx.timestamp).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    {new Date(tx.timestamp).toLocaleDateString()}
+                  </TableCell>
                   <TableCell>
                     {tx.purchasedItems.map((item, idx) => (
                       <div key={idx}>{item.productName}</div>
@@ -84,7 +118,12 @@ export default function TransactionTable({ transactions }: TransactionTableProps
                   </TableCell>
                   <TableCell>€{tx.amount.toFixed(2)}</TableCell>
                   <TableCell>
-                    <Chip label={tx.status.charAt(0).toUpperCase() + tx.status.slice(1)} color={getStatusColor(tx.status)} />
+                    <Chip
+                      label={
+                        tx.status.charAt(0).toUpperCase() + tx.status.slice(1)
+                      }
+                      color={getStatusColor(tx.status)}
+                    />
                   </TableCell>
                   <TableCell>
                     <TransactionDetails purchasedItems={tx.purchasedItems} />

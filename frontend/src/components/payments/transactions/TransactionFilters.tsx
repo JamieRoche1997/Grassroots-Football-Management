@@ -1,4 +1,11 @@
-import { Box, TextField, MenuItem, Select, InputLabel, FormControl } from "@mui/material";
+import {
+  Box,
+  TextField,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+} from "@mui/material";
 
 interface TransactionFiltersProps {
   search: string;
@@ -19,10 +26,18 @@ export default function TransactionFilters({
   startDate,
   setStartDate,
   endDate,
-  setEndDate
+  setEndDate,
 }: TransactionFiltersProps) {
   return (
-    <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap", alignItems: "center" }}>
+    <Box
+      sx={{
+        display: "flex",
+        gap: 2,
+        mb: 3,
+        flexWrap: "wrap",
+        alignItems: "center",
+      }}
+    >
       {/* Search Field */}
       <TextField
         label="Search Transactions"

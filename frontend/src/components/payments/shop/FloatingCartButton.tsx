@@ -7,7 +7,10 @@ interface FloatingCartButtonProps {
   setCartOpen: (open: boolean) => void;
 }
 
-export default function FloatingCartButton({ getTotalItems, setCartOpen }: FloatingCartButtonProps) {
+export default function FloatingCartButton({
+  getTotalItems,
+  setCartOpen,
+}: FloatingCartButtonProps) {
   return (
     <Fab
       color="primary"
@@ -19,7 +22,6 @@ export default function FloatingCartButton({ getTotalItems, setCartOpen }: Float
         right: 16,
         zIndex: 1000, // Ensure it stays on top
         boxShadow: 3, // Add a slight shadow for better visibility
-        
       }}
     >
       <Badge badgeContent={getTotalItems()} color="error">

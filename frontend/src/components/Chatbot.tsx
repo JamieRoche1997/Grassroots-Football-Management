@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -14,16 +14,16 @@ import {
   Fab,
   Zoom,
   Fade,
-} from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
-import ChatIcon from '@mui/icons-material/Chat';
-import CloseIcon from '@mui/icons-material/Close';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
-import PersonIcon from '@mui/icons-material/Person';
-import { sendMessageToAI } from '../services/chatbot';
-import { useAuth } from '../hooks/useAuth';
+} from "@mui/material";
+import SendIcon from "@mui/icons-material/Send";
+import ChatIcon from "@mui/icons-material/Chat";
+import CloseIcon from "@mui/icons-material/Close";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
+import PersonIcon from "@mui/icons-material/Person";
+import { sendMessageToAI } from "../services/chatbot";
+import { useAuth } from "../hooks/useAuth";
 
-type MessageRole = 'user' | 'bot';
+type MessageRole = "user" | "bot";
 
 interface ChatMessage {
   id: string;
@@ -44,17 +44,21 @@ interface ChatbotProps {
 
 function FloatingChatbot({
   initialMessages = [],
-  botName = 'AI Assistant',
-  placeholder = 'Type your message...',
+  botName = "AI Assistant",
+  placeholder = "Type your message...",
   width = 320,
   height = 450,
   avatarSrc,
   initiallyOpen = false,
 }: ChatbotProps) {
-  const { clubName, ageGroup, division } = useAuth() ?? { clubName: '', ageGroup: '', division: '' };
+  const { clubName, ageGroup, division } = useAuth() ?? {
+    clubName: "",
+    ageGroup: "",
+    division: "",
+  };
   const [isOpen, setIsOpen] = useState<boolean>(initiallyOpen);
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
-  const [inputValue, setInputValue] = useState<string>('');
+  const [inputValue, setInputValue] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
@@ -66,7 +70,7 @@ function FloatingChatbot({
   }, [messages, isOpen]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleToggle = () => setIsOpen(!isOpen);
@@ -77,32 +81,36 @@ function FloatingChatbot({
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content: inputValue,
-      role: 'user',
+      role: "user",
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInputValue('');
+    setInputValue("");
     setIsLoading(true);
 
     try {
-      const botResponse = await sendMessageToAI(inputValue, clubName ?? '', ageGroup ?? '', division ?? '');
-      console.log('Bot response:', botResponse);
+      const botResponse = await sendMessageToAI(
+        inputValue,
+        clubName ?? "",
+        ageGroup ?? "",
+        division ?? ""
+      );
       const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         content: botResponse,
-        role: 'bot',
+        role: "bot",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
-      console.error('Error getting bot response:', error);
+      console.error("Error getting bot response:", error);
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
-          content: 'Sorry, I encountered an error. Please try again later.',
-          role: 'bot',
+          content: "Sorry, I encountered an error. Please try again later.",
+          role: "bot",
           timestamp: new Date(),
         },
       ]);
@@ -112,14 +120,14 @@ function FloatingChatbot({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
   const formatTimestamp = (date: Date): string => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   return (
@@ -127,7 +135,7 @@ function FloatingChatbot({
       <Fab
         color="primary"
         onClick={handleToggle}
-        sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1300 }}
+        sx={{ position: "fixed", bottom: 16, right: 16, zIndex: 1300 }}
       >
         {isOpen ? <CloseIcon /> : <ChatIcon />}
       </Fab>
@@ -136,28 +144,47 @@ function FloatingChatbot({
         <Paper
           elevation={4}
           sx={{
-            position: 'fixed',
+            position: "fixed",
             bottom: 80,
             right: 16,
             width,
             height,
-            display: 'flex',
-            flexDirection: 'column',
+            display: "flex",
+            flexDirection: "column",
             zIndex: 1200,
-            overflow: 'hidden',
+            overflow: "hidden",
             borderRadius: 2,
           }}
         >
-          <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', alignItems: 'center' }}>
+          <Box
+            sx={{
+              p: 2,
+              bgcolor: "primary.main",
+              color: "primary.contrastText",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
             <SmartToyIcon sx={{ mr: 1 }} />
             <Typography variant="h6">{botName}</Typography>
           </Box>
           <Divider />
-          <Box sx={{ flex: 1, overflowY: 'auto', p: 2, bgcolor: theme.palette.background.default }}>
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: "auto",
+              p: 2,
+              bgcolor: theme.palette.background.default,
+            }}
+          >
             <Fade in>
               <List>
                 {messages.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 2 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ textAlign: "center", mt: 2 }}
+                  >
                     Start asking your questions...
                   </Typography>
                 ) : (
@@ -165,20 +192,27 @@ function FloatingChatbot({
                     <ListItem
                       key={message.id}
                       sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: message.role === 'user' ? 'flex-end' : 'flex-start',
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems:
+                          message.role === "user" ? "flex-end" : "flex-start",
                         mb: 2,
-                        px: 0
+                        px: 0,
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', maxWidth: '85%' }}>
-                        {message.role === 'bot' && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          maxWidth: "85%",
+                        }}
+                      >
+                        {message.role === "bot" && (
                           <Avatar
                             sx={{
                               mr: 1,
                               width: 28,
-                              height: 28
+                              height: 28,
                             }}
                             src={avatarSrc}
                           >
@@ -190,35 +224,38 @@ function FloatingChatbot({
                             p: 1.5,
                             borderRadius: 2,
                             backgroundColor:
-                              message.role === 'user'
+                              message.role === "user"
                                 ? theme.palette.primary.main
                                 : theme.palette.background.paper,
                             color:
-                              message.role === 'user'
+                              message.role === "user"
                                 ? theme.palette.primary.contrastText
                                 : theme.palette.text.primary,
-                            boxShadow: 1
+                            boxShadow: 1,
                           }}
                         >
-                          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ whiteSpace: "pre-wrap" }}
+                          >
                             {message.content}
                           </Typography>
                           <Typography
                             variant="caption"
                             sx={{
                               mt: 0.5,
-                              fontSize: '0.7rem',
+                              fontSize: "0.7rem",
                               color:
-                                message.role === 'user'
-                                  ? 'rgba(255,255,255,0.7)'
+                                message.role === "user"
+                                  ? "rgba(255,255,255,0.7)"
                                   : theme.palette.text.secondary,
-                              textAlign: 'right'
+                              textAlign: "right",
                             }}
                           >
                             {formatTimestamp(message.timestamp)}
                           </Typography>
                         </Box>
-                        {message.role === 'user' && (
+                        {message.role === "user" && (
                           <Avatar sx={{ ml: 1, width: 28, height: 28 }}>
                             <PersonIcon fontSize="small" />
                           </Avatar>
@@ -228,15 +265,22 @@ function FloatingChatbot({
                   ))
                 )}
                 {isLoading && (
-                  <ListItem sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', px: 0 }}>
+                  <ListItem
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      px: 0,
+                    }}
+                  >
                     <Box
                       sx={{
-                        display: 'flex',
-                        alignItems: 'center',
+                        display: "flex",
+                        alignItems: "center",
                         p: 1.5,
                         borderRadius: 2,
                         backgroundColor: theme.palette.background.paper,
-                        boxShadow: 1
+                        boxShadow: 1,
                       }}
                     >
                       <CircularProgress size={16} sx={{ mr: 1 }} />
@@ -249,7 +293,14 @@ function FloatingChatbot({
             </Fade>
           </Box>
           <Divider />
-          <Box sx={{ p: 1.5, bgcolor: theme.palette.background.paper, display: 'flex', gap: 1 }}>
+          <Box
+            sx={{
+              p: 1.5,
+              bgcolor: theme.palette.background.paper,
+              display: "flex",
+              gap: 1,
+            }}
+          >
             <TextField
               fullWidth
               size="small"
@@ -261,7 +312,7 @@ function FloatingChatbot({
               multiline
               maxRows={3}
               disabled={isLoading}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
             />
             <IconButton
               color="primary"
@@ -270,7 +321,7 @@ function FloatingChatbot({
               sx={{
                 bgcolor: theme.palette.primary.main,
                 color: theme.palette.primary.contrastText,
-                '&:hover': { bgcolor: theme.palette.primary.dark }
+                "&:hover": { bgcolor: theme.palette.primary.dark },
               }}
             >
               <SendIcon fontSize="small" />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -21,20 +21,20 @@ import {
   ListItem,
   ListItemText,
   IconButton,
-} from '@mui/material';
-import { alpha } from '@mui/material/styles';
-import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
-import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
-import SaveIcon from '@mui/icons-material/Save';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import { getMembershipsForTeam } from '../../services/membership';
-import { format } from 'date-fns';
-import Layout from '../../components/Layout';
-import Header from '../../components/Header';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import { useAuth } from '../../hooks/useAuth';
-import { fetchAllFixtures } from '../../services/schedule_management';
-import { saveLineups } from '../../services/match_management';
+} from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
+import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
+import SaveIcon from "@mui/icons-material/Save";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import { getMembershipsForTeam } from "../../services/membership";
+import { format } from "date-fns";
+import Layout from "../../components/Layout";
+import Header from "../../components/Header";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import { useAuth } from "../../hooks/useAuth";
+import { fetchAllFixtures } from "../../services/schedule_management";
+import { saveLineups } from "../../services/match_management";
 
 interface Player {
   email: string;
@@ -62,119 +62,118 @@ interface Match {
 }
 
 const formations = {
-  '5-4-1': [
-    ['GK'],
-    ['RWB', 'CB', 'CB', 'CB', 'LWB'], // 5 defenders
-    ['RM', 'CM', 'CM', 'LM'], // 4 midfielders
-    ['ST'], // 1 striker
+  "5-4-1": [
+    ["GK"],
+    ["RWB", "CB", "CB", "CB", "LWB"], // 5 defenders
+    ["RM", "CM", "CM", "LM"], // 4 midfielders
+    ["ST"], // 1 striker
   ], // Total: 10 outfield players
 
-  '5-3-2': [
-    ['GK'],
-    ['RWB', 'CB', 'CB', 'CB', 'LWB'], // 5 defenders
-    ['CM', 'CM', 'CM'], // 3 midfielders
-    ['ST', 'ST'], // 2 strikers
+  "5-3-2": [
+    ["GK"],
+    ["RWB", "CB", "CB", "CB", "LWB"], // 5 defenders
+    ["CM", "CM", "CM"], // 3 midfielders
+    ["ST", "ST"], // 2 strikers
   ], // Total: 10 outfield players
 
-  '4-5-1': [
-    ['GK'],
-    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
-    ['CDM'], // 1 defensive mid
-    ['RM', 'CM', 'CM', 'LM'], // 4 midfielders
-    ['ST'], // 1 striker
+  "4-5-1": [
+    ["GK"],
+    ["RB", "CB", "CB", "LB"], // 4 defenders
+    ["CDM"], // 1 defensive mid
+    ["RM", "CM", "CM", "LM"], // 4 midfielders
+    ["ST"], // 1 striker
   ], // Total: 10 outfield players
 
-  '4-4-2': [
-    ['GK'],
-    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
-    ['RM', 'CM', 'CM', 'LM'], // 4 midfielders
-    ['ST', 'ST'], // 2 strikers
+  "4-4-2": [
+    ["GK"],
+    ["RB", "CB", "CB", "LB"], // 4 defenders
+    ["RM", "CM", "CM", "LM"], // 4 midfielders
+    ["ST", "ST"], // 2 strikers
   ], // Total: 10 outfield players
 
-  '4-1-4-1': [
-    ['GK'],
-    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
-    ['CDM'], // 1 defensive mid
-    ['RM', 'CM', 'CM', 'LM'], // 4 midfielders
-    ['ST'], // 1 striker
+  "4-1-4-1": [
+    ["GK"],
+    ["RB", "CB", "CB", "LB"], // 4 defenders
+    ["CDM"], // 1 defensive mid
+    ["RM", "CM", "CM", "LM"], // 4 midfielders
+    ["ST"], // 1 striker
   ], // Total: 10 outfield players
 
-  '4-3-3': [
-    ['GK'],
-    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
-    ['CM', 'CM', 'CM'], // 3 midfielders
-    ['RW', 'ST', 'LW'], // 3 forwards
+  "4-3-3": [
+    ["GK"],
+    ["RB", "CB", "CB", "LB"], // 4 defenders
+    ["CM", "CM", "CM"], // 3 midfielders
+    ["RW", "ST", "LW"], // 3 forwards
   ], // Total: 10 outfield players
 
-  '4-3-2-1': [
-    ['GK'],
-    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
-    ['CM', 'CDM', 'CM'], // 3 midfielders
-    ['CAM', 'CAM'], // 2 attacking mids
-    ['ST'], // 1 striker
+  "4-3-2-1": [
+    ["GK"],
+    ["RB", "CB", "CB", "LB"], // 4 defenders
+    ["CM", "CDM", "CM"], // 3 midfielders
+    ["CAM", "CAM"], // 2 attacking mids
+    ["ST"], // 1 striker
   ], // Total: 10 outfield players
 
-  '4-2-3-1': [
-    ['GK'],
-    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
-    ['CDM', 'CDM'], // 2 defensive mids
-    ['RW', 'CAM', 'LW'], // 3 attacking mids
-    ['ST'], // 1 striker
+  "4-2-3-1": [
+    ["GK"],
+    ["RB", "CB", "CB", "LB"], // 4 defenders
+    ["CDM", "CDM"], // 2 defensive mids
+    ["RW", "CAM", "LW"], // 3 attacking mids
+    ["ST"], // 1 striker
   ], // Total: 10 outfield players
 
-  '4-2-2-2': [
-    ['GK'],
-    ['RB', 'CB', 'CB', 'LB'], // 4 defenders
-    ['CDM', 'CDM'], // 2 defensive mids
-    ['CAM', 'CAM'], // 2 attacking mids
-    ['ST', 'ST'], // 2 strikers
+  "4-2-2-2": [
+    ["GK"],
+    ["RB", "CB", "CB", "LB"], // 4 defenders
+    ["CDM", "CDM"], // 2 defensive mids
+    ["CAM", "CAM"], // 2 attacking mids
+    ["ST", "ST"], // 2 strikers
   ], // Total: 10 outfield players
 
-  '3-6-1': [
-    ['GK'],
-    ['CB', 'CB', 'CB'], // 3 defenders
-    ['RWB', 'CM', 'CDM', 'CM', 'LWB'], // 5 midfielders
-    ['CAM'], // 1 attacking mid
-    ['ST'], // 1 striker
+  "3-6-1": [
+    ["GK"],
+    ["CB", "CB", "CB"], // 3 defenders
+    ["RWB", "CM", "CDM", "CM", "LWB"], // 5 midfielders
+    ["CAM"], // 1 attacking mid
+    ["ST"], // 1 striker
   ], // Total: 10 outfield players
 
-  '3-5-2': [
-    ['GK'],
-    ['CB', 'CB', 'CB'], // 3 defenders
-    ['RWB', 'CM', 'CDM', 'CM', 'LWB'], // 5 midfielders
-    ['ST', 'ST'], // 2 strikers
+  "3-5-2": [
+    ["GK"],
+    ["CB", "CB", "CB"], // 3 defenders
+    ["RWB", "CM", "CDM", "CM", "LWB"], // 5 midfielders
+    ["ST", "ST"], // 2 strikers
   ], // Total: 10 outfield players
 
-  '3-4-3': [
-    ['GK'],
-    ['CB', 'CB', 'CB'], // 3 defenders
-    ['RWB', 'CM', 'CM', 'LWB'], // 4 midfielders
-    ['RW', 'ST', 'LW'], // 3 forwards
+  "3-4-3": [
+    ["GK"],
+    ["CB", "CB", "CB"], // 3 defenders
+    ["RWB", "CM", "CM", "LWB"], // 4 midfielders
+    ["RW", "ST", "LW"], // 3 forwards
   ], // Total: 10 outfield players
 
-  '3-4-1-2': [
-    ['GK'],
-    ['CB', 'CB', 'CB'], // 3 defenders
-    ['RWB', 'CM', 'CM', 'LWB'], // 4 midfielders
-    ['CAM'], // 1 attacking mid
-    ['ST', 'ST'], // 2 strikers
+  "3-4-1-2": [
+    ["GK"],
+    ["CB", "CB", "CB"], // 3 defenders
+    ["RWB", "CM", "CM", "LWB"], // 4 midfielders
+    ["CAM"], // 1 attacking mid
+    ["ST", "ST"], // 2 strikers
   ], // Total: 10 outfield players
 
-  '3-3-4': [
-    ['GK'],
-    ['CB', 'CB', 'CB'], // 3 defenders
-    ['CM', 'CM', 'CM'], // 3 midfielders
-    ['RW', 'ST', 'ST', 'LW'], // 4 forwards
+  "3-3-4": [
+    ["GK"],
+    ["CB", "CB", "CB"], // 3 defenders
+    ["CM", "CM", "CM"], // 3 midfielders
+    ["RW", "ST", "ST", "LW"], // 4 forwards
   ], // Total: 10 outfield players
 
-  '3-2-5': [
-    ['GK'],
-    ['CB', 'CB', 'CB'], // 3 defenders
-    ['CDM', 'CDM'], // 2 midfielders
-    ['RW', 'CAM', 'ST', 'CAM', 'LW'], // 5 attackers
+  "3-2-5": [
+    ["GK"],
+    ["CB", "CB", "CB"], // 3 defenders
+    ["CDM", "CDM"], // 2 midfielders
+    ["RW", "CAM", "ST", "CAM", "LW"], // 5 attackers
   ], // Total: 10 outfield players
 };
-
 
 export default function TeamLineups() {
   const { clubName, ageGroup, division, loading: authLoading } = useAuth();
@@ -183,23 +182,28 @@ export default function TeamLineups() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [selectedFormation, setSelectedFormation] = useState<keyof typeof formations>('4-4-2');
-  const [assignedPlayers, setAssignedPlayers] = useState<{ [position: string]: string }>({});
+  const [selectedFormation, setSelectedFormation] =
+    useState<keyof typeof formations>("4-4-2");
+  const [assignedPlayers, setAssignedPlayers] = useState<{
+    [position: string]: string;
+  }>({});
   const [substitutes, setSubstitutes] = useState<string[]>([]);
-  const [strategyNotes, setStrategyNotes] = useState('');
+  const [strategyNotes, setStrategyNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const assignedPlayerEmails = new Set(Object.values(assignedPlayers));
-  const availableSubstitutes = players.filter(player => !assignedPlayerEmails.has(player.email));
+  const availableSubstitutes = players.filter(
+    (player) => !assignedPlayerEmails.has(player.email)
+  );
 
   useEffect(() => {
     const fetchAllMatchesForYear = async () => {
       if (authLoading) return;
 
       if (!clubName || !ageGroup || !division) {
-        setError('Club information is incomplete.');
+        setError("Club information is incomplete.");
         setLoading(false);
         return;
       }
@@ -209,8 +213,8 @@ export default function TeamLineups() {
         setMatches(allMatches);
         setError(null);
       } catch (error) {
-        console.error('Error fetching matches:', error);
-        setError('Failed to load matches. Please try again later.');
+        console.error("Error fetching matches:", error);
+        setError("Failed to load matches. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -219,24 +223,27 @@ export default function TeamLineups() {
     fetchAllMatchesForYear();
   }, [authLoading, clubName, ageGroup, division]);
 
-
   useEffect(() => {
     const fetchPlayersForMatch = async () => {
       if (authLoading) return;
 
       if (!clubName || !ageGroup || !division) {
-        setError('Club information is incomplete.');
+        setError("Club information is incomplete.");
         setLoading(false);
         return;
       }
 
       try {
-        const playersData = await getMembershipsForTeam(clubName, ageGroup, division);
+        const playersData = await getMembershipsForTeam(
+          clubName,
+          ageGroup,
+          division
+        );
         setPlayers(playersData);
         setError(null);
       } catch (error) {
-        console.error('Error fetching players:', error);
-        setError('Failed to load players. Please try again later.');
+        console.error("Error fetching players:", error);
+        setError("Failed to load players. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -268,7 +275,7 @@ export default function TeamLineups() {
 
   const handleSaveMatchData = async () => {
     if (!selectedMatch) {
-      alert('Please select a match before saving.');
+      alert("Please select a match before saving.");
       return;
     }
 
@@ -289,22 +296,33 @@ export default function TeamLineups() {
     };
 
     try {
-      console.log('Saving lineups:', lineup);
-
       if (isHomeTeam && clubName && ageGroup && division) {
-        await saveLineups(selectedMatch.matchId, clubName, ageGroup, division, lineup, {});
+        await saveLineups(
+          selectedMatch.matchId,
+          clubName,
+          ageGroup,
+          division,
+          lineup,
+          {}
+        );
       } else if (isAwayTeam && clubName && ageGroup && division) {
-        await saveLineups(selectedMatch.matchId, clubName, ageGroup, division, {}, lineup);
+        await saveLineups(
+          selectedMatch.matchId,
+          clubName,
+          ageGroup,
+          division,
+          {},
+          lineup
+        );
       }
 
-      alert('Lineup saved successfully!');
+      alert("Lineup saved successfully!");
       setSaveSuccess(true);
     } catch (error) {
-      console.error('Error saving lineup:', error);
-      alert('Failed to save lineup. Please try again.');
+      console.error("Error saving lineup:", error);
+      alert("Failed to save lineup. Please try again.");
     }
   };
-
 
   if (authLoading || loading) {
     return (
@@ -320,23 +338,29 @@ export default function TeamLineups() {
       <Layout>
         <Header />
         <Box sx={{ p: 3 }}>
-          <Typography color="error" variant="h6">{error}</Typography>
+          <Typography color="error" variant="h6">
+            {error}
+          </Typography>
         </Box>
       </Layout>
     );
   }
 
   function getPlayerName(playerEmail: string): string {
-    const player = players.find(p => p.email === playerEmail);
-    console.log(player);
-    return player ? player.name : 'Unknown Player';
+    const player = players.find((p) => p.email === playerEmail);
+    return player ? player.name : "Unknown Player";
   }
   return (
     <Layout>
       <Header />
       <Box sx={{ px: { xs: 2, md: 4 }, py: 3, maxWidth: 1200, mx: "auto" }}>
-        <Typography variant="h4" component="h1" fontWeight={600} sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
-          <SportsSoccerIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+        <Typography
+          variant="h4"
+          component="h1"
+          fontWeight={600}
+          sx={{ mb: 4, display: "flex", alignItems: "center" }}
+        >
+          <SportsSoccerIcon sx={{ mr: 1.5, color: "primary.main" }} />
           Team Lineups
         </Typography>
 
@@ -347,23 +371,32 @@ export default function TeamLineups() {
         )}
 
         {saveSuccess && (
-          <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSaveSuccess(false)}>
+          <Alert
+            severity="success"
+            sx={{ mb: 3 }}
+            onClose={() => setSaveSuccess(false)}
+          >
             Match data saved successfully!
           </Alert>
         )}
 
-        <Paper elevation={2} sx={{
-          p: 3, mb: 4, borderRadius: 2,
-          backgroundColor: alpha(theme.palette.background.paper, 0.8),
-          backdropFilter: 'blur(12px)',
-          border: '1px solid',
-          borderColor: alpha(theme.palette.divider, 0.1),
-          transition: 'all 0.3s ease',
-          '&:hover': {
-            transform: 'translateY(-4px)',
-            boxShadow: theme.shadows[6],
-          },
-        }}>
+        <Paper
+          elevation={2}
+          sx={{
+            p: 3,
+            mb: 4,
+            borderRadius: 2,
+            backgroundColor: alpha(theme.palette.background.paper, 0.8),
+            backdropFilter: "blur(12px)",
+            border: "1px solid",
+            borderColor: alpha(theme.palette.divider, 0.1),
+            transition: "all 0.3s ease",
+            "&:hover": {
+              transform: "translateY(-4px)",
+              boxShadow: theme.shadows[6],
+            },
+          }}
+        >
           <Typography variant="h6" fontWeight={500} sx={{ mb: 2 }}>
             Match Details
           </Typography>
@@ -371,18 +404,33 @@ export default function TeamLineups() {
           <Select
             fullWidth
             displayEmpty
-            value={selectedMatch?.matchId || ''}
-            onChange={(e) => setSelectedMatch(matches.find((m) => m.matchId === e.target.value) || null)}
+            value={selectedMatch?.matchId || ""}
+            onChange={(e) =>
+              setSelectedMatch(
+                matches.find((m) => m.matchId === e.target.value) || null
+              )
+            }
             sx={{ mb: 3 }}
           >
-            <MenuItem value="" disabled>Select a match</MenuItem>
+            <MenuItem value="" disabled>
+              Select a match
+            </MenuItem>
             {matches.map((match) => (
               <MenuItem key={match.matchId} value={match.matchId}>
-                <Box sx={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body1">{match.homeTeam} vs {match.awayTeam}</Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    width: "100%",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography variant="body1">
+                    {match.homeTeam} vs {match.awayTeam}
+                  </Typography>
                   <Chip
                     size="small"
-                    label={format(new Date(match.date), 'MMM d, yyyy')}
+                    label={format(new Date(match.date), "MMM d, yyyy")}
                     sx={{ ml: 2 }}
                   />
                 </Box>
@@ -396,7 +444,7 @@ export default function TeamLineups() {
           <Select
             value={selectedFormation}
             onChange={handleFormationChange}
-            sx={{ width: '100%', mb: 2 }}
+            sx={{ width: "100%", mb: 2 }}
           >
             {Object.keys(formations).map((formation) => (
               <MenuItem key={formation} value={formation}>
@@ -406,45 +454,45 @@ export default function TeamLineups() {
           </Select>
         </Paper>
 
-        {/* Field and lineup visualization */}
+        {/* Field and lineup visualisation */}
         <Paper
           elevation={3}
           sx={{
             mb: 4,
-            overflow: 'hidden',
+            overflow: "hidden",
             borderRadius: 2,
             backgroundColor: alpha(theme.palette.background.paper, 0.8),
-            backdropFilter: 'blur(12px)',
-            border: '1px solid',
+            backdropFilter: "blur(12px)",
+            border: "1px solid",
             borderColor: alpha(theme.palette.divider, 0.1),
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-4px)',
+            transition: "all 0.3s ease",
+            "&:hover": {
+              transform: "translateY(-4px)",
               boxShadow: theme.shadows[6],
             },
           }}
         >
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '100%',
-              minHeight: '60vh',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "100%",
+              minHeight: "60vh",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
               p: 3,
-              position: 'relative',
-              '&::before': {
+              position: "relative",
+              "&::before": {
                 content: '""',
-                position: 'absolute',
+                position: "absolute",
                 top: 0,
                 left: 0,
                 right: 0,
                 bottom: 0,
                 zIndex: 0,
-              }
+              },
             }}
           >
             {formations[selectedFormation].map((row, rowIndex) => (
@@ -453,38 +501,44 @@ export default function TeamLineups() {
                 container
                 spacing={isMobile ? 1 : 2}
                 justifyContent="center"
-                sx={{ width: '100%', mb: 3, position: 'relative', zIndex: 1 }}
+                sx={{ width: "100%", mb: 3, position: "relative", zIndex: 1 }}
               >
                 {row.map((position, positionIndex) => {
                   const positionKey = `${position}-${rowIndex}-${positionIndex}`;
-                  const assignedPlayer = players.find(p => p.email === assignedPlayers[positionKey]);
+                  const assignedPlayer = players.find(
+                    (p) => p.email === assignedPlayers[positionKey]
+                  );
 
                   return (
-                    <Grid key={positionKey} sx={{ textAlign: 'center' }}>
+                    <Grid key={positionKey} sx={{ textAlign: "center" }}>
                       <Card
                         sx={{
                           p: 1.5,
-                          textAlign: 'center',
+                          textAlign: "center",
                           minWidth: isMobile ? 120 : 150,
-                          width: '100%',
+                          width: "100%",
                           height: isMobile ? 80 : 100,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'center',
-                          alignItems: 'center',
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "center",
+                          alignItems: "center",
                           borderRadius: 2,
                           boxShadow: 3,
-                          transition: 'transform 0.2s, box-shadow 0.2s',
-                          '&:hover': {
-                            transform: 'translateY(-4px)',
+                          transition: "transform 0.2s, box-shadow 0.2s",
+                          "&:hover": {
+                            transform: "translateY(-4px)",
                             boxShadow: 6,
                           },
                         }}
                       >
-                        <Typography variant="subtitle2" fontWeight={600} sx={{
-                          color: 'primary.main',
-                          mb: 0.5
-                        }}>
+                        <Typography
+                          variant="subtitle2"
+                          fontWeight={600}
+                          sx={{
+                            color: "primary.main",
+                            mb: 0.5,
+                          }}
+                        >
                           {position}
                         </Typography>
 
@@ -492,14 +546,20 @@ export default function TeamLineups() {
                           fullWidth
                           displayEmpty
                           value={assignedPlayers[positionKey] || ""}
-                          onChange={(e) => handlePlayerAssign(positionKey, e.target.value)}
+                          onChange={(e) =>
+                            handlePlayerAssign(positionKey, e.target.value)
+                          }
                           size={isMobile ? "small" : "medium"}
                           sx={{
-                            '.MuiOutlinedInput-notchedOutline': {
-                              borderColor: assignedPlayer ? 'transparent' : 'inherit',
+                            ".MuiOutlinedInput-notchedOutline": {
+                              borderColor: assignedPlayer
+                                ? "transparent"
+                                : "inherit",
                             },
-                            backgroundColor: assignedPlayer ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
-                            borderRadius: 1.5
+                            backgroundColor: assignedPlayer
+                              ? "rgba(25, 118, 210, 0.08)"
+                              : "transparent",
+                            borderRadius: 1.5,
                           }}
                         >
                           <MenuItem value="">
@@ -509,17 +569,26 @@ export default function TeamLineups() {
                           </MenuItem>
 
                           {positionOrder.flatMap((posCategory, index) => {
-                            const groupedPlayers = players.filter(player => player.position === posCategory);
+                            const groupedPlayers = players.filter(
+                              (player) => player.position === posCategory
+                            );
                             if (groupedPlayers.length === 0) return [];
 
                             return [
-                              index > 0 && <Divider key={`divider-${posCategory}`} />,
-                              <ListSubheader key={`header-${posCategory}`}>{posCategory}</ListSubheader>,
+                              index > 0 && (
+                                <Divider key={`divider-${posCategory}`} />
+                              ),
+                              <ListSubheader key={`header-${posCategory}`}>
+                                {posCategory}
+                              </ListSubheader>,
                               ...groupedPlayers.map((player) => (
-                                <MenuItem key={player.email} value={player.email}>
+                                <MenuItem
+                                  key={player.email}
+                                  value={player.email}
+                                >
                                   {player.name}
                                 </MenuItem>
-                              ))
+                              )),
                             ];
                           })}
                         </Select>
@@ -533,20 +602,19 @@ export default function TeamLineups() {
         </Paper>
 
         {/* Substitutes Selection */}
-                {/* Substitutes Selection */}
-                <Paper
+        <Paper
           elevation={2}
           sx={{
             p: 3,
             mb: 4,
             borderRadius: 2,
             backgroundColor: alpha(theme.palette.background.paper, 0.8),
-            backdropFilter: 'blur(12px)',
-            border: '1px solid',
+            backdropFilter: "blur(12px)",
+            border: "1px solid",
             borderColor: alpha(theme.palette.divider, 0.1),
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-4px)',
+            transition: "all 0.3s ease",
+            "&:hover": {
+              transform: "translateY(-4px)",
               boxShadow: theme.shadows[6],
             },
           }}
@@ -554,7 +622,7 @@ export default function TeamLineups() {
           <Typography
             variant="h6"
             fontWeight={500}
-            sx={{ mb: 2, display: 'flex', alignItems: 'center' }}
+            sx={{ mb: 2, display: "flex", alignItems: "center" }}
           >
             Substitutes ({substitutes.length}/10)
           </Typography>
@@ -621,20 +689,23 @@ export default function TeamLineups() {
           )}
         </Paper>
 
-
         {/* Strategy Notes */}
-        <Paper elevation={2} sx={{
-          p: 3, borderRadius: 2,
-          backgroundColor: alpha(theme.palette.background.paper, 0.8),
-          backdropFilter: 'blur(12px)',
-          border: '1px solid',
-          borderColor: alpha(theme.palette.divider, 0.1),
-          transition: 'all 0.3s ease',
-          '&:hover': {
-            transform: 'translateY(-4px)',
-            boxShadow: theme.shadows[6],
-          },
-        }}>
+        <Paper
+          elevation={2}
+          sx={{
+            p: 3,
+            borderRadius: 2,
+            backgroundColor: alpha(theme.palette.background.paper, 0.8),
+            backdropFilter: "blur(12px)",
+            border: "1px solid",
+            borderColor: alpha(theme.palette.divider, 0.1),
+            transition: "all 0.3s ease",
+            "&:hover": {
+              transform: "translateY(-4px)",
+              boxShadow: theme.shadows[6],
+            },
+          }}
+        >
           <Typography variant="h6" fontWeight={500} sx={{ mb: 2 }}>
             Strategy Notes
           </Typography>
@@ -647,9 +718,8 @@ export default function TeamLineups() {
         </Paper>
 
         {/* Save Button */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-          {/* Tool top but change the colour of the test to white */}
-          <Tooltip title={!selectedMatch ? "Please select a match first" : ""} >
+        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+          <Tooltip title={!selectedMatch ? "Please select a match first" : ""}>
             <span>
               <Button
                 variant="contained"
@@ -663,9 +733,9 @@ export default function TeamLineups() {
                   py: 1.5,
                   borderRadius: 2,
                   boxShadow: 4,
-                  '&:hover': {
+                  "&:hover": {
                     boxShadow: 6,
-                  }
+                  },
                 }}
               >
                 Save Lineup

@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
-import { onMessage } from 'firebase/messaging';
-import { messaging } from '../services/firebaseConfig';
-import { useSnackbar } from 'notistack';
+import { useEffect } from "react";
+import { onMessage } from "firebase/messaging";
+import { messaging } from "../services/firebaseConfig";
+import { useSnackbar } from "notistack";
 
 /**
  * Listens for foreground FCM messages and shows a simple toast.
@@ -11,11 +11,11 @@ export const useNotification = () => {
 
   useEffect(() => {
     const unsubscribe = onMessage(messaging, (payload) => {
-      const title = payload.notification?.title ?? 'Notification';
-      const body = payload.notification?.body ?? '';
+      const title = payload.notification?.title ?? "Notification";
+      const body = payload.notification?.body ?? "";
 
       enqueueSnackbar(`${title}: ${body}`, {
-        variant: 'info',
+        variant: "info",
         autoHideDuration: 6000,
       });
     });

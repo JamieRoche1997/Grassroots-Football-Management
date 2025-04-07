@@ -12,14 +12,14 @@ import {
   Divider,
   Skeleton,
   useTheme,
-  Paper
+  Paper,
 } from "@mui/material";
 import {
   CheckCircleOutline as AvailableIcon,
   CancelOutlined as UnavailableIcon,
   CalendarToday as DateIcon,
   LocationOn as LocationIcon,
-  Notes as NotesIcon
+  Notes as NotesIcon,
 } from "@mui/icons-material";
 import Layout from "../../components/Layout";
 import Header from "../../components/Header";
@@ -54,7 +54,7 @@ export default function TrainingDetails() {
 
   const loadAvailability = useCallback(async () => {
     if (!trainingId || !clubName || !ageGroup || !division) return;
-    
+
     setIsLoading(true);
     try {
       const data = await fetchTrainingAvailability(
@@ -72,8 +72,9 @@ export default function TrainingDetails() {
   }, [trainingId, clubName, ageGroup, division]);
 
   const handleRSVP = async (isAvailable: boolean) => {
-    if (!user?.email || !trainingId || !clubName || !ageGroup || !division) return;
-    
+    if (!user?.email || !trainingId || !clubName || !ageGroup || !division)
+      return;
+
     setIsSubmitting(true);
     try {
       await updateTrainingAvailability(
@@ -99,25 +100,25 @@ export default function TrainingDetails() {
   const availablePlayers = availability.filter((a) => a.available);
   const unavailablePlayers = availability.filter((a) => !a.available);
 
-  const renderPlayerList = (players: AvailabilityEntry[], emptyMessage: string) => {
+  const renderPlayerList = (
+    players: AvailabilityEntry[],
+    emptyMessage: string
+  ) => {
     if (isLoading) {
-      return Array(3).fill(0).map((_, idx) => (
-        <Skeleton key={idx} variant="text" width="60%" sx={{ my: 0.5 }} />
-      ));
+      return Array(3)
+        .fill(0)
+        .map((_, idx) => (
+          <Skeleton key={idx} variant="text" width="60%" sx={{ my: 0.5 }} />
+        ));
     }
 
     return players.length > 0 ? (
       players.map((player) => (
         <Box key={player.email} display="flex" alignItems="center" py={1}>
-          <Avatar 
-            src={player.avatar} 
-            sx={{ width: 32, height: 32, mr: 2 }}
-          >
+          <Avatar src={player.avatar} sx={{ width: 32, height: 32, mr: 2 }}>
             {player.email.charAt(0).toUpperCase()}
           </Avatar>
-          <Typography variant="body1">
-            {player.email}
-          </Typography>
+          <Typography variant="body1">{player.email}</Typography>
         </Box>
       ))
     ) : (
@@ -137,24 +138,28 @@ export default function TrainingDetails() {
   return (
     <Layout>
       <Header />
-      
-      <Box sx={{ 
-        maxWidth: 1000, 
-        mx: "auto", 
-        px: { xs: 2, md: 4 }, 
-        py: 4 
-      }}>
+
+      <Box
+        sx={{
+          maxWidth: 1000,
+          mx: "auto",
+          px: { xs: 2, md: 4 },
+          py: 4,
+        }}
+      >
         {/* Training Details Section */}
         {training && (
-          <Card sx={{ 
-            mb: 4, 
-            boxShadow: theme.shadows[2],
-            background: theme.palette.background.paper
-          }}>
+          <Card
+            sx={{
+              mb: 4,
+              boxShadow: theme.shadows[2],
+              background: theme.palette.background.paper,
+            }}
+          >
             <CardContent>
-              <Typography 
-                variant="h5" 
-                fontWeight={600} 
+              <Typography
+                variant="h5"
+                fontWeight={600}
                 gutterBottom
                 display="flex"
                 alignItems="center"
@@ -162,7 +167,7 @@ export default function TrainingDetails() {
                 <DateIcon color="primary" sx={{ mr: 1.5 }} />
                 Training Session
               </Typography>
-              
+
               <Stack spacing={2} mt={2}>
                 <Box display="flex" alignItems="center">
                   <Chip
@@ -172,21 +177,17 @@ export default function TrainingDetails() {
                     sx={{ mr: 2 }}
                   />
                 </Box>
-                
+
                 <Box display="flex" alignItems="center">
                   <LocationIcon color="action" sx={{ mr: 1.5 }} />
-                  <Typography variant="body1">
-                    {training.location}
-                  </Typography>
+                  <Typography variant="body1">{training.location}</Typography>
                 </Box>
 
                 {training.notes && (
                   <Paper variant="outlined" sx={{ p: 2, mt: 1 }}>
                     <Box display="flex">
                       <NotesIcon color="action" sx={{ mr: 1.5 }} />
-                      <Typography variant="body1">
-                        {training.notes}
-                      </Typography>
+                      <Typography variant="body1">{training.notes}</Typography>
                     </Box>
                   </Paper>
                 )}
@@ -199,10 +200,10 @@ export default function TrainingDetails() {
         <Typography variant="h6" fontWeight={600} mb={3}>
           Confirm Your Attendance
         </Typography>
-        
-        <Stack 
-          direction={{ xs: "column", sm: "row" }} 
-          spacing={2} 
+
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
           mb={5}
           justifyContent="center"
         >
@@ -213,11 +214,11 @@ export default function TrainingDetails() {
             startIcon={<AvailableIcon />}
             onClick={() => handleRSVP(true)}
             disabled={isSubmitting || isLoading}
-            sx={{ 
+            sx={{
               py: 1.5,
               fontWeight: 600,
               borderRadius: 2,
-              flex: { xs: 1, sm: 0.5 }
+              flex: { xs: 1, sm: 0.5 },
             }}
           >
             Confirm Availability
@@ -229,11 +230,11 @@ export default function TrainingDetails() {
             startIcon={<UnavailableIcon />}
             onClick={() => handleRSVP(false)}
             disabled={isSubmitting || isLoading}
-            sx={{ 
+            sx={{
               py: 1.5,
               fontWeight: 600,
               borderRadius: 2,
-              flex: { xs: 1, sm: 0.5 }
+              flex: { xs: 1, sm: 0.5 },
             }}
           >
             Unavailable
@@ -250,11 +251,11 @@ export default function TrainingDetails() {
                   Available ({availablePlayers.length})
                 </Typography>
               </Box>
-              
+
               <Divider sx={{ my: 1 }} />
-              
+
               {renderPlayerList(
-                availablePlayers, 
+                availablePlayers,
                 "No players have confirmed availability yet"
               )}
             </CardContent>
@@ -268,11 +269,11 @@ export default function TrainingDetails() {
                   Unavailable ({unavailablePlayers.length})
                 </Typography>
               </Box>
-              
+
               <Divider sx={{ my: 1 }} />
-              
+
               {renderPlayerList(
-                unavailablePlayers, 
+                unavailablePlayers,
                 "All players currently available"
               )}
             </CardContent>

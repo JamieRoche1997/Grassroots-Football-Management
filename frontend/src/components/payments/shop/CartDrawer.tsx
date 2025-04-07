@@ -1,6 +1,6 @@
-import { Drawer, Box, Typography, Divider, Button } from '@mui/material';
-import CartItem from './CartItem';
-import { Product } from '../../../pages/Payments/Shop';
+import { Drawer, Box, Typography, Divider, Button } from "@mui/material";
+import CartItem from "./CartItem";
+import { Product } from "../../../pages/Payments/Shop";
 
 interface CartDrawerProps {
   cart: { product: Product; quantity: number }[];
@@ -13,7 +13,16 @@ interface CartDrawerProps {
   handleCheckout: () => void;
 }
 
-export default function CartDrawer({ cart, removeFromCart, addToCart, removeItemCompletely, getTotalPrice, cartOpen, setCartOpen, handleCheckout }: CartDrawerProps) {
+export default function CartDrawer({
+  cart,
+  removeFromCart,
+  addToCart,
+  removeItemCompletely,
+  getTotalPrice,
+  cartOpen,
+  setCartOpen,
+  handleCheckout,
+}: CartDrawerProps) {
   return (
     <Drawer anchor="right" open={cartOpen} onClose={() => setCartOpen(false)}>
       <Box sx={{ p: 3 }}>
@@ -25,7 +34,14 @@ export default function CartDrawer({ cart, removeFromCart, addToCart, removeItem
         ) : (
           <>
             {cart.map(({ product, quantity }) => (
-              <CartItem key={product.id} product={product} quantity={quantity} removeFromCart={removeFromCart} addToCart={addToCart} removeItemCompletely={removeItemCompletely} />
+              <CartItem
+                key={product.id}
+                product={product}
+                quantity={quantity}
+                removeFromCart={removeFromCart}
+                addToCart={addToCart}
+                removeItemCompletely={removeItemCompletely}
+              />
             ))}
 
             <Divider sx={{ my: 2 }} />

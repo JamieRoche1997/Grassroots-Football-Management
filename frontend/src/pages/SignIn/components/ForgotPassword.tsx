@@ -1,22 +1,25 @@
-import * as React from 'react';
+import * as React from "react";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
-import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import OutlinedInput from '@mui/material/OutlinedInput';
-import { Typography } from '@mui/material';
-import { useState } from 'react';
+import Button from "@mui/material/Button";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import OutlinedInput from "@mui/material/OutlinedInput";
+import { Typography } from "@mui/material";
+import { useState } from "react";
 
 interface ForgotPasswordProps {
   open: boolean;
   handleClose: () => void;
 }
 
-export default function ForgotPassword({ open, handleClose }: ForgotPasswordProps) {
-  const [email, setEmail] = useState<string>(""); // ✅ Store email input
+export default function ForgotPassword({
+  open,
+  handleClose,
+}: ForgotPasswordProps) {
+  const [email, setEmail] = useState<string>(""); // Store email input
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const auth = getAuth();
@@ -45,18 +48,21 @@ export default function ForgotPassword({ open, handleClose }: ForgotPasswordProp
       open={open}
       onClose={handleClose}
       PaperProps={{
-        component: 'form',
+        component: "form",
         onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
           event.preventDefault();
           handleResetPassword();
         },
-        sx: { backgroundImage: 'none' },
+        sx: { backgroundImage: "none" },
       }}
     >
       <DialogTitle>Reset password</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
+      <DialogContent
+        sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}
+      >
         <DialogContentText>
-          Enter your account&apos;s email address, and we&apos;ll send you a link to reset your password.
+          Enter your account&apos;s email address, and we&apos;ll send you a
+          link to reset your password.
         </DialogContentText>
         <OutlinedInput
           autoFocus
@@ -67,8 +73,8 @@ export default function ForgotPassword({ open, handleClose }: ForgotPasswordProp
           placeholder="Email address"
           type="email"
           fullWidth
-          value={email}  // ✅ Bind state to input field
-          onChange={(e) => setEmail(e.target.value)}  // ✅ Update state on change
+          value={email} // Bind state to input field
+          onChange={(e) => setEmail(e.target.value)} // Update state on change
         />
       </DialogContent>
       <DialogActions sx={{ pb: 3, px: 3 }}>
@@ -77,8 +83,16 @@ export default function ForgotPassword({ open, handleClose }: ForgotPasswordProp
           Continue
         </Button>
       </DialogActions>
-      {message && <Typography color="success.main" sx={{ mt: 2, textAlign: "center" }}>{message}</Typography>}
-      {error && <Typography color="error" sx={{ mt: 2, textAlign: "center" }}>{error}</Typography>}
+      {message && (
+        <Typography color="success.main" sx={{ mt: 2, textAlign: "center" }}>
+          {message}
+        </Typography>
+      )}
+      {error && (
+        <Typography color="error" sx={{ mt: 2, textAlign: "center" }}>
+          {error}
+        </Typography>
+      )}
     </Dialog>
   );
 }

@@ -1,16 +1,16 @@
-import { useState } from 'react';
-import Stack from '@mui/material/Stack';
-import Header from '../../components/Header';
-import Layout from '../../components/Layout';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import FormGroup from '@mui/material/FormGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
+import { useState } from "react";
+import Stack from "@mui/material/Stack";
+import Header from "../../components/Header";
+import Layout from "../../components/Layout";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import FormGroup from "@mui/material/FormGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Switch from "@mui/material/Switch";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
 
 export default function Settings() {
   const [tabIndex, setTabIndex] = useState(0);
@@ -30,7 +30,9 @@ export default function Settings() {
     setTabIndex(newIndex);
   };
 
-  const handleNotificationChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNotificationChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     setNotifications({
       ...notifications,
       [event.target.name]: event.target.checked,
@@ -49,13 +51,13 @@ export default function Settings() {
       <Stack
         spacing={2}
         sx={{
-          alignItems: 'center',
+          alignItems: "center",
           pb: 5,
           mt: { xs: 8, md: 0 },
         }}
       >
         <Header />
-        <Box sx={{ width: '100%', maxWidth: 600 }}>
+        <Box sx={{ width: "100%", maxWidth: 600 }}>
           {/* Tabs for different settings sections */}
           <Tabs value={tabIndex} onChange={handleTabChange} centered>
             <Tab label="Notifications" />
@@ -164,10 +166,20 @@ export default function Settings() {
                 <Button variant="contained" fullWidth sx={{ mb: 1 }}>
                   Download My Data
                 </Button>
-                <Button variant="outlined" color="error" fullWidth sx={{ mb: 1 }}>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  sx={{ mb: 1 }}
+                >
                   Clear Chat History
                 </Button>
-                <Button variant="outlined" color="error" fullWidth sx={{ mb: 1 }}>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  sx={{ mb: 1 }}
+                >
                   Reset All Settings
                 </Button>
                 <Button variant="outlined" color="error" fullWidth>

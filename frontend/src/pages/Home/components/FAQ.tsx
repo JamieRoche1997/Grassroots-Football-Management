@@ -1,46 +1,51 @@
-import Box from '@mui/material/Box';
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import Typography from '@mui/material/Typography';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import Box from "@mui/material/Box";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import Typography from "@mui/material/Typography";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 const faqData = [
   {
-    question: 'How do I sign up for the platform?',
+    question: "How do I sign up for the platform?",
     answer:
       'You can sign up by clicking on the "Sign Up" button at the top right corner of the page and filling in your details.',
   },
   {
-    question: 'Is there a free trial available?',
+    question: "Is there a free trial available?",
     answer:
-      'Yes, we offer a 14-day free trial with access to all features so you can explore the platform.',
+      "Yes, we offer a 14-day free trial with access to all features so you can explore the platform.",
   },
   {
-    question: 'Can I cancel my subscription at any time?',
+    question: "Can I cancel my subscription at any time?",
     answer:
-      'Absolutely! You can cancel your subscription at any time in your account settings.',
+      "Absolutely! You can cancel your subscription at any time in your account settings.",
   },
   {
-    question: 'How secure is my data on the platform?',
+    question: "How secure is my data on the platform?",
     answer:
-      'We take data security seriously. All your data is encrypted and securely stored in compliance with industry standards.',
+      "We take data security seriously. All your data is encrypted and securely stored in compliance with industry standards.",
   },
   {
-    question: 'Does the platform support multiple teams?',
+    question: "Does the platform support multiple teams?",
     answer:
-      'Yes, our platform is designed to support multiple teams with features tailored for each team’s needs.',
+      "Yes, our platform is designed to support multiple teams with features tailored for each team’s needs.",
   },
 ];
 
 export default function FAQ() {
   return (
-    <Box id="faq" sx={{ display: 'flex', flexDirection: 'column', gap: 4, py: 8 }}>
-      <div style={{ textAlign: 'center' }}>
+    <Box
+      id="faq"
+      sx={{ display: "flex", flexDirection: "column", gap: 4, py: 8 }}
+    >
+      <div style={{ textAlign: "center" }}>
         <Typography variant="h4" gutterBottom>
           Frequently Asked Questions
         </Typography>
-        <Typography>Find answers to the most common questions about our platform.</Typography>
+        <Typography>
+          Find answers to the most common questions about our platform.
+        </Typography>
       </div>
       <Box>
         {faqData.map((faq, index) => (

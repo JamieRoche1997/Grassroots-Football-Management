@@ -23,7 +23,7 @@ import {
   Divider,
   useTheme,
   styled,
-  Stack
+  Stack,
 } from "@mui/material";
 import {
   DriveEta,
@@ -33,31 +33,34 @@ import {
   Person,
   DirectionsCar,
   Close,
-  Check
+  Check,
 } from "@mui/icons-material";
 import { alpha } from "@mui/material/styles";
 import Layout from "../../components/Layout";
 import Header from "../../components/Header";
 import { getRides, offerRide, requestRide } from "../../services/carpool";
-import { fetchFixturesByMonth, FixtureData } from "../../services/schedule_management";
+import {
+  fetchFixturesByMonth,
+  FixtureData,
+} from "../../services/schedule_management";
 import { useAuth } from "../../hooks/useAuth";
 
 // Styled Components
 const MatchCard = styled(Card)(({ theme }) => ({
   borderRadius: 12,
-  transition: 'all 0.3s ease',
-  cursor: 'pointer',
-  '&:hover': {
-    transform: 'translateY(-4px)',
+  transition: "all 0.3s ease",
+  cursor: "pointer",
+  "&:hover": {
+    transform: "translateY(-4px)",
     boxShadow: theme.shadows[6],
-    backgroundColor: alpha(theme.palette.primary.main, 0.05)
-  }
+    backgroundColor: alpha(theme.palette.primary.main, 0.05),
+  },
 }));
 
 const RideCard = styled(Card)(({ theme }) => ({
   borderRadius: 12,
   marginBottom: theme.spacing(2),
-  borderLeft: `4px solid ${theme.palette.primary.main}`
+  borderLeft: `4px solid ${theme.palette.primary.main}`,
 }));
 
 interface Ride {
@@ -95,7 +98,7 @@ export default function CarpoolOverview() {
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
-    severity: "success" as "success" | "error"
+    severity: "success" as "success" | "error",
   });
 
   // Fetch matches and rides
@@ -111,24 +114,33 @@ export default function CarpoolOverview() {
 
         let allMatches: FixtureData[] = [];
         for (const month of futureMonths) {
-          const fetchedMatches = await fetchFixturesByMonth(month, clubName!, ageGroup!, division!);
+          const fetchedMatches = await fetchFixturesByMonth(
+            month,
+            clubName!,
+            ageGroup!,
+            division!
+          );
           allMatches = [...allMatches, ...fetchedMatches];
         }
 
-        setMatches(allMatches.filter(match => new Date(match.date) >= new Date()));
+        setMatches(
+          allMatches.filter((match) => new Date(match.date) >= new Date())
+        );
 
         // Fetch rides
         const rides = await getRides(clubName!, ageGroup!, division!);
-        setAvailableRides(rides.map(ride => ({
-          ...ride,
-          matchDetails: ride.matchDetails || "Unknown Match"
-        })));
+        setAvailableRides(
+          rides.map((ride) => ({
+            ...ride,
+            matchDetails: ride.matchDetails || "Unknown Match",
+          }))
+        );
       } catch (error) {
         console.error("Error fetching data:", error);
         setSnackbar({
           open: true,
           message: "Failed to load data",
-          severity: "error"
+          severity: "error",
         });
       }
     };
@@ -141,7 +153,9 @@ export default function CarpoolOverview() {
   const handleToggleDriver = () => setIsDriver(!isDriver);
 
   const handleMatchClick = (match: FixtureData) => {
-    const ridesForMatch = availableRides.filter(ride => ride.matchId === match.matchId);
+    const ridesForMatch = availableRides.filter(
+      (ride) => ride.matchId === match.matchId
+    );
     setSelectedMatch(match.matchId);
     setMatchRides(ridesForMatch);
     setRideDialogOpen(true);
@@ -149,7 +163,7 @@ export default function CarpoolOverview() {
 
   const handleRequestRide = async (rideId: string) => {
     try {
-      const ride = availableRides.find(r => r.id === rideId);
+      const ride = availableRides.find((r) => r.id === rideId);
 
       if (!user?.displayName || !ride) return;
 
@@ -157,7 +171,7 @@ export default function CarpoolOverview() {
         setSnackbar({
           open: true,
           message: "You cannot request a ride from yourself!",
-          severity: "error"
+          severity: "error",
         });
         return;
       }
@@ -166,28 +180,33 @@ export default function CarpoolOverview() {
         setSnackbar({
           open: true,
           message: "You've already requested this ride!",
-          severity: "error"
+          severity: "error",
         });
         return;
       }
 
-      await requestRide({
-        userName: user.displayName,
-        ride_id: rideId
-      }, clubName!, ageGroup!, division!);
+      await requestRide(
+        {
+          userName: user.displayName,
+          ride_id: rideId,
+        },
+        clubName!,
+        ageGroup!,
+        division!
+      );
 
       setRideRequests([...rideRequests, rideId]);
       setSnackbar({
         open: true,
         message: "Ride request sent successfully!",
-        severity: "success"
+        severity: "success",
       });
     } catch (error) {
       console.error("Error requesting ride:", error);
       setSnackbar({
         open: true,
         message: "Failed to request ride",
-        severity: "error"
+        severity: "error",
       });
     }
   };
@@ -197,16 +216,19 @@ export default function CarpoolOverview() {
       setSnackbar({
         open: true,
         message: "Please fill all required fields",
-        severity: "error"
+        severity: "error",
       });
       return;
     }
 
     try {
-      const matchInfo = matches.find(match => match.matchId === selectedMatch);
-      const opponentTeam = matchInfo?.homeTeam === clubName
-        ? matchInfo.awayTeam
-        : matchInfo?.homeTeam;
+      const matchInfo = matches.find(
+        (match) => match.matchId === selectedMatch
+      );
+      const opponentTeam =
+        matchInfo?.homeTeam === clubName
+          ? matchInfo.awayTeam
+          : matchInfo?.homeTeam;
 
       const newRide: Ride = {
         clubName: clubName || "",
@@ -234,20 +256,20 @@ export default function CarpoolOverview() {
       setSnackbar({
         open: true,
         message: "Ride offered successfully!",
-        severity: "success"
+        severity: "success",
       });
     } catch (error) {
       console.error("Error offering ride:", error);
       setSnackbar({
         open: true,
         message: "Failed to offer ride",
-        severity: "error"
+        severity: "error",
       });
     }
   };
 
   const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
   return (
@@ -258,36 +280,42 @@ export default function CarpoolOverview() {
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          sx={{ width: "100%" }}
         >
           {snackbar.message}
         </Alert>
       </Snackbar>
 
-      <Box sx={{
-        maxWidth: 1200,
-        margin: 'auto',
-        px: { xs: 2, md: 4 },
-        py: 3
-      }}>
-        <Box sx={{
-          display: 'flex',
-          alignItems: 'center',
-          mb: 4,
-          gap: 2
-        }}>
-          <DirectionsCar sx={{
-            fontSize: 40,
-            color: 'primary.main',
-            p: 1,
-            bgcolor: alpha(theme.palette.primary.main, 0.1),
-            borderRadius: '50%'
-          }} />
+      <Box
+        sx={{
+          maxWidth: 1200,
+          margin: "auto",
+          px: { xs: 2, md: 4 },
+          py: 3,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            mb: 4,
+            gap: 2,
+          }}
+        >
+          <DirectionsCar
+            sx={{
+              fontSize: 40,
+              color: "primary.main",
+              p: 1,
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              borderRadius: "50%",
+            }}
+          />
           <Typography variant="h4" fontWeight={700}>
             Team Carpool
           </Typography>
@@ -295,17 +323,21 @@ export default function CarpoolOverview() {
 
         {/* Driver Mode Toggle */}
         <Card sx={{ mb: 4, p: 2, borderRadius: 3 }}>
-          <CardContent sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <CardContent
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <DriveEta color="primary" sx={{ fontSize: 32 }} />
               <Box>
                 <Typography variant="h6">Driver Mode</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {isDriver ? "You're offering rides" : "You're looking for rides"}
+                  {isDriver
+                    ? "You're offering rides"
+                    : "You're looking for rides"}
                 </Typography>
               </Box>
             </Box>
@@ -317,7 +349,7 @@ export default function CarpoolOverview() {
           </CardContent>
 
           {isDriver && (
-            <CardContent sx={{ textAlign: 'center' }}>
+            <CardContent sx={{ textAlign: "center" }}>
               <Button
                 variant="contained"
                 startIcon={<Person />}
@@ -332,29 +364,33 @@ export default function CarpoolOverview() {
 
         {/* Upcoming Matches */}
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-          <Event sx={{ verticalAlign: 'middle', mr: 1 }} />
+          <Event sx={{ verticalAlign: "middle", mr: 1 }} />
           Upcoming Matches
         </Typography>
 
         <Grid container spacing={3}>
           {matches.map((match) => {
-            const opponentTeam = match.homeTeam === clubName ? match.awayTeam : match.homeTeam;
+            const opponentTeam =
+              match.homeTeam === clubName ? match.awayTeam : match.homeTeam;
             const matchDate = new Date(match.date);
             const formattedDate = matchDate.toLocaleDateString();
-            const formattedTime = matchDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const formattedTime = matchDate.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
 
             return (
-              <Grid size={{ xs: 12, sm: 6, md: 4}} key={match.matchId}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={match.matchId}>
                 <MatchCard onClick={() => handleMatchClick(match)}>
                   <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <SportsSoccer color="primary" sx={{ mr: 1 }} />
                       <Typography variant="subtitle1" fontWeight={600}>
                         vs {opponentTeam}
                       </Typography>
                     </Box>
 
-                    <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                    <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
                       <Chip
                         icon={<AccessTime fontSize="small" />}
                         label={formattedTime}
@@ -382,22 +418,26 @@ export default function CarpoolOverview() {
           maxWidth="sm"
           fullWidth
         >
-          <DialogTitle sx={{
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
-            fontWeight: 600
-          }}>
-            <DirectionsCar sx={{ mr: 1, verticalAlign: 'middle' }} />
+          <DialogTitle
+            sx={{
+              bgcolor: "primary.main",
+              color: "primary.contrastText",
+              fontWeight: 600,
+            }}
+          >
+            <DirectionsCar sx={{ mr: 1, verticalAlign: "middle" }} />
             Available Rides
           </DialogTitle>
 
           <DialogContent sx={{ p: 3 }}>
             {matchRides.length === 0 ? (
-              <Box sx={{
-                textAlign: 'center',
-                py: 4,
-                color: 'text.secondary'
-              }}>
+              <Box
+                sx={{
+                  textAlign: "center",
+                  py: 4,
+                  color: "text.secondary",
+                }}
+              >
                 <Typography variant="h6">No rides available</Typography>
                 <Typography variant="body2" sx={{ mt: 1 }}>
                   Be the first to offer a ride for this match!
@@ -407,13 +447,15 @@ export default function CarpoolOverview() {
               matchRides.map((ride) => (
                 <RideCard key={ride.id}>
                   <CardContent>
-                    <Box sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                      mb: 2
-                    }}>
-                      <Avatar sx={{ bgcolor: 'primary.main' }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mb: 2,
+                      }}
+                    >
+                      <Avatar sx={{ bgcolor: "primary.main" }}>
                         {ride.driverName.charAt(0)}
                       </Avatar>
                       <Box>
@@ -421,14 +463,15 @@ export default function CarpoolOverview() {
                           {ride.driverName}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {ride.seats} seat{ride.seats !== 1 ? 's' : ''} available
+                          {ride.seats} seat{ride.seats !== 1 ? "s" : ""}{" "}
+                          available
                         </Typography>
                       </Box>
                     </Box>
 
                     <Divider sx={{ my: 2 }} />
 
-                    <Box sx={{ display: 'flex', gap: 3 }}>
+                    <Box sx={{ display: "flex", gap: 3 }}>
                       <Box>
                         <Typography variant="caption" color="text.secondary">
                           Departure
@@ -449,9 +492,15 @@ export default function CarpoolOverview() {
                       </Typography>
                       <Typography>
                         {ride.pickup === "Yes" ? (
-                          <Check color="success" sx={{ verticalAlign: 'middle' }} />
+                          <Check
+                            color="success"
+                            sx={{ verticalAlign: "middle" }}
+                          />
                         ) : (
-                          <Close color="error" sx={{ verticalAlign: 'middle' }} />
+                          <Close
+                            color="error"
+                            sx={{ verticalAlign: "middle" }}
+                          />
                         )}
                       </Typography>
                     </Box>
@@ -463,7 +512,7 @@ export default function CarpoolOverview() {
                       disabled={ride.seats === 0}
                       sx={{ mt: 2 }}
                     >
-                      {ride.seats === 0 ? 'No seats available' : 'Request Ride'}
+                      {ride.seats === 0 ? "No seats available" : "Request Ride"}
                     </Button>
                   </CardContent>
                 </RideCard>
@@ -482,12 +531,14 @@ export default function CarpoolOverview() {
           maxWidth="sm"
           fullWidth
         >
-          <DialogTitle sx={{
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
-            fontWeight: 600
-          }}>
-            <Person sx={{ mr: 1, verticalAlign: 'middle' }} />
+          <DialogTitle
+            sx={{
+              bgcolor: "primary.main",
+              color: "primary.contrastText",
+              fontWeight: 600,
+            }}
+          >
+            <Person sx={{ mr: 1, verticalAlign: "middle" }} />
             Offer a Ride
           </DialogTitle>
 
@@ -500,15 +551,14 @@ export default function CarpoolOverview() {
                   label="Select Match"
                 >
                   {matches.map((match) => {
-                    const opponentTeam = match.homeTeam === clubName
-                      ? match.awayTeam
-                      : match.homeTeam;
+                    const opponentTeam =
+                      match.homeTeam === clubName
+                        ? match.awayTeam
+                        : match.homeTeam;
                     return (
-                      <MenuItem
-                        key={match.matchId}
-                        value={match.matchId}
-                      >
-                        {opponentTeam} - {new Date(match.date).toLocaleDateString()}
+                      <MenuItem key={match.matchId} value={match.matchId}>
+                        {opponentTeam} -{" "}
+                        {new Date(match.date).toLocaleDateString()}
                       </MenuItem>
                     );
                   })}

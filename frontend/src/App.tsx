@@ -41,7 +41,10 @@ interface ProtectedRouteProps {
   allowedRoles?: string[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  allowedRoles,
+}) => {
   const { user, loading, role } = useAuth();
 
   if (loading) {
@@ -68,35 +71,238 @@ const App: React.FC = () => {
       <Route path="/signup" element={<SignUp />} />
 
       {/* Protected Routes */}
-      <Route path="/signup/coach" element={<ProtectedRoute><Coach /></ProtectedRoute>} />
-      <Route path="/signup/player" element={<ProtectedRoute><Player /></ProtectedRoute>} />
-      <Route path="/signup/parent" element={<ProtectedRoute><Parent /></ProtectedRoute>} />
-      <Route path="/club-search" element={<ProtectedRoute><ClubSearch /></ProtectedRoute>} />
-      <Route path="/permissions" element={<ProtectedRoute><PermissionsPage /></ProtectedRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/payments" element={<ProtectedRoute allowedRoles={["coach"]}><PaymentsOverview /></ProtectedRoute>} />
-      <Route path="/payments/products" element={<ProtectedRoute allowedRoles={["coach"]}><AddProduct /></ProtectedRoute>} />
-      <Route path="/payments/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
-      <Route path="/payments/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
-      <Route path="/payments/cancel" element={<ProtectedRoute><Cancel /></ProtectedRoute>} />
-      <Route path="/payments/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-      <Route path="/carpool" element={<ProtectedRoute><CarpoolOverview /></ProtectedRoute>} />
-      <Route path="/carpool/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
-      <Route path="/ratings/players" element={<ProtectedRoute><PlayerRatings /></ProtectedRoute>} />
-      <Route path="/ratings/players/:playerUid" element={<ProtectedRoute><PlayerStats /></ProtectedRoute>} />
-      <Route path="/team/requests" element={<ProtectedRoute allowedRoles={["coach"]}><TeamRequests /></ProtectedRoute>} />
-      <Route path="/team/squad" element={<ProtectedRoute><TeamSquad /></ProtectedRoute>} />
-      <Route path="/team/lineups" element={<ProtectedRoute><TeamLineups /></ProtectedRoute>} />
-      <Route path="/team/results" element={<ProtectedRoute><TeamResults /></ProtectedRoute>} />
-      <Route path="/team/results/:matchId" element={<ProtectedRoute><ResultProfile /></ProtectedRoute>} />
-      <Route path="/schedule" element={<ProtectedRoute><Schedule /></ProtectedRoute>} />
-      <Route path="/schedule/matches" element={<ProtectedRoute><MatchesCalendar /></ProtectedRoute>} />
-      <Route path="/schedule/matches/:matchId" element={<ProtectedRoute><MatchDetails /></ProtectedRoute>} />
-      <Route path="/schedule/training/:trainingId" element={<ProtectedRoute><TrainingDetails /></ProtectedRoute>} />
-      <Route path="/schedule/training" element={<ProtectedRoute><TrainingCalendar /></ProtectedRoute>} />
-      <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route
+        path="/signup/coach"
+        element={
+          <ProtectedRoute>
+            <Coach />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/signup/player"
+        element={
+          <ProtectedRoute>
+            <Player />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/signup/parent"
+        element={
+          <ProtectedRoute>
+            <Parent />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/club-search"
+        element={
+          <ProtectedRoute>
+            <ClubSearch />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/permissions"
+        element={
+          <ProtectedRoute>
+            <PermissionsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments"
+        element={
+          <ProtectedRoute allowedRoles={["coach"]}>
+            <PaymentsOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments/products"
+        element={
+          <ProtectedRoute allowedRoles={["coach"]}>
+            <AddProduct />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments/shop"
+        element={
+          <ProtectedRoute>
+            <Shop />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments/success"
+        element={
+          <ProtectedRoute>
+            <Success />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments/cancel"
+        element={
+          <ProtectedRoute>
+            <Cancel />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments/transactions"
+        element={
+          <ProtectedRoute>
+            <Transactions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/carpool"
+        element={
+          <ProtectedRoute>
+            <CarpoolOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/carpool/drivers"
+        element={
+          <ProtectedRoute>
+            <Drivers />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ratings/players"
+        element={
+          <ProtectedRoute>
+            <PlayerRatings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ratings/players/:playerUid"
+        element={
+          <ProtectedRoute>
+            <PlayerStats />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team/requests"
+        element={
+          <ProtectedRoute allowedRoles={["coach"]}>
+            <TeamRequests />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team/squad"
+        element={
+          <ProtectedRoute>
+            <TeamSquad />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team/lineups"
+        element={
+          <ProtectedRoute>
+            <TeamLineups />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team/results"
+        element={
+          <ProtectedRoute>
+            <TeamResults />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team/results/:matchId"
+        element={
+          <ProtectedRoute>
+            <ResultProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/schedule"
+        element={
+          <ProtectedRoute>
+            <Schedule />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/schedule/matches"
+        element={
+          <ProtectedRoute>
+            <MatchesCalendar />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/schedule/matches/:matchId"
+        element={
+          <ProtectedRoute>
+            <MatchDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/schedule/training/:trainingId"
+        element={
+          <ProtectedRoute>
+            <TrainingDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/schedule/training"
+        element={
+          <ProtectedRoute>
+            <TrainingCalendar />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/account"
+        element={
+          <ProtectedRoute>
+            <Account />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 };

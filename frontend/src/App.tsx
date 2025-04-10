@@ -34,6 +34,8 @@ import TrainingCalendar from "./pages/Schedule/TrainingCalendar";
 import Account from "./pages/Account/Account";
 import Profile from "./pages/Account/Profile";
 import Settings from "./pages/Account/Settings";
+import SwaggerDocs from "./pages/Swagger/SwaggerDocs";
+
 import { useNotification } from "./hooks/useNotification";
 
 interface ProtectedRouteProps {
@@ -300,6 +302,15 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/swagger"
+        element={
+          <ProtectedRoute>
+            <SwaggerDocs />
           </ProtectedRoute>
         }
       />

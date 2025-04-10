@@ -37,6 +37,7 @@
     "recharts": "^2.15.1",
     "sql-formatter": "^15.5.0",
     "stripe": "^17.6.0",
+    "swagger-ui-react": "^5.20.7",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
@@ -47,6 +48,7 @@
     "@types/react-big-calendar": "^1.16.1",
     "@types/react-dom": "^18.3.5",
     "@types/react-router-dom": "^5.3.3",
+    "@types/swagger-ui-react": "^5.18.0",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.0.0",

@@ -1,0 +1,3473 @@
+swagger: '2.0'
+info:
+  title: Grassroots Football Management API
+  description: API Gateway for Grassroots Football Management microservices
+  version: 1.0.0
+host: grassroots-gateway-2au66zeb.nw.gateway.dev
+x-google-endpoints:
+- name: gfm-1ykrsotxghm8m.apigateway.grassroots-football-management.cloud.goog
+  allowCors: True
+schemes:
+  - https
+
+tags:
+  - name: Authentication
+    description: Operations related to user authentication
+  - name: Profile
+    description: User profile management
+  - name: Membership
+    description: Membership-related operations
+  - name: Team Management
+    description: Club and team operations
+  - name: Schedule Management
+    description: Fixtures and training management
+  - name: Match Management
+    description: Lineups, events, results
+  - name: Payments
+    description: Stripe payments and products
+  - name: Carpool
+    description: Carpool ride offers and requests
+  - name: Notifications
+    description: Push notifications and updates
+  - name: AI Chatbot
+    description: Queries to the AI Chatbot
+  - name: Player Stats
+    description: Player statistics and leaderboards
+
+securityDefinitions:
+  firebase:
+    type: oauth2
+    flow: "implicit"
+    authorizationUrl: ""
+    x-google-issuer: "https://securetoken.google.com/grassroots-football-management"
+    x-google-jwks_uri: "https://www.googleapis.com/service_accounts/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+    x-google-audiences: "grassroots-football-management"
+
+security:
+  - firebase: []
+
+paths:
+  # Authentication Microservice Routes
+  /auth/create:
+    post:
+      x-google-backend:
+        address: https://microservice-authentication-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      security: []
+      tags:
+      - Authentication
+      summary: Create a new user in Firebase Authentication
+      description: Creates a new user with email and password
+      operationId: createAuthUser
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: User creation data
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              password:
+                type: string
+      responses:
+        '201':
+          description: User created successfully
+        '400':
+          description: Invalid input or email already exists
+        '500':
+          description: Internal server error
+
+  /auth/login:
+    post:
+      x-google-backend:
+        address: https://microservice-authentication-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      security: []
+      tags:
+      - Authentication
+      summary: Login a user
+      description: Verifies an ID token and logs in the user
+      operationId: loginUser
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: ID token for authentication
+          required: true
+          schema:
+            type: object
+            properties:
+              idToken:
+                type: string
+      responses:
+        '200':
+          description: User logged in successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Invalid or expired ID token
+        '500':
+          description: Internal server error
+
+  /auth/{email}:
+    get:
+      x-google-backend:
+        address: https://microservice-authentication-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      security: []
+      tags:
+      - Authentication
+      summary: Get user identity by email
+      description: Retrieves the UID and email from the authentication service
+      operationId: getUserByEmail
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: email
+          required: true
+          type: string
+      responses:
+        '200':
+          description: User retrieved successfully
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+    patch:
+      x-google-backend:
+        address: https://microservice-authentication-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-authentication-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Authentication
+      summary: Update user fields
+      description: Updates one or more fields for a given user in Firestore
+      operationId: updateUserByEmail
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: email
+          required: true
+          type: string
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              uid:
+                type: string
+      responses:
+        "200":
+          description: User updated successfully
+        "400":
+          description: Invalid request
+        "500":
+          description: Internal server error
+
+    delete:
+      x-google-backend:
+        address: https://microservice-authentication-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-authentication-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Authentication
+      summary: Delete user by email
+      description: Deletes a user from both Firebase Authentication and Firestore
+      operationId: deleteUserByEmail
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: email
+          required: true
+          type: string
+      responses:
+        '200':
+          description: User deleted successfully
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+  /user:
+    post:
+      x-google-backend:
+        address: https://microservice-authentication-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-authentication-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Authentication
+      summary: Create a new user document
+      description: Creates a new user document in the Firestore database
+      operationId: createUser
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: User data for the new user
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              uid:
+                type: string
+      responses:
+        '201':
+          description: User created successfully
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+  /user/pre-register:
+    post:
+      x-google-backend:
+        address: https://microservice-authentication-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-authentication-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Authentication
+      summary: Create a new user document
+      description: Creates a new user document in the Firestore database
+      operationId: createUserPre
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: User data for the new user
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              uid:
+                type: string
+      responses:
+        '201':
+          description: User created successfully
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+
+  # Profile Microservice Routes
+  /profile:
+    post:
+      x-google-backend:
+        address: https://microservice-profile-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-profile-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Profile
+      summary: Create a new user profile
+      description: Creates a new profile for a user in the Profile Service
+      operationId: createProfile
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Profile data for the new user
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              name:
+                type: string
+              role:
+                type: string
+              position:
+                type: string    # Added
+              userRegistered:
+                type: boolean   # Added
+              clubName:
+                type: string    # Added
+              ageGroup:
+                type: string    # Added
+              division:
+                type: string    # Added
+      responses:
+        '201':
+          description: Profile created successfully
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+  /profile/{email}:
+    get:
+      x-google-backend:
+        address: https://microservice-profile-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      security: []
+      tags:
+      - Profile
+      summary: Retrieve a user profile
+      description: Fetches a profile from the Profile Service using email
+      operationId: getProfile
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: email
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Profile retrieved successfully
+        '404':
+          description: Profile not found
+        '500':
+          description: Internal server error
+
+    patch:
+      x-google-backend:
+        address: https://microservice-profile-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-profile-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Profile
+      summary: Update a user profile
+      description: Updates fields in an existing user profile
+      operationId: updateProfile
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: email
+          required: true
+          type: string
+        - in: body
+          name: body
+          description: Fields to update in the profile
+          required: true
+          schema:
+            type: object
+            additionalProperties: true  # This allows dynamic fields
+      responses:
+        '200':
+          description: Profile updated successfully
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+    delete:
+      x-google-backend:
+        address: https://microservice-profile-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-profile-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Profile
+      summary: Delete a user profile
+      description: Deletes a profile from the Profile Service using email
+      operationId: deleteProfile
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: email
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Profile deleted successfully
+        '404':
+          description: Profile not found
+        '500':
+          description: Internal server error
+
+
+  # Membership Microservice Routes
+  /membership:
+    post:
+      x-google-backend:
+        address: https://microservice-membership-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-membership-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Membership
+      summary: Create a new membership
+      description: Creates a membership entry for a user in the Membership Service
+      operationId: createMembership
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Membership data for the new user
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              name:
+                type: string
+              dob:
+                type: string
+              uid:
+                type: string
+              clubName:
+                type: string 
+              ageGroup:
+                type: string
+              division:
+                type: string
+              role:
+                type: string
+              position:
+                type: string
+              userRegistered:
+                type: boolean
+      responses:
+        '201':
+          description: Membership created successfully
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+    patch:
+      x-google-backend:
+        address: https://microservice-membership-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-membership-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Membership
+      summary: Update a user's membership
+      description: Updates fields in an existing membership record
+      operationId: updateMembership
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              email:
+                type: string
+              role:
+                type: string
+              position:
+                type: string
+              userRegistered:
+                type: boolean
+      responses:
+        '200':
+          description: Membership updated successfully
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+    get:
+      x-google-backend:
+        address: https://microservice-membership-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-membership-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Membership
+      summary: Retrieve a user's membership
+      description: Fetches membership data using query params (clubName, ageGroup, division, email)
+      operationId: getMembership
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+        - in: query
+          name: email
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Membership retrieved successfully
+        '404':
+          description: Membership not found
+        '500':
+          description: Internal server error
+
+    delete:
+      x-google-backend:
+        address: https://microservice-membership-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-membership-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Membership
+      summary: Delete a user's membership
+      description: Deletes a membership using query params (clubName, ageGroup, division, email)
+      operationId: deleteMembership
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+        - in: query
+          name: email
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Membership deleted successfully
+        '404':
+          description: Membership not found
+        '500':
+          description: Internal server error
+
+  /membership/team:
+    get:
+      x-google-backend:
+        address: https://microservice-membership-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-membership-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Membership
+      summary: Fetch all players for a team
+      description: Fetches all players using query params (clubName, ageGroup, division)
+      operationId: listTeamMembers
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: List of players retrieved successfully
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                email:
+                  type: string
+                role:
+                  type: string
+                position:
+                  type: string
+                userRegistered:
+                  type: boolean
+                joinedAt:
+                  type: string
+                updatedAt:
+                  type: string
+        '400':
+          description: Missing or invalid query parameters
+        '500':
+          description: Internal server error
+
+
+  # Team Management Microservice Routes
+  /club/create-join:
+    post:
+      x-google-backend:
+        address: https://microservice-team-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-team-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Team Management
+      summary: Create or join a club
+      operationId: createOrJoinClub
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              clubName:
+                type: string
+              coachEmail:
+                type: string
+              ageGroups:
+                type: array
+                items:
+                  type: string
+              divisions:
+                type: array
+                items:
+                  type: string
+              county:
+                type: string
+      responses:
+        '201':
+          description: New club created
+        '200':
+          description: Coach added to existing club
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+  /club/{email}:
+    delete:
+      x-google-backend:
+        address: https://microservice-team-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-team-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Team Management
+      summary: Delete a club
+      description: Deletes a club using the club name
+      operationId: deleteClub
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: clubName
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Club deleted successfully
+        '404':
+          description: Club not found
+        '500':
+          description: Internal server error
+
+  /club/search:
+    get:
+      x-google-backend:
+        address: https://microservice-team-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-team-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Team Management
+      summary: Search for clubs
+      operationId: searchClubs
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          type: string
+          description: Club name to search
+          required: false
+        - in: query
+          name: county
+          type: string
+          description: County to filter by
+          required: false
+        - in: query
+          name: ageGroup
+          type: string
+          description: Age group to filter by
+          required: false
+        - in: query
+          name: division
+          type: string
+          description: Division to filter by
+          required: false
+      responses:
+        '200':
+          description: List of clubs
+        '500':
+          description: Internal server error
+
+  /club/join-request:
+    post:
+      x-google-backend:
+        address: https://microservice-team-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-team-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Team Management
+      summary: Submit a join request
+      operationId: submitJoinRequest
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              playerEmail:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+      responses:
+        '201':
+          description: Join request submitted
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+  /club/requests:
+    get:
+      x-google-backend:
+        address: https://microservice-team-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-team-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Team Management
+      summary: Retrieve pending join requests
+      operationId: getJoinRequests
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          type: string
+          description: The club name to retrieve join requests for
+          required: true
+        - in: query
+          name: ageGroup
+          type: string
+          description: The age group to filter join requests by
+          required: false
+        - in: query
+          name: division
+          type: string
+          description: The division to filter join requests by
+          required: false
+      responses:
+        '200':
+          description: List of pending join requests
+        '400':
+          description: Missing or invalid query parameters
+        '500':
+          description: Internal server error
+
+  /club/requests/approve:
+    post:
+      x-google-backend:
+        address: https://microservice-team-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-team-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Team Management
+      summary: Approve a player's join request
+      operationId: approveJoinRequest
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              playerEmail:
+                type: string
+                description: Email of the player to approve
+              clubName:
+                type: string
+                description: The club name where the player requested to join
+              ageGroup:
+                type: string
+                description: The age group of the player
+              division:
+                type: string
+                description: The division of the player
+      responses:
+        '200':
+          description: Player added to the club
+        '400':
+          description: Missing or invalid parameters
+        '500':
+          description: Internal server error
+
+  /club/requests/reject:
+    post:
+      x-google-backend:
+        address: https://microservice-team-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-team-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Team Management
+      summary: Reject a player's join request
+      operationId: rejectJoinRequest
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              playerEmail:
+                type: string
+                description: Email of the player to reject
+              clubName:
+                type: string
+                description: The club name where the player requested to join
+              ageGroup:
+                type: string
+                description: The age group of the player
+              division: 
+                type: string
+                description: The division of the player
+      responses:
+        '200':
+          description: Join request rejected
+        '400':
+          description: Missing or invalid parameters
+        '500':
+          description: Internal server error
+
+  /club/players:
+    get:
+      x-google-backend:
+        address: https://microservice-team-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-team-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Team Management
+      summary: Retrieve players for a specific club, age group, and division
+      operationId: getPlayers
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          type: string
+          description: The club name to retrieve players for
+          required: true
+        - in: query
+          name: ageGroup
+          type: string
+          description: The age group to filter players by
+          required: true
+        - in: query
+          name: division
+          type: string
+          description: The division to filter players by
+          required: true
+      responses:
+        '200':
+          description: List of players for the specified criteria
+        '400':
+          description: Missing or invalid query parameters
+        '500':
+          description: Internal server error
+
+
+  # Schedule Management Microservice Routes
+  /schedule/fixture:
+    post:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Add a new fixture to the schedule.
+      operationId: addFixture
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [homeTeam, awayTeam, ageGroup, division, date, createdBy]
+            properties:
+              homeTeam:
+                type: string
+              awayTeam:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              date:
+                type: string
+                format: date-time
+              createdBy:
+                type: string
+      responses:
+        '201':
+          description: Fixture added successfully.
+        '500':
+          description: Internal server error.
+
+    get:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Get fixtures for a month.
+      operationId: getFixturesByMonth
+      parameters:
+        - in: query
+          name: month
+          required: true
+          type: string
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: List of fixtures.
+          schema:
+            type: array
+            items:
+              type: object
+        '500':
+          description: Internal server error.
+
+    put:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Update fixture details.
+      operationId: updateFixture
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [matchId, clubName, ageGroup, division]
+            properties:
+              matchId:
+                type: string
+              homeTeam:
+                type: string
+              awayTeam:
+                type: string
+              date:
+                type: string
+                format: date-time
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+      responses:
+        '200':
+          description: Fixture updated successfully.
+        '500':
+          description: Internal server error.
+
+    delete:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Delete a fixture.
+      operationId: deleteFixture
+      parameters:
+        - in: query
+          name: matchId
+          required: true
+          type: string
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Fixture deleted successfully.
+        '500':
+          description: Internal server error.
+
+  /schedule/fixture/{matchId}:
+    get:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Get fixture by match ID.
+      operationId: getFixtureById
+      parameters:
+        - in: path
+          name: matchId
+          required: true
+          type: string
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Fixture details.
+        '404':
+          description: Fixture not found.
+        '500':
+          description: Internal server error.
+
+  /schedule/fixtures:
+    get:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Get all fixtures for age group and division.
+      operationId: getAllFixtures
+      parameters:
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: List of all fixtures.
+        '500':
+          description: Internal server error.
+
+  /schedule/training:
+    post:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Add a training session.
+      operationId: addTraining
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [date, location, createdBy]
+            properties:
+              date:
+                type: string
+                format: date-time
+              location:
+                type: string
+              notes:
+                type: string
+              createdBy:
+                type: string
+      responses:
+        '201':
+          description: Training added successfully.
+        '500':
+          description: Internal server error.
+
+    get:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Get trainings for a month.
+      operationId: getTrainingsByMonth
+      parameters:
+        - in: query
+          name: month
+          required: true
+          type: string
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: List of trainings.
+          schema:
+            type: array
+            items:
+              type: object
+        '500':
+          description: Internal server error.
+
+    put:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Update training details.
+      operationId: updateTraining
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [trainingId]
+            properties:
+              trainingId:
+                type: string
+              date:
+                type: string
+                format: date-time
+              location:
+                type: string
+              notes:
+                type: string
+      responses:
+        '200':
+          description: Training updated successfully.
+        '500':
+          description: Internal server error.
+
+    delete:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Delete a training session.
+      operationId: deleteTraining
+      parameters:
+        - in: query
+          name: trainingId
+          required: true
+          type: string
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Training deleted successfully.
+        '500':
+          description: Internal server error.
+
+  /schedule/trainings:
+    get:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Get all trainings.
+      operationId: getAllTrainings
+      parameters:
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: List of trainings.
+          schema:
+            type: array
+            items:
+              type: object
+        '500':
+          description: Internal server error.
+
+  /schedule/training/availability:
+    post:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Update training availability
+      description: Updates the availability status of a user for a specific training session
+      operationId: updateTrainingAvailability
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required:
+              - email
+              - clubName
+              - ageGroup
+              - division
+              - available
+              - trainingId
+            properties:
+              email:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              available:
+                type: boolean
+              trainingId:
+                type: string
+      responses:
+        '200':
+          description: Availability updated
+        '500':
+          description: Internal server error
+
+    get:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Get training availability
+      description: Fetches availability of all players for a specific training session
+      operationId: getTrainingAvailability
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+        - in: query
+          name: trainingId
+          required: true
+          type: string
+      responses:
+        '200':
+          description: List of availability responses
+        '400':
+          description: Missing or invalid parameters
+        '500':
+          description: Internal server error
+
+  /schedule/fixture/availability:
+    post:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Update or fetch fixture availability
+      description: Updates or fetches availability of players for a specific fixture.
+      operationId: fixtureAvailability
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required:
+              - clubName
+              - ageGroup
+              - division
+              - matchId
+            properties:
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              email:
+                type: string
+              available:
+                type: boolean
+              matchId:
+                type: string
+      responses:
+        '200':
+          description: Success
+        '500':
+          description: Internal server error
+
+    get:
+      x-google-backend:
+        address: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-schedule-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Schedule Management
+      summary: Get fixture availability
+      description: Fetches availability of all players for a specific fixture
+      operationId: getFixtureAvailability
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+        - in: query
+          name: matchId
+          required: true
+          type: string
+      responses:
+        '200':
+          description: List of availability responses
+        '400':
+          description: Missing or invalid parameters
+        '500':
+          description: Internal server error
+
+
+  # Match Management Microservice Routes
+  /fixture/lineups:
+    post:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Save initial lineups for a match
+      operationId: saveLineups
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [matchId, clubName, ageGroup, division, homeTeamLineup, awayTeamLineup]
+            properties:
+              matchId:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              homeTeamLineup:
+                type: object
+              awayTeamLineup:
+                type: object
+      responses:
+        '201':
+          description: Lineups saved successfully.
+    get:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Retrieve lineups for a match
+      operationId: getLineups
+      parameters:
+        - in: query
+          name: matchId
+          required: true
+          type: string
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Lineups retrieved successfully.
+    patch:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Update existing lineups for a match
+      operationId: updateLineups
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [matchId, clubName, ageGroup, division]
+            properties:
+              matchId:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              homeTeamLineup:
+                type: object
+              awayTeamLineup:
+                type: object
+      responses:
+        '200':
+          description: Lineups updated successfully.
+    delete:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Delete lineups for a match
+      operationId: deleteLineups
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [matchId, clubName, ageGroup, division]
+            properties:
+              matchId:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+      responses:
+        '200':
+          description: Lineups deleted successfully.
+
+  /fixture/events:
+    post:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Add a new event to a match
+      operationId: addEvent
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [matchId, clubName, ageGroup, division, event]
+            properties:
+              matchId:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              event:
+                type: object
+      responses:
+        '201':
+          description: Event added successfully.
+    get:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Retrieve all events for a match
+      operationId: getEvents
+      parameters:
+        - in: query
+          name: matchId
+          required: true
+          type: string
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Events retrieved successfully.
+    patch:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Update an existing match event
+      operationId: updateEvent
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [matchId, clubName, ageGroup, division, eventId, event]
+            properties:
+              matchId:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              eventId:
+                type: string
+              event:
+                type: object
+      responses:
+        '200':
+          description: Event updated successfully.
+    delete:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Delete a specific event from a match
+      operationId: deleteEvent
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [matchId, clubName, ageGroup, division, eventId]
+            properties:
+              matchId:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              eventId:
+                type: string
+      responses:
+        '200':
+          description: Event deleted successfully.
+
+  /fixture/results:
+    post:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Save initial match result
+      operationId: saveResult
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [matchId, clubName, ageGroup, division, homeScore, awayScore]
+            properties:
+              matchId:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              homeScore:
+                type: integer
+              awayScore:
+                type: integer
+      responses:
+        '201':
+          description: Result saved successfully.
+    get:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Retrieve match result
+      operationId: getResult
+      parameters:
+        - in: query
+          name: matchId
+          required: true
+          type: string
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Result retrieved successfully.
+    patch:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Update match result
+      operationId: updateResult
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [matchId, clubName, ageGroup, division]
+            properties:
+              homeScore:
+                type: integer
+              awayScore:
+                type: integer
+      responses:
+        '200':
+          description: Result updated successfully.
+    delete:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Delete match result
+      operationId: deleteResult
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [matchId, clubName, ageGroup, division]
+            properties:
+              matchId:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+      responses:
+        '200':
+          description: Result deleted successfully.
+        '404':
+          description: Result not found.
+        '500':
+          description: Internal server error.
+
+  /fixture/player:
+    post:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Submit or overwrite player rating for a match
+      description: Submits or overwrites player rating with dynamically accepted fields.
+      operationId: submitPlayerRating
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [clubName, ageGroup, division, matchId, playerEmail]
+            properties:
+              clubName:
+                type: string
+                description: The name of the club.
+              ageGroup:
+                type: string
+                description: The age group (e.g., U12).
+              division:
+                type: string
+                description: The division (e.g., Premier).
+              matchId:
+                type: string
+                description: The match ID.
+              playerEmail:
+                type: string
+                description: The email of the player being rated.
+            additionalProperties:  # This allows any other rating fields to be dynamically accepted.
+              type: number
+              description: Any additional player rating metric (e.g., pace, passingAccuracy, teamwork).
+      responses:
+        '201':
+          description: Player rating submitted successfully.
+        '400':
+          description: Missing required fields or invalid input.
+        '500':
+          description: Internal server error.
+
+    get:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Retrieve a player rating for a match
+      description: Fetches a player rating for a specific match.
+      operationId: getPlayerRating
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: matchId
+          required: true
+          type: string
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: List of player ratings for the match.
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                playerEmail:
+                  type: string
+                createdAt:
+                  type: string
+                  format: date-time
+                additionalProperties:
+                  type: number
+        '500':
+          description: Internal server error.
+
+    patch:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Update player rating fields for a match
+      description: Allows partial updates to player ratings, dynamically accepting new fields.
+      operationId: updatePlayerRating
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [clubName, ageGroup, division, matchId, playerEmail]
+            properties:
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              matchId:
+                type: string
+              playerEmail:
+                type: string
+            additionalProperties:
+              type: number
+              description: Any additional player rating metric to update.
+      responses:
+        '200':
+          description: Player rating updated successfully.
+        '400':
+          description: No valid fields provided for update.
+        '500':
+          description: Internal server error.
+
+    delete:
+      x-google-backend:
+        address: https://microservice-match-management-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-match-management-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Match Management
+      summary: Delete player rating for a match
+      description: Deletes a player’s rating for a specific match.
+      operationId: deletePlayerRating
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [clubName, ageGroup, division, matchId, playerEmail]
+            properties:
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              matchId:
+                type: string
+              playerEmail:
+                type: string
+      responses:
+        '200':
+          description: Player rating deleted successfully.
+        '500':
+          description: Internal server error.
+
+
+  # Carpool Microservice Routes
+  /carpool/offer:
+    post:
+      x-google-backend:
+        address: https://microservice-carpool-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-carpool-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Carpool
+      summary: Offer a ride for a specific match
+      description: Allows a user to offer a carpool ride for a match.
+      operationId: offerRide
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Ride details
+          required: true
+          schema:
+            type: object
+            required:
+              - id
+              - driverName
+              - seats
+              - location
+              - pickup
+              - time
+              - matchId
+              - matchDetails
+            properties:
+              id:
+                type: string
+                description: The unique ID of the ride
+              driverName:
+                type: string
+                description: The name of the driver
+              seats:
+                type: integer
+                description: Number of available seats
+              location:
+                type: string
+                description: Departure location
+              pickup:
+                type: string
+                enum: ["Yes", "No"]
+                description: Whether pickup stops are available
+              time:
+                type: string
+                format: time
+                description: Departure time
+              matchId:
+                type: string
+                description: The unique ID of the match associated with the ride
+              matchDetails:
+                type: string
+                description: Match details (e.g., "Cork City vs Dublin United - 2024-02-20")
+      responses:
+        '201':
+          description: Ride added successfully
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              ride_id:
+                type: string
+        '400':
+          description: Missing required fields
+        '500':
+          description: Internal server error
+
+  /carpool/rides:
+    get:
+      x-google-backend:
+        address: https://microservice-carpool-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-carpool-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Carpool
+      summary: Retrieve available rides for a specific team
+      description: Retrieves a list of all carpool rides for the given club, age group, and division.
+      operationId: getRides
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          type: string
+          description: Name of the club
+          required: true
+        - in: query
+          name: ageGroup
+          type: string
+          description: Age group (e.g., U12, U14)
+          required: true
+        - in: query
+          name: division
+          type: string
+          description: Division (e.g., Premier, First Division)
+          required: true
+      responses:
+        '200':
+          description: List of available rides for the specified team
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Unique identifier for the ride
+                driverName:
+                  type: string
+                  description: Name of the driver offering the ride
+                seats:
+                  type: integer
+                  description: Number of available seats
+                location:
+                  type: string
+                  description: Pickup location for the ride
+                pickup:
+                  type: string
+                  enum: ["Yes", "No"]
+                  description: Indicates whether pickup is required
+                time:
+                  type: string
+                  format: time
+                  description: Time of departure
+                matchId:
+                  type: string
+                  description: ID of the match this ride is for
+                matchDetails:
+                  type: string
+                  description: Brief details about the match
+        '400':
+          description: Missing required query parameters
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Missing required query parameters
+        '500':
+          description: Internal server error
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Internal server error
+
+  /carpool/request:
+    post:
+      x-google-backend:
+        address: https://microservice-carpool-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-carpool-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Carpool
+      summary: Confirm a carpool ride request
+      description: Allows a user to confirm a ride for a specific match. The ride request is automatically confirmed, the available seats are reduced, and the user's name is added to the carpool's passenger list.
+      operationId: requestRide
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Ride confirmation details
+          required: true
+          schema:
+            type: object
+            required:
+              - userName
+              - ride_id
+            properties:
+              userName:
+                type: string
+                description: The name of the user requesting the ride
+              ride_id:
+                type: string
+                description: The unique ID of the ride
+      responses:
+        '200':
+          description: Ride confirmed successfully
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Ride confirmed"
+              ride_id:
+                type: string
+                example: "df2673b6-26ae-46b7-9dfd-630af4fdab5a"
+              user:
+                type: string
+                example: "Jamie Roche"
+        '400':
+          description: Missing required fields or no available seats
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "No available seats"
+        '404':
+          description: Ride not found
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Ride not found"
+        '500':
+          description: Internal server error
+
+  /carpool/cancel:
+    post:
+      x-google-backend:
+        address: https://microservice-carpool-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-carpool-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Carpool
+      summary: Cancel a carpool ride
+      description: Allows a driver to cancel a ride they offered.
+      operationId: cancelRide
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: The ride ID to be canceled
+          required: true
+          schema:
+            type: object
+            properties:
+              rideId:
+                type: string
+                description: The unique ID of the ride to be canceled
+      responses:
+        '200':
+          description: Ride cancelled successfully
+        '400':
+          description: Missing ride ID in request
+        '404':
+          description: Ride not found
+        '500':
+          description: Internal server error
+ 
+
+ # Payments Microservice Routes
+  /stripe/status:
+    get:
+      x-google-backend:
+        address: https://microservice-payments-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-payments-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Payments
+      summary: Check Stripe account status for a club
+      description: Checks if a club has a connected Stripe Express account.
+      operationId: checkStripeStatus
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          description: The club name to check Stripe account status for.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Club's Stripe account status
+          schema:
+            type: object
+            properties:
+              stripe_account_id:
+                type: string
+                description: The Stripe Express account ID if available, else null.
+        '400':
+          description: Missing or invalid query parameter.
+        '500':
+          description: Internal server error.
+
+  /stripe/connect:
+    post:
+      x-google-backend:
+        address: https://microservice-payments-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-payments-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Payments
+      summary: Onboard a club with Stripe Express
+      description: Creates a Stripe Express account for a club and returns an onboarding link.
+      operationId: createConnectAccount
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Club details for Stripe Express onboarding.
+          required: true
+          schema:
+            type: object
+            required:
+              - clubName
+              - email
+            properties:
+              clubName:
+                type: string
+                description: The name of the club.
+                example: "Cobh Ramblers"
+              email:
+                type: string
+                description: The email of the club representative.
+                example: "coach@cobhramblers.ie"
+      responses:
+        '200':
+          description: Stripe Express onboarding link created successfully.
+          schema:
+            type: object
+            properties:
+              onboarding_url:
+                type: string
+                description: The Stripe Express onboarding link for the club.
+        '400':
+          description: Missing or invalid request data.
+        '500':
+          description: Internal server error or Stripe API failure.
+
+  /products/create:
+    post:
+      x-google-backend:
+        address: https://microservice-payments-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-payments-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Payments
+      summary: Create a new product in a club's Stripe Express account
+      description: |
+        Creates a new product and price inside the club's own Stripe Express account. 
+        If `installmentMonths` is provided, the price will be set as a recurring monthly subscription with a defined cancellation period.
+      operationId: createProduct
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Product details for Stripe Express creation
+          required: true
+          schema:
+            type: object
+            properties:
+              clubName:
+                type: string
+                description: The name of the club associated with this product.
+              ageGroup:
+                type: string
+                description: The age group of the team listing the product.
+              division:
+                type: string
+                description: The division of the team listing the product.
+              products:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - name
+                    - price
+                  properties:
+                    name:
+                      type: string
+                      description: Name of the product.
+                      example: "Membership Fee"
+                    price:
+                      type: number
+                      format: float
+                      description: Base price of the product in EUR.
+                      example: 450.00
+                    installmentMonths:
+                      type: integer
+                      description: Number of months for installment plan. If provided, the product will be created as a subscription.
+                      example: 6
+      responses:
+        '201':
+          description: Product created successfully in the club's Stripe Express account.
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Products created successfully"
+              products:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: Name of the product.
+                    stripe_product_id:
+                      type: string
+                      description: Stripe product ID.
+                    stripe_price_id:
+                      type: string
+                      description: Stripe price ID.
+                    price:
+                      type: number
+                      format: float
+                      description: Price of the product in EUR.
+                    installmentMonths:
+                      type: integer
+                      description: Number of months for installment plan (null for full payment).
+                    category:
+                      type: string
+                      description: Category of the product.
+                    isMembership:
+                      type: boolean
+                      description: Indicates if the product is a membership.
+        '400':
+          description: Missing or invalid request data.
+        '500':
+          description: Internal server error or Stripe API failure.
+
+  /products/list:
+    get:
+      x-google-backend:
+        address: https://microservice-payments-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-payments-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Payments
+      summary: Retrieve available products for a specific team inside a club
+      description: Fetches all products listed for sale in a club's Stripe Express account filtered by age group and division.
+      operationId: listProducts
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          description: The name of the club whose products should be retrieved.
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          description: The age group of the team retrieving the products.
+          required: true
+          type: string
+        - in: query
+          name: division
+          description: The division of the team retrieving the products.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: List of available products for the specific team inside the club.
+          schema:
+            type: object
+            properties:
+              products:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: Unique product ID from Firestore.
+                    name:
+                      type: string
+                      description: Name of the product.
+                    price:
+                      type: number
+                      format: float
+                      description: Base price of the product in EUR.
+                    installmentMonths:
+                      type: integer
+                      description: Number of months for installment plan (null for full payment).
+                    category:
+                      type: string
+                      description: Category of the product.
+                    isMembership:
+                      type: boolean
+                      description: Indicates if the product is a membership.
+                    stripe_product_id:
+                      type: string
+                      description: The Stripe product ID linked to this product.
+                    stripe_price_id:
+                      type: string
+                      description: The Stripe price ID linked to this product.
+        '400':
+          description: Missing or invalid request data.
+        '500':
+          description: Internal server error or Stripe API failure.
+
+  /stripe/create-checkout-session:
+    post:
+      x-google-backend:
+        address: https://microservice-payments-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-payments-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Payments
+      summary: Create a Stripe Checkout session
+      description: |
+        Creates a Stripe Checkout session for a club's Stripe Express account. 
+        Handles both one-time and subscription-based payments dynamically.
+      operationId: createCheckoutSession
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Checkout session details, including cart items and club information.
+          required: true
+          schema:
+            type: object
+            required:
+              - clubName
+              - cart
+            properties:
+              clubName:
+                type: string
+                description: The name of the club processing the payment.
+                example: "Cobh Ramblers"
+              ageGroup:
+                type: string
+                description: The age group of the club making the purchase.
+              division:
+                type: string
+                description: The division of the team making the purchase.
+              customerEmail:
+                type: string
+                description: The email of the customer making the purchase.
+                example: "customer@email.com"
+              cart:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - productId
+                    - priceId
+                    - quantity
+                  properties:
+                    productId:
+                      type: string
+                      description: The unique identifier of the product.
+                      example: "prod_RpLpYtn9vcUnNU"
+                    priceId:
+                      type: string
+                      description: The Stripe price ID linked to the product.
+                      example: "price_1Qvh7b2ShZcnCRAUHmXkReB0"
+                    quantity:
+                      type: integer
+                      description: Quantity of the product being purchased.
+                      example: 2
+                    installmentMonths:
+                      type: integer
+                      description: The number of months over which the subscription will be charged. If greater than 1, a subscription is created and automatically canceled after this duration.
+                      example: 6
+      responses:
+        '200':
+          description: Stripe Checkout session created successfully.
+          schema:
+            type: object
+            properties:
+              checkoutUrl:
+                type: string
+                description: The URL for Stripe-hosted Checkout.
+                example: "https://checkout.stripe.com/c/pay/cs_test_a1G..."
+        '400':
+          description: Missing or invalid request data.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Club name and cart items are required."
+        '500':
+          description: Internal server error or Stripe API failure.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Internal server error"
+
+  /stripe/webhook:
+    post:
+      x-google-backend:
+        address: https://microservice-payments-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-payments-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Payments
+      summary: Stripe webhook for processing payments
+      description: Handles Stripe webhook events such as successful payments.
+      operationId: stripeWebhook
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: header
+          name: Stripe-Signature
+          description: Stripe's signature for verifying webhook authenticity.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Webhook received and processed successfully.
+        '400':
+          description: Invalid webhook signature or request payload.
+        '500':
+          description: Internal server error.
+
+  /transactions/list:
+    get:
+      x-google-backend:
+        address: https://microservice-payments-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-payments-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Payments
+      summary: Retrieve a user's transaction history
+      description: Fetches a list of completed and pending transactions for a user based on their email. Each transaction includes itemized details of purchased products.
+      operationId: listTransactions
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+        - in: query
+          name: email
+          description: The email of the user whose transactions should be retrieved.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: List of transactions retrieved successfully.
+          schema:
+            type: object
+            properties:
+              transactions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: Unique transaction ID.
+                    amount:
+                      type: number
+                      format: float
+                      description: Transaction amount in EUR.
+                      example: 50.00
+                    currency:
+                      type: string
+                      description: Currency of the transaction.
+                      example: "eur"
+                    status:
+                      type: string
+                      description: Payment status.
+                      example: "completed"
+                    club:
+                      type: string
+                      description: The club where the transaction was made.
+                      example: "Cobh Ramblers"
+                    ageGroup:
+                      type: string
+                      description: Age group related to the transaction.
+                      example: "U16"
+                    division:
+                      type: string
+                      description: Division related to the transaction.
+                      example: "Premier"
+                    timestamp:
+                      type: string
+                      format: date-time
+                      description: Timestamp when the transaction was recorded.
+                      example: "2025-02-27T12:34:56Z"
+                    purchasedItems:
+                      type: array
+                      description: List of purchased products in the transaction.
+                      items:
+                        type: object
+                        properties:
+                          productId:
+                            type: string
+                            description: Stripe price ID of the product.
+                            example: "price_ABC123"
+                          productName:
+                            type: string
+                            description: Name of the purchased product.
+                            example: "Season Membership"
+                          category:
+                            type: string
+                            description: Category of the product.
+                            enum:
+                              - membership
+                              - merchandise
+                              - training
+                              - match
+                              - other
+                            example: "membership"
+                          quantity:
+                            type: integer
+                            description: Quantity of the product purchased.
+                            example: 1
+                          installmentMonths:
+                            type: integer
+                            description: Number of months for installment plan. If omitted, it is a one-time payment.
+                            example: 6
+                          totalPrice:
+                            type: number
+                            format: float
+                            description: Total price paid for this product.
+                            example: 50.00
+        '400':
+          description: Missing or invalid query parameter.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "User email is required."
+        '500':
+          description: Internal server error.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Internal server error."
+
+  /stripe/login-link:
+    post:
+      x-google-backend:
+        address: https://microservice-payments-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-payments-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Payments
+      summary: Generate a Stripe Express Dashboard login link
+      description: |
+        Creates a one-time login link for a club's Stripe Express account, allowing administrators to access the Express Dashboard.
+      operationId: createStripeLoginLink
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Club details to generate the Stripe Express login link.
+          required: true
+          schema:
+            type: object
+            required:
+              - clubName
+            properties:
+              clubName:
+                type: string
+                description: The name of the club associated with the Stripe Express account.
+                example: "Cobh Ramblers"
+      responses:
+        '200':
+          description: Stripe Express login link created successfully.
+          schema:
+            type: object
+            properties:
+              url:
+                type: string
+                description: The one-time login URL for the Stripe Express Dashboard.
+                example: "https://connect.stripe.com/express/someGeneratedLoginLink"
+        '400':
+          description: Missing or invalid request data.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Club name is required"
+        '404':
+          description: Club not found or does not have a Stripe Express account.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Club not found"
+        '500':
+          description: Internal server error or Stripe API failure.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Internal server error"
+
+  /payments:
+    get:
+      x-google-backend:
+        address: https://microservice-payments-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-payments-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Payments
+      summary: Retrieve all payments for a specific team
+      description: Retrieves a list of all payments for the given club, age group, and division.
+      operationId: getPayments
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          type: string
+          description: Name of the club
+          required: true
+        - in: query
+          name: ageGroup
+          type: string
+          description: Age group (e.g., U12, U14)
+          required: true
+        - in: query
+          name: division
+          type: string
+          description: Division (e.g., Premier, First Division)
+          required: true
+      responses:
+        '200':
+          description: List of payments for the specified team
+          schema:
+            type: object
+            properties:
+              payments:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: Unique identifier for the payment
+                    amount:
+                      type: number
+                      format: float
+                      description: Amount paid
+                    currency:
+                      type: string
+                      description: Currency of the payment (e.g., EUR, USD)
+                    status:
+                      type: string
+                      description: Status of the payment (e.g., Completed, Pending)
+                    timestamp:
+                      type: string
+                      format: date-time
+                      description: Timestamp of when the payment was made
+                    purchasedItems:
+                      type: array
+                      items:
+                        type: string
+                      description: List of items purchased in the transaction
+        '400':
+          description: Missing required query parameters
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Missing required query parameters
+        '500':
+          description: Internal server error
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Internal server error
+
+
+  # AI Assistant Microservice Routes
+  /query-ai:
+    post:
+      x-google-backend:
+        address: https://microservice-ai-chatbot-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-ai-chatbot-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - AI Chatbot
+      summary: Query the AI Assistant
+      description: Send a message to the AI Assistant to get data-driven responses from Grassroots Football Management.
+      operationId: queryAiAssistant
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Message data for the AI assistant
+          required: true
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The user's message/question
+              token:
+                type: string
+                description: Firebase ID token of the authenticated user
+              email:
+                type: string
+                description: Email address of the authenticated user
+              month:
+                type: string
+                description: Current month (format yyyy-MM) for scheduling queries
+              clubName:
+                type: string
+                description: The name of the club for context
+              ageGroup:
+                type: string
+                description: The age group for context
+              division:
+                type: string
+                description: The division for context
+      responses:
+        '200':
+          description: AI assistant response
+          schema:
+            type: object
+            properties:
+              reply:
+                type: string
+                description: AI Assistant's natural language reply if no tool calls are made
+              replies:
+                type: array
+                description: List of replies (one per tool call result) if tools are called
+                items:
+                  type: string
+              tool_calls:
+                type: array
+                description: (Optional) List of tool calls GPT made if it invoked any tools.
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: Unique ID for the tool call.
+                    type:
+                      type: string
+                      enum: [function]
+                    function:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Name of the function being called (e.g., 'getUserClubInfo')
+                        arguments:
+                          type: string
+                          description: JSON-encoded arguments for the function call
+        '400':
+          description: Invalid request (missing required fields)
+        '401':
+          description: Unauthorized - Invalid Firebase token
+        '403':
+          description: Forbidden - Email mismatch (token does not match provided email)
+        '500':
+          description: Internal server error
+
+
+  # Player Stats Microservice Routes
+  /stats/update:
+    post:
+      x-google-backend:
+        address: https://microservice-player-stats-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-player-stats-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Player Stats
+      summary: Update player stats based on match events
+      description: Updates player stats such as goals, assists, yellow cards, red cards, and games played.
+      operationId: updatePlayerStats
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Player event details for updating stats
+          required: true
+          schema:
+            type: object
+            required:
+              - clubName
+              - ageGroup
+              - division
+              - playerEmail
+              - playerName
+              - eventType
+            properties:
+              clubName:
+                type: string
+                description: The name of the club
+              ageGroup:
+                type: string
+                description: The player's age group
+              division:
+                type: string
+                description: The player's division
+              playerEmail:
+                type: string
+                description: Email of the player whose stats are being updated
+              playerName:
+                type: string
+                description: Full name of the player
+              eventType:
+                type: string
+                enum: ["goal", "assist", "yellowCard", "redCard"]
+                description: The type of event that affects the player's stats
+      responses:
+        '200':
+          description: Player stats updated successfully
+        '400':
+          description: Missing or invalid request data
+        '500':
+          description: Internal server error
+
+  /stats/get:
+    get:
+      x-google-backend:
+        address: https://microservice-player-stats-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-player-stats-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Player Stats
+      summary: Retrieve player statistics
+      description: Fetches player statistics based on their email.
+      operationId: getPlayerStats
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+        - in: query
+          name: playerEmail
+          required: true
+          type: string
+          description: The email of the player whose stats are being retrieved
+      responses:
+        '200':
+          description: Player statistics retrieved successfully
+          schema:
+            type: object
+            properties:
+              playerEmail:
+                type: string
+              playerName:
+                type: string
+              goals:
+                type: integer
+              assists:
+                type: integer
+              yellowCards:
+                type: integer
+              redCards:
+                type: integer
+        '400':
+          description: Missing or invalid query parameters
+        '404':
+          description: Player stats not found
+        '500':
+          description: Internal server error
+
+  /stats/search:
+    get:
+      x-google-backend:
+        address: https://microservice-player-stats-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-player-stats-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Player Stats
+      summary: Search players by name
+      description: Searches for players based on a partial or full match of their name.
+      operationId: searchPlayersByName
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+        - in: query
+          name: playerName
+          required: true
+          type: string
+          description: The player's name (partial or full) to search for
+      responses:
+        '200':
+          description: List of matching players and their stats
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                playerEmail:
+                  type: string
+                playerName:
+                  type: string
+                goals:
+                  type: integer
+                assists:
+                  type: integer
+                yellowCards:
+                  type: integer
+                redCards:
+                  type: integer
+        '400':
+          description: Missing or invalid query parameters
+        '404':
+          description: No matching players found
+        '500':
+          description: Internal server error
+
+  /stats/list:
+    get:
+      x-google-backend:
+        address: https://microservice-player-stats-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-player-stats-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Player Stats
+      summary: Retrieve all player statistics and leaderboards
+      description: Lists all player statistics and identifies top performers for various categories.
+      operationId: listAllPlayerStats
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: clubName
+          required: true
+          type: string
+        - in: query
+          name: ageGroup
+          required: true
+          type: string
+        - in: query
+          name: division
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Player statistics leaderboard and all players' stats retrieved successfully
+          schema:
+            type: object
+            properties:
+              leaderboard:
+                type: object
+                properties:
+                  topScorer:
+                    type: object
+                    properties:
+                      playerName:
+                        type: string
+                      goals:
+                        type: integer
+                  mostAssists:
+                    type: object
+                    properties:
+                      playerName:
+                        type: string
+                      assists:
+                        type: integer
+                  mostYellowCards:
+                    type: object
+                    properties:
+                      playerName:
+                        type: string
+                      yellowCards:
+                        type: integer
+                  mostRedCards:
+                    type: object
+                    properties:
+                      playerName:
+                        type: string
+                      redCards:
+                        type: integer
+              allPlayers:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    playerEmail:
+                      type: string
+                    playerName:
+                      type: string
+                    goals:
+                      type: integer
+                    assists:
+                      type: integer
+                    yellowCards:
+                      type: integer
+                    redCards:
+                      type: integer
+        '400':
+          description: Missing or invalid query parameters
+        '500':
+          description: Internal server error
+
+
+  # Notification Microservice Routes
+  /add-fcm-token:
+    post:
+      x-google-backend:
+        address: https://microservice-notification-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-notification-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Notifications
+      summary: Add FCM token to club-specific notifications collection
+      description: Adds a user's FCM token to the Firestore path for their club, age group, and division.
+      operationId: addFcmToken
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Player event details for updating stats
+          required: true
+          schema:
+            type: object
+            required:
+              - email
+              - clubName
+              - ageGroup
+              - division
+              - fcmToken
+            properties:
+              email:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              fcmToken:
+                type: string
+      responses:
+        '200':
+          description: FCM token added successfully
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+  
+  /notifications/unread:
+    post:
+      x-google-backend:
+        address: https://microservice-notification-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-notification-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Notifications
+      summary: Get unread notifications
+      description: Retrieves all unread notifications for a player in a specific club, age group, and division.
+      operationId: getUnreadNotifications
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: User and team identifiers for retrieving notifications
+          required: true
+          schema:
+            type: object
+            required:
+              - email
+              - clubName
+              - ageGroup
+              - division
+            properties:
+              email:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+      responses:
+        '200':
+          description: List of unread notifications
+        '400':
+          description: Invalid input
+        '500':
+          description: Failed to fetch notifications
+
+  /notifications/mark-read:
+    post:
+      x-google-backend:
+        address: https://microservice-notification-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-notification-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Notifications
+      summary: Mark notification as read
+      description: Marks a specific notification as read in the database for a given player.
+      operationId: markNotificationAsRead
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Notification and user details to update
+          required: true
+          schema:
+            type: object
+            required:
+              - email
+              - clubName
+              - ageGroup
+              - division
+              - notificationId
+            properties:
+              email:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+              notificationId:
+                type: string
+      responses:
+        '200':
+          description: Notification marked as read
+        '400':
+          description: Invalid input
+        '500':
+          description: Failed to update notification
+
+  /notifications/all:
+    post:
+      x-google-backend:
+        address: https://microservice-notification-180320540339.europe-west2.run.app
+        jwtAudience: https://microservice-notification-180320540339.europe-west2.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+      tags:
+      - Notifications
+      summary: Get all notifications (read and unread)
+      description: Returns all notifications for a player, including read and unread, sorted by timestamp.
+      operationId: getAllNotifications
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          description: Player and club context
+          schema:
+            type: object
+            required:
+              - email
+              - clubName
+              - ageGroup
+              - division
+            properties:
+              email:
+                type: string
+              clubName:
+                type: string
+              ageGroup:
+                type: string
+              division:
+                type: string
+      responses:
+        '200':
+          description: All notifications fetched successfully
+        '400':
+          description: Invalid input
+        '500':
+          description: Failed to fetch notifications
+  

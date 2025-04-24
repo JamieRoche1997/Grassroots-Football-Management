@@ -1,11 +1,10 @@
 import { alpha, Theme } from '@mui/material/styles';
-import type { TreeViewComponents } from '@mui/x-tree-view/themeAugmentation';
 import { gray, brand } from '../../../components/shared-theme/themePrimitives';
 
-export const treeViewCustomizations: TreeViewComponents<Theme> = {
+export const treeViewCustomizations = {
   MuiTreeItem2: {
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({ theme }: { theme: Theme }) => ({
         position: 'relative',
         boxSizing: 'border-box',
         padding: theme.spacing(0, 1),
@@ -25,7 +24,7 @@ export const treeViewCustomizations: TreeViewComponents<Theme> = {
           },
         },
       }),
-      content: ({ theme }) => ({
+      content: ({ theme }: { theme: Theme }) => ({
         marginTop: theme.spacing(1),
         padding: theme.spacing(0.5, 1),
         overflow: 'clip',

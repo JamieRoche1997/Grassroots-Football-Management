@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Box,
   Paper,
@@ -14,6 +14,8 @@ import {
   Fab,
   Zoom,
   Fade,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import ChatIcon from "@mui/icons-material/Chat";
@@ -60,8 +62,10 @@ function FloatingChatbot({
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
+  const inputMaxLength = 500;
 
   useEffect(() => {
     if (isOpen) {
@@ -69,14 +73,18 @@ function FloatingChatbot({
     }
   }, [messages, isOpen]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
   const handleToggle = () => setIsOpen(!isOpen);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
+    if (inputValue.length > inputMaxLength) {
+      setErrorMessage(`Message too long. Maximum ${inputMaxLength} characters allowed.`);
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -98,7 +106,7 @@ function FloatingChatbot({
       );
       const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: botResponse,
+        content: botResponse || "Sorry, I couldn't process your request at this time.",
         role: "bot",
         timestamp: new Date(),
       };
@@ -114,6 +122,7 @@ function FloatingChatbot({
           timestamp: new Date(),
         },
       ]);
+      setErrorMessage("Failed to connect to the AI service. Please try again later.");
     } finally {
       setIsLoading(false);
     }
@@ -128,6 +137,19 @@ function FloatingChatbot({
 
   const formatTimestamp = (date: Date): string => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const handleCloseError = () => {
+    setErrorMessage(null);
+  };
+
+  // Input validation - prevent pasting excessive text
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const pastedText = e.clipboardData.getData('text');
+    if (inputValue.length + pastedText.length > inputMaxLength) {
+      e.preventDefault();
+      setErrorMessage(`Pasted text too long. Message would exceed ${inputMaxLength} characters.`);
+    }
   };
 
   return (
@@ -249,6 +271,7 @@ function FloatingChatbot({
                                 message.role === "user"
                                   ? "rgba(255,255,255,0.7)"
                                   : theme.palette.text.secondary,
+                              display: "block",
                               textAlign: "right",
                             }}
                           >
@@ -256,37 +279,19 @@ function FloatingChatbot({
                           </Typography>
                         </Box>
                         {message.role === "user" && (
-                          <Avatar sx={{ ml: 1, width: 28, height: 28 }}>
+                          <Avatar
+                            sx={{
+                              ml: 1,
+                              width: 28,
+                              height: 28,
+                            }}
+                          >
                             <PersonIcon fontSize="small" />
                           </Avatar>
                         )}
                       </Box>
                     </ListItem>
                   ))
-                )}
-                {isLoading && (
-                  <ListItem
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      px: 0,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        p: 1.5,
-                        borderRadius: 2,
-                        backgroundColor: theme.palette.background.paper,
-                        boxShadow: 1,
-                      }}
-                    >
-                      <CircularProgress size={16} sx={{ mr: 1 }} />
-                      <Typography variant="body2">Thinking...</Typography>
-                    </Box>
-                  </ListItem>
                 )}
                 <div ref={messagesEndRef} />
               </List>
@@ -295,42 +300,101 @@ function FloatingChatbot({
           <Divider />
           <Box
             sx={{
-              p: 1.5,
-              bgcolor: theme.palette.background.paper,
+              p: 2,
+              backgroundColor: theme.palette.background.paper,
               display: "flex",
-              gap: 1,
+              alignItems: "center",
             }}
           >
             <TextField
               fullWidth
-              size="small"
-              variant="outlined"
               placeholder={placeholder}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
+              onPaste={handlePaste}
               multiline
               maxRows={3}
+              size="small"
               disabled={isLoading}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+              inputProps={{ maxLength: inputMaxLength }}
+              helperText={inputValue.length > 0 ? `${inputValue.length}/${inputMaxLength}` : ""}
+              sx={{
+                "& .MuiInputBase-root": {
+                  bgcolor: "background.default",
+                  borderRadius: 2,
+                },
+              }}
             />
             <IconButton
               color="primary"
               onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isLoading}
-              sx={{
-                bgcolor: theme.palette.primary.main,
-                color: theme.palette.primary.contrastText,
-                "&:hover": { bgcolor: theme.palette.primary.dark },
-              }}
+              disabled={isLoading || !inputValue.trim()}
+              sx={{ ml: 1 }}
             >
-              <SendIcon fontSize="small" />
+              {isLoading ? (
+                <CircularProgress color="inherit" size={24} />
+              ) : (
+                <SendIcon />
+              )}
             </IconButton>
           </Box>
         </Paper>
       </Zoom>
+      
+      <Snackbar
+        open={!!errorMessage}
+        autoHideDuration={6000}
+        onClose={handleCloseError}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert onClose={handleCloseError} severity="error" sx={{ width: '100%' }}>
+          {errorMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 }
 
-export default FloatingChatbot;
+// Wrap in error boundary to catch any unexpected rendering errors
+class ChatbotErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("Chatbot error:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Fab
+          color="primary"
+          onClick={() => this.setState({ hasError: false })}
+          sx={{ position: "fixed", bottom: 16, right: 16, zIndex: 1300 }}
+        >
+          <ChatIcon />
+        </Fab>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+export default function Chatbot(props: ChatbotProps) {
+  return (
+    <ChatbotErrorBoundary>
+      <FloatingChatbot {...props} />
+    </ChatbotErrorBoundary>
+  );
+}

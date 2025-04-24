@@ -12,6 +12,7 @@ import ColorModeSelect from "../../components/shared-theme/ColorModeSelect";
 import { useAuth } from "../../hooks/useAuth";
 import { getProfile } from "../../services/profile";
 import { addPlayerFCMToken } from "../../services/notifications";
+import { useState } from "react";
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: "flex",
@@ -59,10 +60,13 @@ export default function PermissionsPage(props: {
   disableCustomTheme?: boolean;
 }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, setUserData } = useAuth();
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     try {
+      setLoading(true);
+      
       if (user?.email) {
         await handleAllowNotifications(user.email);
         const membershipInfo = await getProfile(user?.email);
@@ -78,13 +82,59 @@ export default function PermissionsPage(props: {
             membershipInfo.ageGroup,
             membershipInfo.division
           );
+          
+          // Force update user context before navigation
+          await new Promise<void>((resolve) => {
+            console.log("Updating user data before navigation:", membershipInfo);
+            setUserData({
+              clubName: membershipInfo.clubName,
+              ageGroup: membershipInfo.ageGroup,
+              division: membershipInfo.division,
+              name: membershipInfo.name
+            });
+            
+            // Give time for the context to update before navigating
+            setTimeout(resolve, 500);
+          });
         } else {
-          console.error("User email is not available");
+          console.error("User membership info is not available");
         }
       }
+      
       navigate("/dashboard");
     } catch (error) {
       console.error("Error", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleSkip = async () => {
+    try {
+      setLoading(true);
+      
+      // Ensure profile data is loaded before navigating
+      if (user?.email) {
+        const membershipInfo = await getProfile(user?.email);
+        
+        if (membershipInfo) {
+          await new Promise<void>((resolve) => {
+            setUserData({
+              clubName: membershipInfo.clubName,
+              ageGroup: membershipInfo.ageGroup,
+              division: membershipInfo.division,
+              name: membershipInfo.name
+            });
+            setTimeout(resolve, 500);
+          });
+        }
+      }
+      
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error skipping permissions:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -102,13 +152,19 @@ export default function PermissionsPage(props: {
               Get notified when training is scheduled, matches are updated, or
               changes happen in your team.
             </Typography>
-            <Button variant="contained" onClick={handleSubmit} fullWidth>
-              Enable Notifications
+            <Button 
+              variant="contained" 
+              onClick={handleSubmit} 
+              fullWidth
+              disabled={loading}
+            >
+              {loading ? "Processing..." : "Enable Notifications"}
             </Button>
             <Button
               variant="text"
-              onClick={() => navigate("/dashboard")}
+              onClick={handleSkip}
               fullWidth
+              disabled={loading}
             >
               Skip for Now
             </Button>

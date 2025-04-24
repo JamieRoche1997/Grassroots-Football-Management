@@ -7,7 +7,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@mui/styled-engine': '@mui/styled-engine-sc', // Ensure Emotion is used
+      // Removed alias that was causing conflicts
     },
   },
   plugins: [react()],

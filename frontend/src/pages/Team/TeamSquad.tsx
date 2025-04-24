@@ -27,6 +27,9 @@ import {
   styled,
   alpha,
   InputLabel,
+  Alert,
+  Snackbar,
+  CircularProgress,
 } from "@mui/material";
 import {
   FilterList,
@@ -35,6 +38,7 @@ import {
   Delete,
   Person,
   Group,
+  Warning,
 } from "@mui/icons-material";
 import Layout from "../../components/Layout";
 import Header from "../../components/Header";
@@ -127,6 +131,23 @@ export default function TeamPlayers() {
   });
   const [removePlayerOpen, setRemovePlayerOpen] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error" | "info" | "warning";
+  }>({
+    open: false,
+    message: "",
+    severity: "info",
+  });
+  const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
+  const [formErrors, setFormErrors] = useState<{
+    name?: string;
+    email?: string;
+    position?: string;
+    dob?: string;
+  }>({});
   const uid = Math.random().toString(36).substr(2, 9);
 
   const isCoach = role === "coach";
@@ -191,25 +212,62 @@ export default function TeamPlayers() {
     );
   };
 
-  const handleAddPlayer = async () => {
-    if (
-      !clubName ||
-      !ageGroup ||
-      !division ||
-      !newPlayer.name ||
-      !newPlayer.email ||
-      !newPlayer.position
+  const validateForm = () => {
+    const errors: {
+      name?: string;
+      email?: string;
+      position?: string;
+      dob?: string;
+    } = {};
+    let isValid = true;
+
+    if (!newPlayer.name.trim()) {
+      errors.name = "Name is required";
+      isValid = false;
+    }
+
+    if (!newPlayer.email.trim()) {
+      errors.email = "Email is required";
+      isValid = false;
+    } else if (
+      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(newPlayer.email.trim())
     ) {
-      alert("Please fill in all fields.");
+      errors.email = "Invalid email address";
+      isValid = false;
+    }
+
+    if (!newPlayer.position) {
+      errors.position = "Position is required";
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handleAddPlayer = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    if (!clubName || !ageGroup || !division) {
+      setSnackbar({
+        open: true,
+        message: "Team information is incomplete",
+        severity: "error",
+      });
       return;
     }
 
     try {
+      setActionLoading(true);
       const userExists = await checkUserExists(newPlayer.email);
       if (userExists) {
-        alert(
-          "A user with this email already exists. Please ask them to sign in."
-        );
+        setSnackbar({
+          open: true,
+          message: "A user with this email already exists. Please ask them to sign in.",
+          severity: "warning",
+        });
         return;
       }
 
@@ -237,23 +295,38 @@ export default function TeamPlayers() {
         userRegistered: false,
       });
 
-      alert("Player added successfully!");
+      setSnackbar({
+        open: true,
+        message: "Player added successfully!",
+        severity: "success",
+      });
       setAddPlayerOpen(false);
       setNewPlayer({ name: "", email: "", position: "", dob: "", uid: "" });
       fetchClubAndPlayers();
     } catch (error) {
       console.error("Error adding player:", error);
-      alert("Failed to add player. Please try again.");
+      setSnackbar({
+        open: true,
+        message: "Failed to add player. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleRemovePlayers = async () => {
     if (selectedPlayers.length === 0) {
-      alert("Select players to remove.");
+      setSnackbar({
+        open: true,
+        message: "Select players to remove",
+        severity: "warning",
+      });
       return;
     }
 
     try {
+      setActionLoading(true);
       await Promise.all(
         selectedPlayers.map(async (playerEmail) => {
           if (clubName && ageGroup && division) {
@@ -267,14 +340,35 @@ export default function TeamPlayers() {
         })
       );
 
-      alert(`Successfully removed players: ${selectedPlayers.join(", ")}`);
+      setSnackbar({
+        open: true,
+        message: `Successfully removed ${selectedPlayers.length} player${
+          selectedPlayers.length > 1 ? "s" : ""
+        }`,
+        severity: "success",
+      });
       fetchClubAndPlayers();
       setRemovePlayerOpen(false);
+      setConfirmRemoveOpen(false);
       setSelectedPlayers([]);
     } catch (error) {
       console.error("Error removing players:", error);
-      alert("Error removing players. Please try again.");
+      setSnackbar({
+        open: true,
+        message: "Error removing players. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setActionLoading(false);
     }
+  };
+
+  const handleConfirmRemove = () => {
+    setConfirmRemoveOpen(true);
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   if (authLoading || loading) {
@@ -488,7 +582,7 @@ export default function TeamPlayers() {
         {/* Add Player Dialog */}
         <Dialog
           open={addPlayerOpen}
-          onClose={() => setAddPlayerOpen(false)}
+          onClose={() => !actionLoading && setAddPlayerOpen(false)}
           maxWidth="sm"
           fullWidth
           PaperProps={{
@@ -516,6 +610,9 @@ export default function TeamPlayers() {
                 onChange={(e) =>
                   setNewPlayer({ ...newPlayer, name: e.target.value })
                 }
+                error={!!formErrors.name}
+                helperText={formErrors.name}
+                disabled={actionLoading}
               />
               <TextField
                 label="Email"
@@ -525,8 +622,12 @@ export default function TeamPlayers() {
                 onChange={(e) =>
                   setNewPlayer({ ...newPlayer, email: e.target.value })
                 }
+                error={!!formErrors.email}
+                helperText={formErrors.email}
+                disabled={actionLoading}
               />
-              <FormControl fullWidth>
+             
+              <FormControl fullWidth error={!!formErrors.position}>
                 <InputLabel>Position</InputLabel>
                 <Select
                   value={newPlayer.position}
@@ -534,25 +635,32 @@ export default function TeamPlayers() {
                     setNewPlayer({ ...newPlayer, position: e.target.value })
                   }
                   label="Position"
+                  disabled={actionLoading}
                 >
                   <MenuItem value="Goalkeeper">Goalkeeper</MenuItem>
                   <MenuItem value="Defender">Defender</MenuItem>
                   <MenuItem value="Midfielder">Midfielder</MenuItem>
                   <MenuItem value="Forward">Forward</MenuItem>
                 </Select>
+                {formErrors.position && (
+                  <Typography color="error" variant="caption" sx={{ mt: 1, ml: 2 }}>
+                    {formErrors.position}
+                  </Typography>
+                )}
               </FormControl>
             </Stack>
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
-            <Button onClick={() => setAddPlayerOpen(false)}>Cancel</Button>
+            <Button onClick={() => setAddPlayerOpen(false)} disabled={actionLoading}>
+              Cancel
+            </Button>
             <Button
               variant="contained"
               onClick={handleAddPlayer}
-              disabled={
-                !newPlayer.name || !newPlayer.email || !newPlayer.position
-              }
+              disabled={actionLoading}
+              startIcon={actionLoading ? <CircularProgress size={20} /> : null}
             >
-              Add Player
+              {actionLoading ? "Adding..." : "Add Player"}
             </Button>
           </DialogActions>
         </Dialog>
@@ -560,7 +668,7 @@ export default function TeamPlayers() {
         {/* Remove Player Dialog */}
         <Dialog
           open={removePlayerOpen}
-          onClose={() => setRemovePlayerOpen(false)}
+          onClose={() => !actionLoading && setRemovePlayerOpen(false)}
           maxWidth="sm"
           fullWidth
           PaperProps={{
@@ -583,57 +691,126 @@ export default function TeamPlayers() {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Select players to remove from the squad:
             </Typography>
-            <List dense>
-              {players.map((player) => (
-                <ListItem
-                  key={player.email}
-                  sx={{
-                    borderBottom: `1px solid ${alpha(
-                      theme.palette.divider,
-                      0.1
-                    )}`,
-                    "&:hover": {
-                      backgroundColor: alpha(theme.palette.action.hover, 0.1),
-                    },
-                  }}
-                >
-                  <ListItemIcon>
-                    <Checkbox
-                      edge="start"
-                      checked={selectedPlayers.includes(player.email)}
-                      onChange={() => togglePlayerSelection(player.email)}
-                      color="error"
+            {players.length === 0 ? (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                No players available to remove
+              </Alert>
+            ) : (
+              <List dense>
+                {players.map((player) => (
+                  <ListItem
+                    key={player.email}
+                    sx={{
+                      borderBottom: `1px solid ${alpha(
+                        theme.palette.divider,
+                        0.1
+                      )}`,
+                      "&:hover": {
+                        backgroundColor: alpha(theme.palette.action.hover, 0.1),
+                      },
+                    }}
+                  >
+                    <ListItemIcon>
+                      <Checkbox
+                        edge="start"
+                        checked={selectedPlayers.includes(player.email)}
+                        onChange={() => togglePlayerSelection(player.email)}
+                        color="error"
+                        disabled={actionLoading}
+                      />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={player.name}
+                      secondary={
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <PositionChip label={player.position} size="small" />
+                          <Typography variant="caption">
+                            Age: {calculateAge(player.dob)}
+                          </Typography>
+                        </Box>
+                      }
                     />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={player.name}
-                    secondary={
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <PositionChip label={player.position} size="small" />
-                        <Typography variant="caption">
-                          Age: {calculateAge(player.dob)}
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
+                  </ListItem>
+                ))}
+              </List>
+            )}
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
-            <Button onClick={() => setRemovePlayerOpen(false)}>Cancel</Button>
+            <Button onClick={() => setRemovePlayerOpen(false)} disabled={actionLoading}>
+              Cancel
+            </Button>
             <Button
               variant="contained"
               color="error"
-              onClick={handleRemovePlayers}
-              disabled={selectedPlayers.length === 0}
+              onClick={handleConfirmRemove}
+              disabled={selectedPlayers.length === 0 || actionLoading}
             >
               Remove Selected
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Confirm Remove Dialog */}
+        <Dialog
+          open={confirmRemoveOpen}
+          onClose={() => !actionLoading && setConfirmRemoveOpen(false)}
+          maxWidth="xs"
+          PaperProps={{
+            sx: {
+              borderRadius: 4,
+            },
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 600 }}>
+            <Warning color="error" sx={{ mr: 1, verticalAlign: "middle" }} />
+            Confirm Removal
+          </DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to remove {selectedPlayers.length} player
+              {selectedPlayers.length !== 1 ? "s" : ""} from the squad?
+            </Typography>
+            <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+              This action cannot be undone.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setConfirmRemoveOpen(false)}
+              disabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleRemovePlayers}
+              disabled={actionLoading}
+              startIcon={actionLoading ? <CircularProgress size={20} /> : null}
+            >
+              {actionLoading ? "Removing..." : "Remove"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={handleSnackbarClose}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            onClose={handleSnackbarClose}
+            severity={snackbar.severity}
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </Layout>
   );

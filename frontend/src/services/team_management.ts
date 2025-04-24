@@ -32,7 +32,10 @@ export const createOrJoinClub = async (data: ClubData): Promise<void> => {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to create or join club");
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || `Failed to create or join club: ${response.status} ${response.statusText}`
+      );
     }
   } catch (error) {
     console.error("Error creating or joining club:", error);
@@ -67,7 +70,10 @@ export const fetchClubs = async (filters: {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch clubs");
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || `Failed to fetch clubs: ${response.status} ${response.statusText}`
+      );
     }
 
     return await response.json();
@@ -90,6 +96,15 @@ export const applyToJoinClub = async (
   division: string
 ): Promise<void> => {
   try {
+    // Input validation
+    if (!name || !playerEmail || !clubName || !ageGroup || !division) {
+      throw new Error("All fields are required for club application");
+    }
+    
+    if (!playerEmail.includes('@')) {
+      throw new Error("Invalid email format");
+    }
+
     const headers = await getAuthHeaders();
 
     const response = await fetch(`${url}/club/join-request`, {
@@ -99,7 +114,10 @@ export const applyToJoinClub = async (
     });
 
     if (!response.ok) {
-      throw new Error("Failed to apply to join club");
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || `Failed to apply to join club: ${response.status} ${response.statusText}`
+      );
     }
   } catch (error) {
     console.error("Error applying to join club:", error);
@@ -125,17 +143,29 @@ export const getJoinRequests = async (
   ageGroup: string,
   division: string
 ): Promise<JoinRequest[]> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
-    `${url}/club/requests?clubName=${encodeURIComponent(
-      clubName
-    )}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(
-      division
-    )}`,
-    { headers }
-  );
-  if (!response.ok) throw new Error("Failed to fetch join requests");
-  return await response.json();
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${url}/club/requests?clubName=${encodeURIComponent(
+        clubName
+      )}&ageGroup=${encodeURIComponent(ageGroup)}&division=${encodeURIComponent(
+        division
+      )}`,
+      { headers }
+    );
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || `Failed to fetch join requests: ${response.status} ${response.statusText}`
+      );
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching join requests:", error);
+    throw error;
+  }
 };
 
 /**
@@ -149,13 +179,24 @@ export const approveJoinRequest = async (
   ageGroup: string,
   division: string
 ): Promise<void> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`${url}/club/requests/approve`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ playerEmail, clubName, ageGroup, division }),
-  });
-  if (!response.ok) throw new Error("Failed to approve join request");
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${url}/club/requests/approve`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ playerEmail, clubName, ageGroup, division }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || `Failed to approve join request: ${response.status} ${response.statusText}`
+      );
+    }
+  } catch (error) {
+    console.error("Error approving join request:", error);
+    throw error;
+  }
 };
 
 /**
@@ -169,13 +210,24 @@ export const rejectJoinRequest = async (
   ageGroup: string,
   division: string
 ): Promise<void> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`${url}/club/requests/reject`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ playerEmail, clubName, ageGroup, division }),
-  });
-  if (!response.ok) throw new Error("Failed to reject join request");
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${url}/club/requests/reject`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ playerEmail, clubName, ageGroup, division }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || `Failed to reject join request: ${response.status} ${response.statusText}`
+      );
+    }
+  } catch (error) {
+    console.error("Error rejecting join request:", error);
+    throw error;
+  }
 };
 
 export interface Player {

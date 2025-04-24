@@ -15,6 +15,7 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import ColorModeIconDropdown from "../../../components/shared-theme/ColorModeIconDropdown";
 import Sitemark from "./SitemarkIcon";
 import { useNavigate } from "react-router-dom";
+import Tooltip from "@mui/material/Tooltip";
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   display: "flex",
@@ -38,22 +39,37 @@ export default function AppAppBar() {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const navigate = useNavigate();
 
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      // Ensure menu is closed when component is unmounted
+      if (open) setOpen(false);
+      if (anchorEl) setAnchorEl(null);
+    };
+  }, [open, anchorEl]);
+
   const toggleDrawer = (newOpen: boolean) => () => {
     setOpen(newOpen);
   };
 
   const handleScroll = (id: string) => {
-    const element = document.getElementById(id);
-    const offset = 64; // Height of the app bar in pixels
-    if (element) {
-      const elementPosition =
-        element.getBoundingClientRect().top + window.scrollY;
-      const offsetPosition = elementPosition - offset;
+    try {
+      const element = document.getElementById(id);
+      const offset = 64; // Height of the app bar in pixels
+      if (element) {
+        const elementPosition =
+          element.getBoundingClientRect().top + window.scrollY;
+        const offsetPosition = elementPosition - offset;
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth",
-      });
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        });
+      } else {
+        console.warn(`Element with ID "${id}" not found in the document.`);
+      }
+    } catch (error) {
+      console.error(`Error scrolling to element "${id}":`, error);
     }
   };
 
@@ -67,9 +83,33 @@ export default function AppAppBar() {
   };
 
   const handleSignUp = (role: string) => {
-    navigate(`/signup?role=${role}`);
-    handleMenuClose();
+    try {
+      navigate(`/signup?role=${role}`);
+      handleMenuClose();
+    } catch (error) {
+      console.error("Error navigating to signup:", error);
+      // Fallback if navigation fails
+      window.location.href = `/signup?role=${role}`;
+    }
   };
+
+  const handleSignIn = () => {
+    try {
+      navigate("/signin");
+    } catch (error) {
+      console.error("Error navigating to signin:", error);
+      // Fallback if navigation fails
+      window.location.href = "/signin";
+    }
+  };
+
+  const navItems = [
+    { id: "features", label: "Features" },
+    { id: "pricing", label: "Pricing" },
+    { id: "reviews", label: "Reviews" },
+    { id: "faq", label: "FAQ" },
+    { id: "contact", label: "Contact" },
+  ];
 
   return (
     <AppBar
@@ -89,47 +129,19 @@ export default function AppAppBar() {
           >
             <Sitemark />
             <Box sx={{ display: { xs: "none", md: "flex" }, gap: 2, ml: 2 }}>
-              <Button
-                variant="text"
-                color="info"
-                size="medium"
-                onClick={() => handleScroll("features")}
-              >
-                Features
-              </Button>
-              <Button
-                variant="text"
-                color="info"
-                size="medium"
-                onClick={() => handleScroll("pricing")}
-              >
-                Pricing
-              </Button>
-              <Button
-                variant="text"
-                color="info"
-                size="medium"
-                onClick={() => handleScroll("reviews")}
-              >
-                Reviews
-              </Button>
-              <Button
-                variant="text"
-                color="info"
-                size="medium"
-                onClick={() => handleScroll("faq")}
-              >
-                FAQ
-              </Button>
-              <Button
-                variant="text"
-                color="info"
-                size="medium"
-                onClick={() => handleScroll("contact")}
-                sx={{ minWidth: 0 }}
-              >
-                Contact
-              </Button>
+              {navItems.map((item) => (
+                <Tooltip key={item.id} title={`Go to ${item.label}`} arrow>
+                  <Button
+                    variant="text"
+                    color="info"
+                    size="medium"
+                    onClick={() => handleScroll(item.id)}
+                    aria-label={`Go to ${item.label} section`}
+                  >
+                    {item.label}
+                  </Button>
+                </Tooltip>
+              ))}
             </Box>
           </Box>
 
@@ -145,7 +157,8 @@ export default function AppAppBar() {
               color="primary"
               variant="text"
               size="medium"
-              onClick={() => navigate("/signin")}
+              onClick={handleSignIn}
+              aria-label="Sign in"
             >
               Sign in
             </Button>
@@ -156,6 +169,9 @@ export default function AppAppBar() {
               variant="contained"
               size="medium"
               onClick={handleMenuOpen}
+              aria-haspopup="true"
+              aria-expanded={Boolean(anchorEl)}
+              aria-label="Sign up options"
             >
               Sign Up
             </Button>
@@ -165,31 +181,20 @@ export default function AppAppBar() {
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
+              MenuListProps={{
+                "aria-labelledby": "sign-up-button",
+                role: "menu",
+              }}
             >
-              <MenuItem
-                onClick={() => {
-                  handleSignUp("coach");
-                  handleMenuClose();
-                }}
-              >
-                Coach
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleSignUp("player");
-                  handleMenuClose();
-                }}
-              >
-                Player
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleSignUp("parent");
-                  handleMenuClose();
-                }}
-              >
-                Parent
-              </MenuItem>
+              {["coach", "player", "parent"].map((role) => (
+                <MenuItem
+                  key={role}
+                  onClick={() => handleSignUp(role)}
+                  role="menuitem"
+                >
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </MenuItem>
+              ))}
             </Menu>
 
             <ColorModeIconDropdown />
@@ -198,7 +203,11 @@ export default function AppAppBar() {
           {/* Mobile Menu */}
           <Box sx={{ display: { xs: "flex", md: "none" }, gap: 1 }}>
             <ColorModeIconDropdown size="medium" />
-            <IconButton aria-label="Menu button" onClick={toggleDrawer(true)}>
+            <IconButton 
+              aria-label="Open menu" 
+              onClick={toggleDrawer(true)}
+              aria-expanded={open}
+            >
               <MenuIcon />
             </IconButton>
             <Drawer
@@ -210,6 +219,7 @@ export default function AppAppBar() {
                   top: "var(--template-frame-height, 0px)",
                 },
               }}
+              aria-label="Mobile navigation menu"
             >
               <Box sx={{ p: 2, backgroundColor: "background.default" }}>
                 <Box
@@ -218,15 +228,24 @@ export default function AppAppBar() {
                     justifyContent: "flex-end",
                   }}
                 >
-                  <IconButton onClick={toggleDrawer(false)}>
+                  <IconButton 
+                    onClick={toggleDrawer(false)}
+                    aria-label="Close menu"
+                  >
                     <CloseRoundedIcon />
                   </IconButton>
                 </Box>
-                <MenuItem>Features</MenuItem>
-                <MenuItem>Pricing</MenuItem>
-                <MenuItem>Reviews</MenuItem>
-                <MenuItem>FAQ</MenuItem>
-                <MenuItem>Contact</MenuItem>
+                {navItems.map((item) => (
+                  <MenuItem 
+                    key={item.id}
+                    onClick={() => {
+                      handleScroll(item.id);
+                      toggleDrawer(false)();
+                    }}
+                  >
+                    {item.label}
+                  </MenuItem>
+                ))}
                 <Divider sx={{ my: 3 }} />
                 <MenuItem>
                   <Button
@@ -234,6 +253,8 @@ export default function AppAppBar() {
                     variant="contained"
                     fullWidth
                     onClick={handleMenuOpen}
+                    aria-haspopup="true"
+                    aria-expanded={Boolean(anchorEl)}
                   >
                     Sign up
                   </Button>
@@ -241,31 +262,23 @@ export default function AppAppBar() {
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
                     onClose={handleMenuClose}
+                    MenuListProps={{
+                      "aria-labelledby": "mobile-sign-up-button",
+                      role: "menu",
+                    }}
                   >
-                    <MenuItem
-                      onClick={() => {
-                        handleSignUp("coach");
-                        handleMenuClose();
-                      }}
-                    >
-                      Coach
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        handleSignUp("player");
-                        handleMenuClose();
-                      }}
-                    >
-                      Player
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        handleSignUp("parent");
-                        handleMenuClose();
-                      }}
-                    >
-                      Parent
-                    </MenuItem>
+                    {["coach", "player", "parent"].map((role) => (
+                      <MenuItem
+                        key={role}
+                        onClick={() => {
+                          handleSignUp(role);
+                          toggleDrawer(false)();
+                        }}
+                        role="menuitem"
+                      >
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </MenuItem>
+                    ))}
                   </Menu>
                 </MenuItem>
                 <MenuItem>
@@ -273,7 +286,11 @@ export default function AppAppBar() {
                     color="primary"
                     variant="outlined"
                     fullWidth
-                    onClick={() => navigate("/signin")}
+                    onClick={() => {
+                      handleSignIn();
+                      toggleDrawer(false)();
+                    }}
+                    aria-label="Sign in"
                   >
                     Sign in
                   </Button>

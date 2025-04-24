@@ -11,6 +11,7 @@ import {
   FormControl,
   Select,
   MenuItem,
+  Tooltip,
 } from "@mui/material";
 import TransactionTable from "../../components/payments/transactions/TransactionTable";
 import TransactionFilters from "../../components/payments/transactions/TransactionFilters";
@@ -26,29 +27,43 @@ export default function Transactions() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [spendCategory, setSpendCategory] = useState("all"); // Track spend category filter
+  const [spendCategory, setSpendCategory] = useState("all");
+  
+  // Date validation error
+  const [dateError, setDateError] = useState("");
 
-  // Filter transactions by search, status, and date
-  const filteredTransactions = transactions.filter((tx) => {
-    const matchesSearch = search
-      ? tx.purchasedItems.some(
-          (item) =>
-            item.productName.toLowerCase().includes(search.toLowerCase()) ||
-            item.category.toLowerCase().includes(search.toLowerCase()) ||
-            item.totalPrice.toString().includes(search)
-        )
-      : true;
+  // Validate dates whenever they change
+  useMemo(() => {
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      setDateError("End date must be after start date");
+    } else {
+      setDateError("");
+    }
+  }, [startDate, endDate]);
 
-    const matchesStatus = statusFilter === "all" || tx.status === statusFilter;
+  // Filter transactions by search, status, and date (moved to useMemo for performance)
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((tx) => {
+      const matchesSearch = search
+        ? tx.purchasedItems.some(
+            (item) =>
+              item.productName.toLowerCase().includes(search.toLowerCase()) ||
+              item.category.toLowerCase().includes(search.toLowerCase()) ||
+              item.totalPrice.toString().includes(search)
+          )
+        : true;
 
-    const matchesDate =
-      (!startDate || new Date(tx.timestamp) >= new Date(startDate)) &&
-      (!endDate ||
-        new Date(tx.timestamp) <=
-          new Date(new Date(endDate).setHours(23, 59, 59, 999)));
+      const matchesStatus = statusFilter === "all" || tx.status === statusFilter;
 
-    return matchesSearch && matchesStatus && matchesDate;
-  });
+      const matchesDate =
+        (!startDate || new Date(tx.timestamp) >= new Date(startDate)) &&
+        (!endDate ||
+          new Date(tx.timestamp) <=
+            new Date(new Date(endDate).setHours(23, 59, 59, 999)));
+
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  }, [transactions, search, statusFilter, startDate, endDate]);
 
   // Compute Total Spend (filtered by category if needed)
   const totalSpend = useMemo(() => {
@@ -62,15 +77,29 @@ export default function Transactions() {
     }, 0);
   }, [filteredTransactions, spendCategory]);
 
+  // Safely format currency
+  const formatCurrency = (amount: number): string => {
+    try {
+      return new Intl.NumberFormat('en-IE', { 
+        style: 'currency', 
+        currency: 'EUR',
+        minimumFractionDigits: 2 
+      }).format(amount);
+    } catch {
+      return `€${amount.toFixed(2)}`;
+    }
+  };
+
   return (
     <Layout>
       <Header />
       {/* Total Spend Display & Category Filter */}
       <Box sx={{ p: 4 }}>
         <Typography variant="h4">
-          Total Spend: <strong>€{totalSpend.toFixed(2)}</strong>
+          Total Spend: <strong>{formatCurrency(totalSpend)}</strong>
         </Typography>
-        <FormControl sx={{ minWidth: 200 }}>
+        <FormControl sx={{ minWidth: 200, mt: 2, mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1 }}>Filter by Category:</Typography>
           <Select
             value={spendCategory}
             onChange={(e) => setSpendCategory(e.target.value)}
@@ -83,13 +112,30 @@ export default function Transactions() {
           </Select>
         </FormControl>
 
-        <TransactionChart transactions={transactions} />
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            Error loading transaction data: {error}
+          </Alert>
+        ) : (
+          <TransactionChart transactions={transactions} />
+        )}
       </Box>
 
       <Box sx={{ p: 4 }}>
         <Typography variant="h4" gutterBottom>
           Transaction History
         </Typography>
+
+        {/* Display date validation error if needed */}
+        {dateError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {dateError}
+          </Alert>
+        )}
 
         {/* Search & Filters */}
         <TransactionFilters
@@ -104,13 +150,26 @@ export default function Transactions() {
         />
 
         {loading && <CircularProgress />}
-        {error && <Alert severity="error">{error}</Alert>}
-        {!loading && filteredTransactions.length === 0 && (
-          <Alert severity="info">No transactions found.</Alert>
+        {error && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {error}
+          </Alert>
+        )}
+        {!loading && !error && filteredTransactions.length === 0 && (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            No transactions found matching your criteria.
+          </Alert>
         )}
 
-        {!loading && filteredTransactions.length > 0 && (
-          <TransactionTable transactions={filteredTransactions} />
+        {!loading && !error && filteredTransactions.length > 0 && (
+          <Box sx={{ mt: 2 }}>
+            <Tooltip title="Showing filtered results" placement="top-start">
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Found {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
+              </Typography>
+            </Tooltip>
+            <TransactionTable transactions={filteredTransactions} />
+          </Box>
         )}
       </Box>
     </Layout>

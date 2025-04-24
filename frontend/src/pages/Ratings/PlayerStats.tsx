@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
   Stack,
@@ -13,6 +13,8 @@ import {
   useTheme,
   styled,
   alpha,
+  Alert,
+  Button,
 } from "@mui/material";
 import Header from "../../components/Header";
 import Layout from "../../components/Layout";
@@ -24,6 +26,7 @@ import {
   LocalActivity,
   Warning,
   Dangerous,
+  ArrowBack,
 } from "@mui/icons-material";
 
 // Styled Components
@@ -57,26 +60,47 @@ export default function PlayerStatsPage() {
   const { clubName, ageGroup, division } = useAuth();
   const { playerUid } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const playerEmail = location.state?.playerEmail;
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [missingParams, setMissingParams] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchPlayerStats = async () => {
-      if (!clubName || !ageGroup || !division || !playerUid) return;
+      // Validate required parameters
+      const missingParameters = [];
+      if (!clubName) missingParameters.push("Club name");
+      if (!ageGroup) missingParameters.push("Age group");
+      if (!division) missingParameters.push("Division");
+      if (!playerUid) missingParameters.push("Player ID");
+      if (!playerEmail) missingParameters.push("Player email");
+
+      if (missingParameters.length > 0) {
+        setMissingParams(missingParameters);
+        setLoading(false);
+        return;
+      }
 
       try {
         const stats = await getPlayerStats(
-          clubName,
-          ageGroup,
-          division,
-          playerEmail
+          clubName as string,
+          ageGroup as string,
+          division as string,
+          playerEmail as string
         );
-        setPlayerStats(stats);
-      } catch (error) {
-        console.error("Error fetching player stats:", error);
-        setError("Failed to fetch player stats.");
+        if (!stats) {
+          setError("No player statistics found.");
+        } else {
+          setPlayerStats(stats);
+        }
+      } catch (err) {
+        console.error("Error fetching player stats:", err);
+        const errorMessage = err instanceof Error 
+          ? err.message 
+          : "Failed to fetch player statistics. Please try again later.";
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -84,6 +108,13 @@ export default function PlayerStatsPage() {
 
     fetchPlayerStats();
   }, [clubName, ageGroup, division, playerUid, playerEmail]);
+
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
+  // Check if there's an error to display
+  const errorMessage = error || "";
 
   return (
     <Layout>
@@ -96,25 +127,47 @@ export default function PlayerStatsPage() {
           mx: "auto",
         }}
       >
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={handleGoBack}
+          sx={{ mb: 2 }}
+          variant="text"
+        >
+          Back
+        </Button>
+
         {loading ? (
           <Box
             sx={{
               display: "flex",
+              flexDirection: "column",
               justifyContent: "center",
               alignItems: "center",
               height: 300,
+              gap: 2,
             }}
           >
             <CircularProgress size={60} />
+            <Typography color="text.secondary">Loading player statistics...</Typography>
           </Box>
-        ) : error ? (
-          <Typography
-            color="error"
-            variant="h6"
-            sx={{ textAlign: "center", mt: 4 }}
+        ) : missingParams.length > 0 ? (
+          <Alert 
+            severity="warning" 
+            sx={{ mb: 2 }}
           >
-            {error}
-          </Typography>
+            <Typography variant="subtitle1" fontWeight="bold">Missing required information</Typography>
+            <Typography variant="body2">
+              The following details are missing: {missingParams.join(', ')}
+            </Typography>
+          </Alert>
+        ) : error ? (
+          <Alert 
+            severity="error" 
+            sx={{ mb: 2 }}
+          >
+            <Typography variant="subtitle1" fontWeight="bold">Error</Typography>
+            <Typography variant="body2">{errorMessage}</Typography>
+          </Alert>
         ) : playerStats ? (
           <>
             <Stack
@@ -135,7 +188,7 @@ export default function PlayerStatsPage() {
                 />
                 <Box>
                   <Typography variant="h4" fontWeight={700}>
-                    {playerStats.playerName}
+                    {playerStats.playerName || "Player"}
                   </Typography>
                 </Box>
               </Stack>
@@ -165,7 +218,7 @@ export default function PlayerStatsPage() {
                           fontSize: 32,
                         }}
                       >
-                        {playerStats.playerName.charAt(0)}
+                        {playerStats.playerName ? playerStats.playerName.charAt(0) : "P"}
                       </Avatar>
                       <Box>
                         <Typography variant="h6" fontWeight="bold">
@@ -193,7 +246,7 @@ export default function PlayerStatsPage() {
                           Goals
                         </Box>
                       </Typography>
-                      <StatValue variant="h6">{playerStats.goals}</StatValue>
+                      <StatValue variant="h6">{playerStats.goals || 0}</StatValue>
                     </StatItem>
 
                     <StatItem>
@@ -206,7 +259,7 @@ export default function PlayerStatsPage() {
                           Assists
                         </Box>
                       </Typography>
-                      <StatValue variant="h6">{playerStats.assists}</StatValue>
+                      <StatValue variant="h6">{playerStats.assists || 0}</StatValue>
                     </StatItem>
 
                     <StatItem>
@@ -223,7 +276,7 @@ export default function PlayerStatsPage() {
                         variant="h6"
                         sx={{ color: theme.palette.warning.main }}
                       >
-                        {playerStats.yellowCards}
+                        {playerStats.yellowCards || 0}
                       </StatValue>
                     </StatItem>
 
@@ -241,7 +294,7 @@ export default function PlayerStatsPage() {
                         variant="h6"
                         sx={{ color: theme.palette.error.main }}
                       >
-                        {playerStats.redCards}
+                        {playerStats.redCards || 0}
                       </StatValue>
                     </StatItem>
                   </CardContent>
@@ -271,7 +324,7 @@ export default function PlayerStatsPage() {
                           Total Goal Contributions
                         </Typography>
                         <StatValue variant="h5">
-                          {playerStats.goals + playerStats.assists}
+                          {(playerStats.goals || 0) + (playerStats.assists || 0)}
                         </StatValue>
                       </StatCard>
 
@@ -283,7 +336,7 @@ export default function PlayerStatsPage() {
                           variant="h5"
                           sx={{ color: theme.palette.warning.main }}
                         >
-                          {playerStats.yellowCards + playerStats.redCards}
+                          {(playerStats.yellowCards || 0) + (playerStats.redCards || 0)}
                         </StatValue>
                       </StatCard>
                     </Box>
@@ -293,9 +346,12 @@ export default function PlayerStatsPage() {
             </Grid>
           </>
         ) : (
-          <Typography variant="h6" sx={{ textAlign: "center", mt: 4 }}>
-            No stats available for this player.
-          </Typography>
+          <Alert severity="info" sx={{ mt: 4 }}>
+            <Typography variant="subtitle1">No Statistics Available</Typography>
+            <Typography variant="body2">
+              No statistics are available for this player. They may not have played any matches yet.
+            </Typography>
+          </Alert>
         )}
       </Box>
     </Layout>

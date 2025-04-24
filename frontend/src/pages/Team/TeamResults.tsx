@@ -10,6 +10,7 @@ import {
   Stack,
   Alert,
   Divider,
+  Button,
 } from "@mui/material";
 import { fetchFixturesByMonth } from "../../services/schedule_management";
 import { getResult } from "../../services/match_management";
@@ -18,9 +19,10 @@ import Header from "../../components/Header";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
 // Styled Components
 const MatchCard = styled(Card)(({ theme }) => ({
@@ -75,10 +77,13 @@ export default function TeamResults() {
     if (authLoading) return;
 
     if (!clubName || !ageGroup || !division) {
-      setError("Club information is incomplete.");
+      setError("Club information is incomplete. Please verify your team details.");
       setLoading(false);
       return;
     }
+
+    setLoading(true);
+    setError(null);
 
     try {
       const currentYear = format(new Date(), "yyyy");
@@ -98,19 +103,36 @@ export default function TeamResults() {
           clubName,
           ageGroup,
           division
-        );
+        ).catch(error => {
+          console.error(`Error fetching fixtures for ${formattedMonth}:`, error);
+          return []; // Return empty array for failed months to continue processing others
+        });
       });
 
       const monthlyMatches = await Promise.all(monthPromises);
       allMatches = monthlyMatches.flat();
 
-      const pastMatches = allMatches.filter(
-        (match) => parseISO(match.date) < new Date()
-      );
+      // Validate dates and filter past matches
+      const pastMatches = allMatches
+        .filter(match => match.date && typeof match.date === 'string')
+        .filter(match => {
+          const parsedDate = parseISO(match.date);
+          return isValid(parsedDate) && parsedDate < new Date();
+        });
+
+      if (pastMatches.length === 0) {
+        setMatches([]);
+        setLoading(false);
+        return;
+      }
 
       const enrichedMatches = await Promise.all(
         pastMatches.map(async (match) => {
           try {
+            if (!match.matchId) {
+              console.error("Invalid match missing matchId:", match);
+              return match;
+            }
             const result = await getResult(
               match.matchId,
               clubName,
@@ -118,16 +140,24 @@ export default function TeamResults() {
               division
             );
             return { ...match, ...result };
-          } catch {
+          } catch (error) {
+            console.error(`Error fetching result for match ${match.matchId}:`, error);
             return match;
           }
         })
       );
 
       setMatches(
-        enrichedMatches.sort(
-          (a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()
-        )
+        enrichedMatches
+          .filter(match => match && match.homeTeam && match.awayTeam) // Ensure valid match data
+          .sort((a, b) => {
+            try {
+              return parseISO(b.date).getTime() - parseISO(a.date).getTime();
+            } catch (error) {
+              console.error("Date sorting error:", error);
+              return 0;
+            }
+          })
       );
       setError(null);
     } catch (error) {
@@ -142,8 +172,9 @@ export default function TeamResults() {
     if (!authLoading) fetchPreviousMatches();
   }, [fetchPreviousMatches, authLoading]);
 
-  const getMatchResult = (match: Match) => {
-    if (match.homeScore === undefined || match.awayScore === undefined) {
+  // Memoize getMatchResult to avoid recalculating on each render
+  const getMatchResult = useCallback((match: Match) => {
+    if (!match || match.homeScore === undefined || match.awayScore === undefined) {
       return { text: "Pending", color: "default" as const };
     }
 
@@ -160,24 +191,13 @@ export default function TeamResults() {
         ? { text: "Draw", color: "warning" as const }
         : { text: "Loss", color: "error" as const };
     }
-  };
+  }, [clubName]);
 
   if (authLoading || loading) {
     return (
       <Layout>
         <Header />
         <LoadingSpinner />
-      </Layout>
-    );
-  }
-
-  if (error) {
-    return (
-      <Layout>
-        <Header />
-        <Alert severity="error" sx={{ m: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
       </Layout>
     );
   }
@@ -208,114 +228,142 @@ export default function TeamResults() {
           </Typography>
         </Stack>
 
-        {matches.length === 0 ? (
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ mb: 3 }} 
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                startIcon={<RefreshIcon />}
+                onClick={() => fetchPreviousMatches()}
+              >
+                Retry
+              </Button>
+            }
+          >
+            {error}
+          </Alert>
+        )}
+
+        {!error && matches.length === 0 ? (
           <Alert severity="info" sx={{ mb: 3 }}>
             No completed matches found for this season.
           </Alert>
         ) : (
           <Grid container spacing={3}>
             {matches.map((match) => {
-              const result = getMatchResult(match);
-              const isHomeGame = match.homeTeam === clubName;
-              const opponent = isHomeGame ? match.awayTeam : match.homeTeam;
+              if (!match || !match.matchId) return null;
+              
+              try {
+                const result = getMatchResult(match);
+                const isHomeGame = match.homeTeam === clubName;
+                const opponent = isHomeGame ? match.awayTeam : match.homeTeam;
+                const matchDate = parseISO(match.date);
+                const formattedDate = isValid(matchDate) 
+                  ? format(matchDate, "MMMM d, yyyy • h:mm a")
+                  : "Date unavailable";
 
-              return (
-                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={match.matchId}>
-                  <MatchCard
-                    onClick={
-                      isCoach
-                        ? () =>
-                            navigate(`/team/results/${match.matchId}`, {
-                              state: { match },
-                            })
-                        : undefined
-                    }
-                  >
-                    <CardContent sx={{ flexGrow: 1 }}>
-                      <Stack spacing={2}>
-                        <Stack
-                          direction="row"
-                          justifyContent="space-between"
-                          alignItems="center"
-                        >
-                          <Typography
-                            variant="subtitle2"
-                            color="text.secondary"
-                          >
-                            {isHomeGame ? "Home Game" : "Away Game"}
-                          </Typography>
-                          <ResultChip
-                            label={result.text}
-                            color={result.color}
-                            variant="outlined"
-                          />
-                        </Stack>
-
-                        <Divider />
-
-                        <Box sx={{ textAlign: "center", py: 1 }}>
-                          <Typography variant="h6" fontWeight={600}>
-                            vs {opponent}
-                          </Typography>
+                return (
+                  <Grid size={{ xs: 12, sm: 6, md: 4 }} key={match.matchId}>
+                    <MatchCard
+                      onClick={
+                        isCoach
+                          ? () =>
+                              navigate(`/team/results/${match.matchId}`, {
+                                state: { match },
+                              })
+                          : undefined
+                      }
+                      sx={{ cursor: isCoach ? "pointer" : "default" }}
+                    >
+                      <CardContent sx={{ flexGrow: 1 }}>
+                        <Stack spacing={2}>
                           <Stack
                             direction="row"
-                            spacing={2}
-                            justifyContent="center"
+                            justifyContent="space-between"
                             alignItems="center"
-                            sx={{ mt: 2 }}
                           >
-                            {match.homeScore !== undefined &&
-                            match.awayScore !== undefined ? (
-                              <>
-                                <Typography variant="h4" fontWeight={700}>
-                                  {isHomeGame
-                                    ? match.homeScore
-                                    : match.awayScore}
-                                </Typography>
+                            <Typography
+                              variant="subtitle2"
+                              color="text.secondary"
+                            >
+                              {isHomeGame ? "Home Game" : "Away Game"}
+                            </Typography>
+                            <ResultChip
+                              label={result.text}
+                              color={result.color}
+                              variant="outlined"
+                            />
+                          </Stack>
+
+                          <Divider />
+
+                          <Box sx={{ textAlign: "center", py: 1 }}>
+                            <Typography variant="h6" fontWeight={600}>
+                              vs {opponent}
+                            </Typography>
+                            <Stack
+                              direction="row"
+                              spacing={2}
+                              justifyContent="center"
+                              alignItems="center"
+                              sx={{ mt: 2 }}
+                            >
+                              {match.homeScore !== undefined &&
+                              match.awayScore !== undefined ? (
+                                <>
+                                  <Typography variant="h4" fontWeight={700}>
+                                    {isHomeGame
+                                      ? match.homeScore
+                                      : match.awayScore}
+                                  </Typography>
+                                  <Typography
+                                    variant="body1"
+                                    sx={{ color: "text.secondary" }}
+                                  >
+                                    -
+                                  </Typography>
+                                  <Typography variant="h4" fontWeight={700}>
+                                    {isHomeGame
+                                      ? match.awayScore
+                                      : match.homeScore}
+                                  </Typography>
+                                </>
+                              ) : (
                                 <Typography
                                   variant="body1"
-                                  sx={{ color: "text.secondary" }}
+                                  color="text.secondary"
                                 >
-                                  -
+                                  Score not available
                                 </Typography>
-                                <Typography variant="h4" fontWeight={700}>
-                                  {isHomeGame
-                                    ? match.awayScore
-                                    : match.homeScore}
-                                </Typography>
-                              </>
-                            ) : (
-                              <Typography
-                                variant="body1"
-                                color="text.secondary"
-                              >
-                                Score not available
-                              </Typography>
-                            )}
+                              )}
+                            </Stack>
+                          </Box>
+
+                          <Divider />
+
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                            justifyContent="center"
+                          >
+                            <CalendarMonthIcon fontSize="small" color="action" />
+                            <Typography variant="body2" color="text.secondary">
+                              {formattedDate}
+                            </Typography>
                           </Stack>
-                        </Box>
-
-                        <Divider />
-
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          alignItems="center"
-                          justifyContent="center"
-                        >
-                          <CalendarMonthIcon fontSize="small" color="action" />
-                          <Typography variant="body2" color="text.secondary">
-                            {format(
-                              parseISO(match.date),
-                              "MMMM d, yyyy • h:mm a"
-                            )}
-                          </Typography>
                         </Stack>
-                      </Stack>
-                    </CardContent>
-                  </MatchCard>
-                </Grid>
-              );
+                      </CardContent>
+                    </MatchCard>
+                  </Grid>
+                );
+              } catch (error) {
+                console.error(`Error rendering match ${match.matchId}:`, error);
+                return null; // Skip rendering this match if there's an error
+              }
             })}
           </Grid>
         )}

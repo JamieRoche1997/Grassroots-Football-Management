@@ -4,6 +4,7 @@ import ListItemText from "@mui/material/ListItemText";
 import { styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import { useAuth } from "../hooks/useAuth";
+import { useEffect } from "react";
 
 const Avatar = styled(MuiAvatar)(() => ({
   width: 40,
@@ -23,6 +24,10 @@ const ListItemAvatar = styled(MuiListItemAvatar)({
 
 export default function ClubInfoDisplay() {
   const { clubName, ageGroup, division } = useAuth();
+  
+  useEffect(() => {
+    console.log("ClubInfoDisplay: Rendering with", { clubName, ageGroup, division });
+  }, [clubName, ageGroup, division]);
 
   // Extract initials from the club name
   const getClubInitials = (name: string | null) => {

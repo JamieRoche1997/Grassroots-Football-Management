@@ -6,6 +6,7 @@ import { styled } from "@mui/material/styles";
 import EmailIcon from "@mui/icons-material/Email";
 import PhoneIcon from "@mui/icons-material/Phone";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
+import { memo } from "react";
 
 const contactData = [
   {
@@ -14,12 +15,14 @@ const contactData = [
     description:
       "For general inquiries, reach us at support@grassrootsfootball.com.",
     link: "mailto:support@grassrootsfootball.com",
+    ariaLabel: "Send email to support",
   },
   {
     icon: <PhoneIcon fontSize="large" color="primary" />,
     title: "Call Us",
     description: "Speak to our support team at +353 86 220 8215.",
     link: "tel:+353862208215",
+    ariaLabel: "Call our support team",
   },
   {
     icon: <LocationOnIcon fontSize="large" color="primary" />,
@@ -27,6 +30,7 @@ const contactData = [
     description:
       "Briar Rose, 2 Mount Eaton, Carrignafoy, Cobh, Cork, Ireland, P24 W427.",
     link: "https://www.google.com/maps?q=P24+W427",
+    ariaLabel: "View our location on Google Maps",
   },
 ];
 
@@ -39,21 +43,55 @@ const StyledCard = styled(Card)(({ theme }) => ({
   height: "100%",
   backgroundColor: theme.palette.background.paper,
   boxShadow: theme.shadows[1],
+  transition: "all 0.2s ease-in-out",
   "&:hover": {
     boxShadow: theme.shadows[4],
     backgroundColor: theme.palette.action.hover,
     cursor: "pointer",
+    transform: "translateY(-5px)",
+  },
+  "&:focus-within": {
+    boxShadow: theme.shadows[4],
+    outline: `2px solid ${theme.palette.primary.main}`,
   },
 }));
 
-export default function Contact() {
+const ContactCard = memo(({ contact, index }: { contact: typeof contactData[0], index: number }) => {
+  return (
+    <Grid key={index} size={{ xs: 12, md: 4 }}>
+      <a
+        href={contact.link}
+        style={{ textDecoration: "none", color: "inherit" }}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={contact.ariaLabel}
+      >
+        <StyledCard tabIndex={0}>
+          {contact.icon}
+          <Typography variant="h6" gutterBottom component="h3">
+            {contact.title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {contact.description}
+          </Typography>
+        </StyledCard>
+      </a>
+    </Grid>
+  );
+});
+
+ContactCard.displayName = "ContactCard";
+
+function Contact() {
   return (
     <Box
       id="contact"
       sx={{ display: "flex", flexDirection: "column", gap: 4, py: 8 }}
+      component="section"
+      aria-labelledby="contact-section-title"
     >
       <div style={{ textAlign: "center" }}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h4" gutterBottom id="contact-section-title">
           Contact Us
         </Typography>
         <Typography variant="body1">
@@ -62,26 +100,11 @@ export default function Contact() {
       </div>
       <Grid container spacing={4}>
         {contactData.map((contact, index) => (
-          <Grid key={index} size={{ xs: 12, md: 4 }}>
-            <a
-              href={contact.link}
-              style={{ textDecoration: "none", color: "inherit" }}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <StyledCard>
-                {contact.icon}
-                <Typography variant="h6" gutterBottom>
-                  {contact.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {contact.description}
-                </Typography>
-              </StyledCard>
-            </a>
-          </Grid>
+          <ContactCard key={index} contact={contact} index={index} />
         ))}
       </Grid>
     </Box>
   );
 }
+
+export default memo(Contact);

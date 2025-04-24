@@ -11,6 +11,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Link from "@mui/material/Link";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import CircularProgress from "@mui/material/CircularProgress";
 import { styled } from "@mui/material/styles";
 import ForgotPassword from "./ForgotPassword";
 import { GoogleIcon } from "./CustomIcons";
@@ -45,6 +46,7 @@ export default function SignInCard() {
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState("");
   const [open, setOpen] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -88,6 +90,8 @@ export default function SignInCard() {
       return; // Stop if validation fails
     }
 
+    setIsLoading(true);
+
     const data = new FormData(event.currentTarget);
     const email = data.get("email") as string;
     const password = data.get("password") as string;
@@ -112,15 +116,18 @@ export default function SignInCard() {
       } else {
         alert("Sign-in failed. Please try again.");
       }
+      setIsLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
+      setIsLoading(true);
       await signInWithGoogle();
       navigate(`/dashboard`);
     } catch (error) {
       console.error("Error during Google Sign-In:", error);
+      setIsLoading(false);
     }
   };
 
@@ -187,8 +194,14 @@ export default function SignInCard() {
           label="Remember me"
         />
         <ForgotPassword open={open} handleClose={handleClose} />
-        <Button type="submit" fullWidth variant="contained">
-          Sign in
+        <Button 
+          type="submit" 
+          fullWidth 
+          variant="contained" 
+          disabled={isLoading}
+          startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
+        >
+          {isLoading ? "Signing in..." : "Sign in"}
         </Button>
         <Typography sx={{ textAlign: "center" }}>
           Don&apos;t have an account?{" "}
@@ -209,9 +222,10 @@ export default function SignInCard() {
           fullWidth
           variant="outlined"
           onClick={handleGoogleSignIn}
-          startIcon={<GoogleIcon />}
+          disabled={isLoading}
+          startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <GoogleIcon />}
         >
-          Sign in with Google
+          {isLoading ? "Signing in..." : "Sign in with Google"}
         </Button>
       </Box>
     </Card>

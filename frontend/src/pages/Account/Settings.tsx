@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Stack from "@mui/material/Stack";
 import Header from "../../components/Header";
 import Layout from "../../components/Layout";
@@ -11,6 +11,35 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
+import CircularProgress from "@mui/material/CircularProgress";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+
+// Mock save function - replace with actual implementation
+const saveSettings = async (settingsData: {
+  notifications: {
+    matchReminders: boolean;
+    carpoolUpdates: boolean;
+    directMessages: boolean;
+    emailUpdates: boolean;
+  };
+  privacy: {
+    hideOnlineStatus: boolean;
+    restrictProfileView: boolean;
+    disableLocation: boolean;
+  };
+}): Promise<void> => {
+  // Simulate API call - in a real implementation, you would use settingsData here
+  console.log("Saving settings:", settingsData);
+  return new Promise((resolve) => {
+    setTimeout(resolve, 1000);
+  });
+};
 
 export default function Settings() {
   const [tabIndex, setTabIndex] = useState(0);
@@ -25,9 +54,31 @@ export default function Settings() {
     restrictProfileView: true,
     disableLocation: false,
   });
-
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [actionToConfirm, setActionToConfirm] = useState<string | null>(null);
+  
+  // Track initial state to detect changes
+  const [initialNotifications, setInitialNotifications] = useState({...notifications});
+  const [initialPrivacy, setInitialPrivacy] = useState({...privacy});
+  
+  useEffect(() => {
+    // Compare current state with initial state
+    const notificationsChanged = JSON.stringify(notifications) !== JSON.stringify(initialNotifications);
+    const privacyChanged = JSON.stringify(privacy) !== JSON.stringify(initialPrivacy);
+    setHasChanges(notificationsChanged || privacyChanged);
+  }, [notifications, privacy, initialNotifications, initialPrivacy]);
+  
   const handleTabChange = (_event: React.SyntheticEvent, newIndex: number) => {
-    setTabIndex(newIndex);
+    if (hasChanges) {
+      setActionToConfirm("changeTab");
+      setConfirmDialogOpen(true);
+    } else {
+      setTabIndex(newIndex);
+    }
   };
 
   const handleNotificationChange = (
@@ -44,6 +95,77 @@ export default function Settings() {
       ...privacy,
       [event.target.name]: event.target.checked,
     });
+  };
+  
+  const handleSaveSettings = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await saveSettings({
+        notifications,
+        privacy,
+      });
+      
+      // Update initial state after successful save
+      setInitialNotifications({...notifications});
+      setInitialPrivacy({...privacy});
+      setHasChanges(false);
+      setSuccess("Settings saved successfully!");
+      
+      // Auto-dismiss success message
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
+    } catch (error) {
+      setError("Failed to save settings. Please try again.");
+      console.error("Settings save error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleResetSettings = () => {
+    setActionToConfirm("resetSettings");
+    setConfirmDialogOpen(true);
+  };
+  
+  const performResetSettings = () => {
+    setNotifications({
+      matchReminders: true,
+      carpoolUpdates: false,
+      directMessages: true,
+      emailUpdates: false,
+    });
+    setPrivacy({
+      hideOnlineStatus: false,
+      restrictProfileView: true,
+      disableLocation: false,
+    });
+    setSuccess("Settings have been reset to defaults");
+    setConfirmDialogOpen(false);
+  };
+  
+  const handleConfirmAction = () => {
+    if (actionToConfirm === "resetSettings") {
+      performResetSettings();
+    } else if (actionToConfirm === "changeTab") {
+      setTabIndex(tabIndex === 0 ? 1 : tabIndex === 1 ? 2 : 0);
+      setConfirmDialogOpen(false);
+    } else if (actionToConfirm === "clearChat") {
+      setSuccess("Chat history has been cleared");
+      setConfirmDialogOpen(false);
+    }
+  };
+  
+  const handleClearChatHistory = () => {
+    setActionToConfirm("clearChat");
+    setConfirmDialogOpen(true);
+  };
+  
+  const handleCloseConfirmDialog = () => {
+    setConfirmDialogOpen(false);
+    setActionToConfirm(null);
   };
 
   return (
@@ -112,6 +234,25 @@ export default function Settings() {
                     label="Receive Email Notifications"
                   />
                 </FormGroup>
+                
+                {hasChanges && (
+                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
+                    <Button 
+                      variant="outlined" 
+                      onClick={handleResetSettings}
+                      disabled={loading}
+                    >
+                      Discard Changes
+                    </Button>
+                    <Button 
+                      variant="contained" 
+                      onClick={handleSaveSettings}
+                      disabled={loading}
+                    >
+                      {loading ? <CircularProgress size={24} /> : "Save Changes"}
+                    </Button>
+                  </Box>
+                )}
               </Box>
             )}
 
@@ -154,6 +295,25 @@ export default function Settings() {
                 <Button variant="outlined" color="error">
                   View Login History
                 </Button>
+                
+                {hasChanges && (
+                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
+                    <Button 
+                      variant="outlined" 
+                      onClick={handleResetSettings}
+                      disabled={loading}
+                    >
+                      Discard Changes
+                    </Button>
+                    <Button 
+                      variant="contained" 
+                      onClick={handleSaveSettings}
+                      disabled={loading}
+                    >
+                      {loading ? <CircularProgress size={24} /> : "Save Changes"}
+                    </Button>
+                  </Box>
+                )}
               </Box>
             )}
 
@@ -171,6 +331,7 @@ export default function Settings() {
                   color="error"
                   fullWidth
                   sx={{ mb: 1 }}
+                  onClick={handleClearChatHistory}
                 >
                   Clear Chat History
                 </Button>
@@ -179,16 +340,78 @@ export default function Settings() {
                   color="error"
                   fullWidth
                   sx={{ mb: 1 }}
+                  onClick={handleResetSettings}
                 >
                   Reset All Settings
                 </Button>
-                <Button variant="outlined" color="error" fullWidth>
+                <Button 
+                  variant="outlined" 
+                  color="error" 
+                  fullWidth
+                >
                   Log Out from All Devices
                 </Button>
               </Box>
             )}
           </Box>
         </Box>
+        
+        {/* Success notification */}
+        <Snackbar 
+          open={!!success} 
+          autoHideDuration={3000} 
+          onClose={() => setSuccess(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setSuccess(null)} severity="success">
+            {success}
+          </Alert>
+        </Snackbar>
+        
+        {/* Error notification */}
+        <Snackbar 
+          open={!!error} 
+          autoHideDuration={5000} 
+          onClose={() => setError(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setError(null)} severity="error">
+            {error}
+          </Alert>
+        </Snackbar>
+        
+        {/* Confirmation Dialog */}
+        <Dialog
+          open={confirmDialogOpen}
+          onClose={handleCloseConfirmDialog}
+        >
+          <DialogTitle>
+            {actionToConfirm === "resetSettings" 
+              ? "Reset Settings" 
+              : actionToConfirm === "clearChat" 
+                ? "Clear Chat History" 
+                : "Unsaved Changes"}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              {actionToConfirm === "resetSettings" 
+                ? "This will reset all settings to their default values. Continue?" 
+                : actionToConfirm === "clearChat" 
+                  ? "This will permanently delete your chat history. This action cannot be undone." 
+                  : "You have unsaved changes. Do you want to proceed without saving?"}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseConfirmDialog}>Cancel</Button>
+            <Button onClick={handleConfirmAction} color="error">
+              {actionToConfirm === "resetSettings" 
+                ? "Reset" 
+                : actionToConfirm === "clearChat" 
+                  ? "Clear" 
+                  : "Proceed"}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Stack>
     </Layout>
   );

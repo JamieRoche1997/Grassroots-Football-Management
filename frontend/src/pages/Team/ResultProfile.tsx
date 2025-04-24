@@ -17,6 +17,8 @@ import {
   styled,
   alpha,
   Grid2 as Grid,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { Theme } from "@mui/material/styles";
 import {
@@ -38,7 +40,10 @@ import {
   addEvent,
   getLineups,
 } from "../../services/match_management";
-import { saveResult } from "../../services/match_management";
+import {
+  saveResult,
+  getResult,
+} from "../../services/match_management";
 import {
   fetchPlayerRatings,
   submitPlayerRating,
@@ -151,6 +156,7 @@ export default function ResultProfile() {
     type: "goal",
     playerEmail: "",
     minute: "",
+    subbedInEmail: undefined,
   });
   const { clubName, ageGroup, division } = useAuth();
   const [homePlayers, setHomePlayers] = useState<
@@ -165,6 +171,18 @@ export default function ResultProfile() {
   const [playerRatings, setPlayerRatings] = useState<{
     [email: string]: number;
   }>({});
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  });
+  const [errors, setErrors] = useState({
+    homeScore: false,
+    awayScore: false,
+    playerEmail: false,
+    minute: false,
+    subbedInEmail: false,
+  });
 
   useEffect(() => {
     const fetchPlayersData = async () => {
@@ -232,7 +250,7 @@ export default function ResultProfile() {
   }, [matchId, clubName, ageGroup, division, playersMap]);
 
   useEffect(() => {
-    const fetchFixtureAndEvents = async () => {
+    const fetchMatchData = async () => {
       if (matchId && clubName && ageGroup && division) {
         setLoading(true);
         try {
@@ -243,7 +261,25 @@ export default function ResultProfile() {
             division
           );
           const events = await getEvents(matchId, clubName, ageGroup, division);
-          setMatch({ ...fixture, events: events as MatchEvent[] });
+          const updatedMatch: Match = { 
+            ...fixture, 
+            events: events as MatchEvent[] 
+          };
+          
+          try {
+            const result = await getResult(matchId, clubName, ageGroup, division);
+            if (result) {
+              updatedMatch.homeScore = result.homeScore;
+              updatedMatch.awayScore = result.awayScore;
+            }
+          } catch (error) {
+            const errorMessage = String(error);
+            if (!errorMessage.includes("Failed to fetch result")) {
+              console.error("Error fetching match result:", error);
+            }
+          }
+          
+          setMatch(updatedMatch);
         } catch (error) {
           console.error("Error fetching match details:", error);
         } finally {
@@ -251,7 +287,8 @@ export default function ResultProfile() {
         }
       }
     };
-    fetchFixtureAndEvents();
+    
+    fetchMatchData();
   }, [matchId, clubName, ageGroup, division]);
 
   useEffect(() => {
@@ -273,8 +310,38 @@ export default function ResultProfile() {
     loadRatings();
   }, [matchId, clubName, ageGroup, division]);
 
+  const validateEventForm = () => {
+    const newErrors = {
+      playerEmail: !newEvent.playerEmail,
+      minute: !newEvent.minute || isNaN(Number(newEvent.minute)) || Number(newEvent.minute) < 0,
+      subbedInEmail: newEvent.type === "substitution" && !newEvent.subbedInEmail,
+    };
+    
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return !Object.values(newErrors).some(Boolean);
+  };
+
+  const validateScoreForm = () => {
+    const newErrors = {
+      homeScore: match?.homeScore === undefined || match.homeScore < 0 || isNaN(Number(match.homeScore)),
+      awayScore: match?.awayScore === undefined || match.awayScore < 0 || isNaN(Number(match.awayScore)),
+    };
+    
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return !Object.values(newErrors).some(Boolean);
+  };
+
   const handleAddEvent = async () => {
-    if (!match || !clubName || !ageGroup || !division) return;
+    if (!match || !clubName || !ageGroup || !division) {
+      setSnackbar({
+        open: true,
+        message: "Missing required team information",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (!validateEventForm()) return;
 
     try {
       await addEvent(match.matchId, clubName, ageGroup, division, newEvent);
@@ -305,40 +372,92 @@ export default function ResultProfile() {
         type: "goal",
         playerEmail: "",
         minute: "",
-        subbedInEmail: "",
+        subbedInEmail: undefined,
+      });
+      setSnackbar({
+        open: true,
+        message: "Event added successfully",
+        severity: "success",
       });
     } catch (error) {
       console.error("Error saving match event:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to add event. Please try again.",
+        severity: "error",
+      });
     }
   };
 
   const handleSaveScore = async () => {
-    if (match && clubName && ageGroup && division) {
-      try {
-        await saveResult(
-          match.matchId,
-          clubName,
-          ageGroup,
-          division,
-          match.homeScore ?? 0,
-          match.awayScore ?? 0
-        );
-      } catch (error) {
-        console.error("Error updating match result:", error);
-      }
+    if (!match || !clubName || !ageGroup || !division) {
+      setSnackbar({
+        open: true,
+        message: "Missing required team information",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (!validateScoreForm()) return;
+
+    try {
+      await saveResult(
+        match.matchId,
+        clubName,
+        ageGroup,
+        division,
+        match.homeScore ?? 0,
+        match.awayScore ?? 0
+      );
+      setSnackbar({
+        open: true,
+        message: "Score saved successfully",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Error updating match result:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to save score. Please try again.",
+        severity: "error",
+      });
     }
   };
 
   const handleRatingChange = async (email: string, rating: number) => {
+    if (!matchId || !clubName || !ageGroup || !division) {
+      setSnackbar({
+        open: true,
+        message: "Missing required team information",
+        severity: "error",
+      });
+      return;
+    }
+    
     setPlayerRatings((prev) => ({ ...prev, [email]: rating }));
     try {
-      await submitPlayerRating(matchId!, clubName!, ageGroup!, division!, {
+      await submitPlayerRating(matchId, clubName, ageGroup, division, {
         playerEmail: email,
         overallPerformance: rating,
       });
+      setSnackbar({
+        open: true,
+        message: "Player rating saved",
+        severity: "success",
+      });
     } catch (error) {
       console.error("Failed to save rating:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to save player rating",
+        severity: "error",
+      });
     }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
   };
 
   if (loading) {
@@ -365,6 +484,17 @@ export default function ResultProfile() {
         <Header />
         <Typography variant="h6" sx={{ textAlign: "center", mt: 4 }}>
           Match not found
+        </Typography>
+      </Layout>
+    );
+  }
+
+  if (!clubName || !ageGroup || !division) {
+    return (
+      <Layout>
+        <Header />
+        <Typography variant="h6" sx={{ textAlign: "center", mt: 4 }}>
+          Required team information is missing
         </Typography>
       </Layout>
     );
@@ -442,6 +572,9 @@ export default function ResultProfile() {
                         homeScore: parseInt(e.target.value),
                       })
                     }
+                    error={errors.homeScore}
+                    helperText={errors.homeScore ? "Please enter a valid score" : ""}
+                    inputProps={{ min: 0 }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 2 }} sx={{ textAlign: "center" }}>
@@ -459,6 +592,9 @@ export default function ResultProfile() {
                         awayScore: parseInt(e.target.value),
                       })
                     }
+                    error={errors.awayScore}
+                    helperText={errors.awayScore ? "Please enter a valid score" : ""}
+                    inputProps={{ min: 0 }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12 }}>
@@ -484,67 +620,72 @@ export default function ResultProfile() {
               </Typography>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: 6 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Player
+                  </Typography>
                   <Select
                     fullWidth
-                    value={newEvent.playerEmail || ""}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, playerEmail: e.target.value })
-                    }
-                    displayEmpty
+                    value={newEvent.playerEmail}
+                    onChange={(e) => {
+                      console.log("Player selected:", e.target.value);
+                      setNewEvent({
+                        ...newEvent,
+                        playerEmail: e.target.value,
+                      });
+                    }}
                   >
-                    <MenuItem disabled value="">
-                      Select Player
-                    </MenuItem>
-                    <ListSubheader>Home Team</ListSubheader>
+                    <MenuItem value="">Select Player</MenuItem>
+                    
+                    {homePlayers.length > 0 && <ListSubheader>Home Team</ListSubheader>}
                     {homePlayers.map((player) => (
                       <MenuItem key={player.email} value={player.email}>
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          <Avatar sx={{ width: 24, height: 24, fontSize: 12 }}>
-                            {player.name.charAt(0)}
-                          </Avatar>
-                          {player.name}{" "}
-                          <PositionChip label={player.position} size="small" />
-                        </Box>
+                        {player.name}
+                        <PositionChip label={player.position} size="small" sx={{ ml: 1 }} />
                       </MenuItem>
                     ))}
-                    <ListSubheader>Away Team</ListSubheader>
+                    
+                    {awayPlayers.length > 0 && <ListSubheader>Away Team</ListSubheader>}
                     {awayPlayers.map((player) => (
                       <MenuItem key={player.email} value={player.email}>
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          <Avatar sx={{ width: 24, height: 24, fontSize: 12 }}>
-                            {player.name.charAt(0)}
-                          </Avatar>
-                          {player.name}{" "}
-                          <PositionChip label={player.position} size="small" />
-                        </Box>
+                        {player.name}
+                        <PositionChip label={player.position} size="small" sx={{ ml: 1 }} />
                       </MenuItem>
                     ))}
                   </Select>
                 </Grid>
+                
                 <Grid size={{ xs: 12, md: 2 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Minute
+                  </Typography>
                   <TextField
                     fullWidth
-                    label="Minute"
                     value={newEvent.minute}
                     onChange={(e) =>
                       setNewEvent({ ...newEvent, minute: e.target.value })
                     }
+                    type="number"
+                    inputProps={{ min: 0 }}
                   />
                 </Grid>
+                
                 <Grid size={{ xs: 12, md: 4 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Event Type
+                  </Typography>
                   <Select
                     fullWidth
                     value={newEvent.type}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      console.log("Event type selected:", e.target.value);
                       setNewEvent({
                         ...newEvent,
                         type: e.target.value as MatchEvent["type"],
-                      })
-                    }
+                        subbedInEmail: e.target.value !== "substitution" 
+                          ? undefined 
+                          : newEvent.subbedInEmail,
+                      });
+                    }}
                   >
                     <MenuItem value="goal">Goal ⚽</MenuItem>
                     <MenuItem value="assist">Assist 🅰️</MenuItem>
@@ -554,78 +695,57 @@ export default function ResultProfile() {
                     <MenuItem value="injury">Injury 🏥</MenuItem>
                   </Select>
                 </Grid>
+                
                 {newEvent.type === "substitution" && (
                   <Grid size={{ xs: 12 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      Player Coming In
+                    </Typography>
                     <Select
                       fullWidth
                       value={newEvent.subbedInEmail || ""}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        console.log("Substitute selected:", e.target.value);
                         setNewEvent({
                           ...newEvent,
                           subbedInEmail: e.target.value,
-                        })
-                      }
-                      displayEmpty
+                        });
+                      }}
                     >
-                      <MenuItem disabled value="">
-                        Select Substitution
-                      </MenuItem>
-                      <ListSubheader>Home Team</ListSubheader>
-                      {homePlayers.map((player) => (
-                        <MenuItem key={player.email} value={player.email}>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                            }}
-                          >
-                            <Avatar
-                              sx={{ width: 24, height: 24, fontSize: 12 }}
-                            >
-                              {player.name.charAt(0)}
-                            </Avatar>
-                            {player.name}{" "}
-                            <PositionChip
-                              label={player.position}
-                              size="small"
-                            />
-                          </Box>
-                        </MenuItem>
-                      ))}
-                      <ListSubheader>Away Team</ListSubheader>
-                      {awayPlayers.map((player) => (
-                        <MenuItem key={player.email} value={player.email}>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                            }}
-                          >
-                            <Avatar
-                              sx={{ width: 24, height: 24, fontSize: 12 }}
-                            >
-                              {player.name.charAt(0)}
-                            </Avatar>
-                            {player.name}{" "}
-                            <PositionChip
-                              label={player.position}
-                              size="small"
-                            />
-                          </Box>
-                        </MenuItem>
-                      ))}
+                      <MenuItem value="">Select Player Coming In</MenuItem>
+                      
+                      {homePlayers.length > 0 && <ListSubheader>Home Team</ListSubheader>}
+                      {homePlayers
+                        .filter(player => player.email !== newEvent.playerEmail)
+                        .map((player) => (
+                          <MenuItem key={player.email} value={player.email}>
+                            {player.name}
+                            <PositionChip label={player.position} size="small" sx={{ ml: 1 }} />
+                          </MenuItem>
+                        ))}
+                      
+                      {awayPlayers.length > 0 && <ListSubheader>Away Team</ListSubheader>}
+                      {awayPlayers
+                        .filter(player => player.email !== newEvent.playerEmail)
+                        .map((player) => (
+                          <MenuItem key={player.email} value={player.email}>
+                            {player.name} 
+                            <PositionChip label={player.position} size="small" sx={{ ml: 1 }} />
+                          </MenuItem>
+                        ))}
                     </Select>
                   </Grid>
                 )}
+                
                 <Grid size={{ xs: 12 }}>
                   <Button
                     fullWidth
                     variant="contained"
                     startIcon={<AddCircleOutline />}
                     onClick={handleAddEvent}
-                    disabled={!newEvent.playerEmail || !newEvent.minute}
+                    disabled={!newEvent.playerEmail || !newEvent.minute || 
+                              (newEvent.type === "substitution" && !newEvent.subbedInEmail)}
+                    sx={{ mt: 2 }}
                   >
                     Add Event
                   </Button>
@@ -643,7 +763,9 @@ export default function ResultProfile() {
               </Typography>
               {match.events && match.events.length > 0 ? (
                 <Box sx={{ maxHeight: 300, overflowY: "auto" }}>
-                  {match.events.map((event, index) => (
+                  {[...match.events]
+                    .sort((a, b) => parseInt(a.minute) - parseInt(b.minute))
+                    .map((event, index) => (
                     <EventCard key={index}>
                       <CardContent sx={{ py: 1, px: 2 }}>
                         <Box
@@ -706,50 +828,56 @@ export default function ResultProfile() {
                 >
                   <Group sx={{ mr: 1 }} /> {match.homeTeam} Ratings
                 </Typography>
-                {homePlayers.map((player) => (
-                  <Box
-                    key={player.email}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      mb: 2,
-                      p: 1,
-                      borderRadius: 1,
-                      "&:hover": {
-                        backgroundColor: alpha(
-                          theme.palette.action.hover,
-                          0.05
-                        ),
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Avatar sx={{ width: 40, height: 40 }}>
-                        {player.name.charAt(0)}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle2">
-                          {player.name}
-                        </Typography>
-                        <PositionChip label={player.position} size="small" />
-                      </Box>
-                    </Box>
-                    <Select
-                      value={playerRatings[player.email] || 0}
-                      onChange={(e) =>
-                        handleRatingChange(player.email, Number(e.target.value))
-                      }
-                      sx={{ minWidth: 80 }}
+                {homePlayers.length > 0 ? (
+                  homePlayers.map((player) => (
+                    <Box
+                      key={player.email}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        mb: 2,
+                        p: 1,
+                        borderRadius: 1,
+                        "&:hover": {
+                          backgroundColor: alpha(
+                            theme.palette.action.hover,
+                            0.05
+                          ),
+                        },
+                      }}
                     >
-                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                        <MenuItem key={num} value={num}>
-                          {num}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                ))}
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Avatar sx={{ width: 40, height: 40 }}>
+                          {player.name.charAt(0)}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2">
+                            {player.name}
+                          </Typography>
+                          <PositionChip label={player.position} size="small" />
+                        </Box>
+                      </Box>
+                      <Select
+                        value={playerRatings[player.email] || 0}
+                        onChange={(e) =>
+                          handleRatingChange(player.email, Number(e.target.value))
+                        }
+                        sx={{ minWidth: 80 }}
+                      >
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                          <MenuItem key={num} value={num}>
+                            {num}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </Box>
+                  ))
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No players available to rate
+                  </Typography>
+                )}
               </CardContent>
             </MatchCard>
           </Grid>
@@ -762,55 +890,73 @@ export default function ResultProfile() {
                 >
                   <Group sx={{ mr: 1 }} /> {match.awayTeam} Ratings
                 </Typography>
-                {awayPlayers.map((player) => (
-                  <Box
-                    key={player.email}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      mb: 2,
-                      p: 1,
-                      borderRadius: 1,
-                      "&:hover": {
-                        backgroundColor: alpha(
-                          theme.palette.action.hover,
-                          0.05
-                        ),
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Avatar sx={{ width: 40, height: 40 }}>
-                        {player.name.charAt(0)}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle2">
-                          {player.name}
-                        </Typography>
-                        <PositionChip label={player.position} size="small" />
-                      </Box>
-                    </Box>
-                    <Select
-                      value={playerRatings[player.email] || 0}
-                      onChange={(e) =>
-                        handleRatingChange(player.email, Number(e.target.value))
-                      }
-                      sx={{ minWidth: 80 }}
+                {awayPlayers.length > 0 ? (
+                  awayPlayers.map((player) => (
+                    <Box
+                      key={player.email}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        mb: 2,
+                        p: 1,
+                        borderRadius: 1,
+                        "&:hover": {
+                          backgroundColor: alpha(
+                            theme.palette.action.hover,
+                            0.05
+                          ),
+                        },
+                      }}
                     >
-                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                        <MenuItem key={num} value={num}>
-                          {num}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                ))}
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Avatar sx={{ width: 40, height: 40 }}>
+                          {player.name.charAt(0)}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2">
+                            {player.name}
+                          </Typography>
+                          <PositionChip label={player.position} size="small" />
+                        </Box>
+                      </Box>
+                      <Select
+                        value={playerRatings[player.email] || 0}
+                        onChange={(e) =>
+                          handleRatingChange(player.email, Number(e.target.value))
+                        }
+                        sx={{ minWidth: 80 }}
+                      >
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                          <MenuItem key={num} value={num}>
+                            {num}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </Box>
+                  ))
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No players available to rate
+                  </Typography>
+                )}
               </CardContent>
             </MatchCard>
           </Grid>
         </Grid>
       </Box>
+      
+      {/* Feedback Snackbar */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={4000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Layout>
   );
 }

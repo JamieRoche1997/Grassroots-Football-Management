@@ -7,29 +7,34 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 const faqData = [
   {
-    question: "How do I sign up for the platform?",
+    question: "How can I register my team on the platform?",
     answer:
-      'You can sign up by clicking on the "Sign Up" button at the top right corner of the page and filling in your details.',
+      "You can register your team by creating an account, navigating to the 'Teams' section, and clicking on 'Add New Team'. You'll need to provide basic team information, age group, and league details.",
   },
   {
-    question: "Is there a free trial available?",
+    question: "Can I track player attendance and performance?",
     answer:
-      "Yes, we offer a 14-day free trial with access to all features so you can explore the platform.",
+      "Yes, our platform offers comprehensive player tracking features. You can record attendance at training sessions and matches, track individual performance metrics, and generate development reports.",
   },
   {
-    question: "Can I cancel my subscription at any time?",
+    question: "How do I schedule matches and training sessions?",
     answer:
-      "Absolutely! You can cancel your subscription at any time in your account settings.",
+      "In the 'Calendar' section, you can add new training sessions or matches, set recurring events, assign venues, and send automatic notifications to players and parents.",
   },
   {
-    question: "How secure is my data on the platform?",
+    question: "How does the carpooling feature work?",
     answer:
-      "We take data security seriously. All your data is encrypted and securely stored in compliance with industry standards.",
+      "The carpooling feature allows team members to coordinate transportation to matches and training. Drivers can offer rides with specific departure locations, times, and available seats, while others can request spots in available vehicles.",
   },
   {
-    question: "Does the platform support multiple teams?",
+    question: "Can I manage team finances through the platform?",
     answer:
-      "Yes, our platform is designed to support multiple teams with features tailored for each team’s needs.",
+      "Yes, coaches can track membership fees, match fees, and other expenses through the payments section. The platform includes products management, a shop for players and parents, and transaction tracking.",
+  },
+  {
+    question: "What formations can I use for team lineups?",
+    answer:
+      "Our platform supports multiple formations including 4-4-2, 4-3-3, 4-2-3-1, 5-4-1, and several others. You can select a formation and assign players to specific positions when creating lineups for matches.",
   },
 ];
 

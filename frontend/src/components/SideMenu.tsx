@@ -5,6 +5,8 @@ import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import Skeleton from "@mui/material/Skeleton";
+import PersonIcon from "@mui/icons-material/Person";
 import MenuContent from "./MenuContent";
 import OptionsMenu from "./OptionsMenu";
 import ClubInfoDisplay from "./ClubInfoDisplay";
@@ -24,7 +26,11 @@ const Drawer = styled(MuiDrawer)({
 });
 
 export default function SideMenu() {
-  const { user, name } = useAuth();
+  const { user, name, loading } = useAuth();
+  
+  // Clean up the user's name for display
+  const displayName = name || user?.email?.split('@')[0] || 'User';
+  const userEmail = user?.email || '';
 
   return (
     <Drawer
@@ -66,26 +72,52 @@ export default function SideMenu() {
           borderColor: "divider",
         }}
       >
-        <Avatar
-          sizes="small"
-          alt="Jamie Roche"
-          src="/static/images/avatar/7.jpg"
-          sx={{ width: 36, height: 36 }}
-        />
-        <Box sx={{ mr: "auto" }}>
-          <Typography
-            variant="body2"
-            sx={{ fontSize: 12, fontWeight: 500, lineHeight: "16px" }}
-          >
-            {name}
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ fontSize: 10, color: "text.secondary" }}
-          >
-            {user?.email}
-          </Typography>
-        </Box>
+        {loading ? (
+          <>
+            <Skeleton variant="circular" width={36} height={36} />
+            <Box sx={{ mr: "auto", width: "100%" }}>
+              <Skeleton width="70%" height={16} />
+              <Skeleton width="50%" height={10} />
+            </Box>
+          </>
+        ) : (
+          <>
+            <Avatar
+              sizes="small"
+              alt={displayName}
+              src="/static/images/avatar/7.jpg"
+              sx={{ width: 36, height: 36 }}
+              imgProps={{
+                onError: (e) => {
+                  // Handle image load error
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = '';
+                }
+              }}
+            >
+              {!user && <PersonIcon fontSize="small" />}
+            </Avatar>
+            <Box sx={{ mr: "auto" }}>
+              <Typography
+                variant="body2"
+                sx={{ fontSize: 12, fontWeight: 500, lineHeight: "16px" }}
+              >
+                {displayName}
+              </Typography>
+              {userEmail && (
+                <Typography
+                  variant="caption"
+                  sx={{ fontSize: 10, color: "text.secondary" }}
+                  noWrap
+                  title={userEmail}
+                >
+                  {userEmail}
+                </Typography>
+              )}
+            </Box>
+          </>
+        )}
         <OptionsMenu />
       </Stack>
     </Drawer>

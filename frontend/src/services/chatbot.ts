@@ -2,6 +2,7 @@ import { auth } from "./firebaseConfig";
 import { getAuthHeaders } from "./getAuthHeaders";
 
 const BASE_URL = "https://grassroots-gateway-2au66zeb.nw.gateway.dev";
+const AI_REQUEST_TIMEOUT = 30000; // 30 seconds timeout
 
 /**
  * Send a message to the AI Assistant.
@@ -14,6 +15,15 @@ export const sendMessageToAI = async (
   ageGroup: string,
   division: string
 ): Promise<string> => {
+  // Input validation
+  if (!message || message.trim() === "") {
+    throw new Error("Message cannot be empty");
+  }
+  
+  if (!clubName || !ageGroup || !division) {
+    throw new Error("Club information is required");
+  }
+  
   const currentUser = auth.currentUser;
   const currentDate = new Date();
   const year = currentDate.getFullYear();
@@ -31,28 +41,46 @@ export const sendMessageToAI = async (
   }
 
   const headers = await getAuthHeaders();
-  const response = await fetch(`${BASE_URL}/query-ai`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      message,
-      token: idToken,
-      email: userEmail,
-      month: currentMonth,
-      clubName: clubName,
-      ageGroup: ageGroup,
-      division: division,
-    }),
-  });
+  
+  try {
+    // Create a promise that rejects after timeout
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Request timed out")), AI_REQUEST_TIMEOUT);
+    });
 
-  if (!response.ok) {
-    const errorBody = await response.json();
-    throw new Error(
-      errorBody.error ||
-        `Failed to communicate with AI assistant (status: ${response.status})`
-    );
+    // Create the fetch promise
+    const fetchPromise = fetch(`${BASE_URL}/query-ai`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        message,
+        token: idToken,
+        email: userEmail,
+        month: currentMonth,
+        clubName: clubName,
+        ageGroup: ageGroup,
+        division: division,
+      }),
+    });
+
+    // Race the fetch against the timeout
+    const response = await Promise.race([fetchPromise, timeoutPromise]) as Response;
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}));
+      throw new Error(
+        errorBody.error ||
+          `Failed to communicate with AI assistant (status: ${response.status} ${response.statusText})`
+      );
+    }
+
+    const data = await response.json();
+    return data.reply;
+  } catch (error) {
+    console.error("Error communicating with AI assistant:", error);
+    if (error instanceof Error && error.message === "Request timed out") {
+      throw new Error("AI assistant took too long to respond. Please try again later.");
+    }
+    throw error;
   }
-
-  const data = await response.json();
-  return data.reply;
 };

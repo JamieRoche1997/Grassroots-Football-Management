@@ -1,5 +1,5 @@
-import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import SignInSide from "./pages/SignIn/SignInSide";
 import SignUp from "./pages/SignUp/SignUp";
 import HomePage from "./pages/Home/HomePage";
@@ -38,6 +38,15 @@ import SwaggerDocs from "./pages/Swagger/SwaggerDocs";
 
 import { useNotification } from "./hooks/useNotification";
 
+// Simple NotFound component for 404 routes
+const NotFound = () => (
+  <div style={{ textAlign: 'center', padding: '50px' }}>
+    <h1>404 - Page Not Found</h1>
+    <p>The page you are looking for doesn't exist.</p>
+    <button onClick={() => window.history.back()}>Go Back</button>
+  </div>
+);
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: string[];
@@ -48,20 +57,48 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   allowedRoles,
 }) => {
   const { user, loading, role } = useAuth();
+  const location = useLocation();
+  const [isTimeout, setIsTimeout] = useState(false);
+
+  // Handle loading timeout after 10 seconds
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        setIsTimeout(true);
+      }
+    }, 10000);
+
+    return () => clearTimeout(timeoutId);
+  }, [loading]);
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <>
+        <LoadingSpinner />
+        {isTimeout && (
+          <div style={{ textAlign: 'center', marginTop: '20px' }}>
+            <p>Loading is taking longer than expected. Please refresh the page.</p>
+          </div>
+        )}
+      </>
+    );
   }
 
   if (!user) {
-    return <Navigate to="/" />;
+    // Save the attempted URL to redirect back after login
+    return <Navigate to="/" state={{ from: location }} />;
   }
 
   if (allowedRoles && role && !allowedRoles.includes(role)) {
-    return <Navigate to="/dashboard" />; // Redirect unauthorized users
+    return <Navigate to="/dashboard" state={{ error: "Unauthorized access" }} />;
   }
 
-  return <>{children}</>;
+  try {
+    return <>{children}</>;
+  } catch (error) {
+    console.error("Error rendering protected route:", error);
+    return <div>Something went wrong. Please try again later.</div>;
+  }
 };
 
 const App: React.FC = () => {
@@ -314,6 +351,9 @@ const App: React.FC = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* 404 Route - Must be the last route */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

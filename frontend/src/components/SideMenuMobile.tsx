@@ -8,6 +8,9 @@ import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import NotificationsRoundedIcon from "@mui/icons-material/NotificationsRounded";
 import MenuButton from "./MenuButton";
 import MenuContent from "./MenuContent";
+import { useAuth } from "../hooks/useAuth";
+import { logoutUser } from "../services/authentication";
+import { useNavigate } from "react-router-dom";
 
 interface SideMenuMobileProps {
   open: boolean | undefined;
@@ -18,6 +21,18 @@ export default function SideMenuMobile({
   open,
   toggleDrawer,
 }: SideMenuMobileProps) {
+  const { user, name } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      navigate("/signin");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   return (
     <Drawer
       anchor="right"
@@ -44,12 +59,12 @@ export default function SideMenuMobile({
           >
             <Avatar
               sizes="small"
-              alt="Jamie Roche"
+              alt={name || "User"}
               src="/static/images/avatar/7.jpg"
               sx={{ width: 24, height: 24 }}
             />
             <Typography component="p" variant="h6">
-              Jamie Roche
+              {name || user?.email || "User"}
             </Typography>
           </Stack>
           <MenuButton showBadge>
@@ -66,6 +81,7 @@ export default function SideMenuMobile({
             variant="outlined"
             fullWidth
             startIcon={<LogoutRoundedIcon />}
+            onClick={handleLogout}
           >
             Logout
           </Button>

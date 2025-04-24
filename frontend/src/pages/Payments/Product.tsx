@@ -20,6 +20,14 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  Snackbar,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  CircularProgress,
+  InputAdornment,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { createProduct } from "../../services/payments";
@@ -66,7 +74,11 @@ export default function Product() {
     { name: "", price: "", selectedPlans: [0], category: "" },
   ]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{[key: string]: {[key: string]: string}}>({});
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [productToRemove, setProductToRemove] = useState<number | null>(null);
 
   // Ensure clubName, ageGroup, and division are loaded before rendering
   useEffect(() => {
@@ -105,6 +117,15 @@ export default function Product() {
 
   // Update product details
   const handleProductChange = (index: number, field: string, value: string) => {
+    // Clear field error when user makes a change
+    setFieldErrors(prev => {
+      const newErrors = {...prev};
+      if (newErrors[index] && newErrors[index][field]) {
+        delete newErrors[index][field];
+      }
+      return newErrors;
+    });
+
     setProducts((prevProducts) =>
       prevProducts.map((product, i) =>
         i === index ? { ...product, [field]: value } : product
@@ -120,58 +141,120 @@ export default function Product() {
     ]);
   };
 
+  // Confirm removal of a product
+  const confirmRemoveProduct = (index: number) => {
+    setProductToRemove(index);
+  };
+
   // Remove a product entry
   const removeProduct = (index: number) => {
     setProducts(products.filter((_, i) => i !== index));
+    setProductToRemove(null);
+  };
+
+  // Validate product data
+  const validateProducts = () => {
+    let valid = true;
+    const newFieldErrors: {[key: string]: {[key: string]: string}} = {};
+
+    products.forEach((product, index) => {
+      const productErrors: {[key: string]: string} = {};
+      
+      if (!product.name.trim()) {
+        productErrors.name = "Product name is required";
+        valid = false;
+      }
+
+      if (!product.category) {
+        productErrors.category = "Category is required";
+        valid = false;
+      }
+
+      if (!product.price) {
+        productErrors.price = "Price is required";
+        valid = false;
+      } else {
+        const priceValue = parseFloat(product.price);
+        if (isNaN(priceValue) || priceValue <= 0) {
+          productErrors.price = "Price must be a positive number";
+          valid = false;
+        }
+      }
+
+      if (product.selectedPlans.length === 0) {
+        productErrors.selectedPlans = "Select at least one payment option";
+        valid = false;
+      }
+
+      if (Object.keys(productErrors).length > 0) {
+        newFieldErrors[index] = productErrors;
+      }
+    });
+
+    setFieldErrors(newFieldErrors);
+    return valid;
   };
 
   const handleSubmit = async () => {
-    const formattedProducts = products
-      .map((product) => {
-        const basePrice = parseFloat(product.price);
+    if (!validateProducts()) {
+      setError("Please fix the errors in the form.");
+      return;
+    }
 
-        return product.selectedPlans.map((months) => {
-          const price =
-            months === 0
-              ? basePrice
-              : (
-                  basePrice *
-                  installmentOptions.find((p) => p.months === months)!
-                    .multiplier
-                ).toFixed(2);
-
-          return {
-            name:
-              months === 0
-                ? product.name
-                : `${product.name} (${months}-Month Plan)`,
-            price: parseFloat(price.toString()),
-            installmentMonths: months === 0 ? null : months,
-            category: product.category,
-            isMembership: product.category === "membership",
-          };
-        });
-      })
-      .flat();
-
-    if (formattedProducts.length === 0) {
+    if (products.length === 0) {
       setError("Please add at least one product.");
       return;
     }
-    setLoading(true);
+
+    setSubmitting(true);
+    setError(null);
+    
     try {
-      if (clubName && ageGroup && division) {
-        await createProduct(clubName, ageGroup, division, formattedProducts);
-      } else {
-        setError("Club name, age group, and division are required.");
+      if (!clubName || !ageGroup || !division) {
+        throw new Error("Club name, age group, and division are required.");
       }
-      alert("Products added successfully!");
-      navigate("/payments/shop");
+
+      const formattedProducts = products
+        .map((product) => {
+          const basePrice = parseFloat(product.price);
+
+          return product.selectedPlans.map((months) => {
+            const price =
+              months === 0
+                ? basePrice
+                : (
+                    basePrice *
+                    installmentOptions.find((p) => p.months === months)!
+                      .multiplier
+                  ).toFixed(2);
+
+            return {
+              name:
+                months === 0
+                  ? product.name
+                  : `${product.name} (${months}-Month Plan)`,
+              price: parseFloat(price.toString()),
+              installmentMonths: months === 0 ? null : months,
+              category: product.category,
+              isMembership: product.category === "membership",
+            };
+          });
+        })
+        .flat();
+
+      await createProduct(clubName, ageGroup, division, formattedProducts);
+      setSuccessMessage("Products added successfully!");
+      
+      // Reset form after successful submission
+      setTimeout(() => {
+        navigate("/payments/shop");
+      }, 2000);
+      
     } catch (error) {
       console.error("Error adding products:", error);
       setError("Failed to add products. Please try again.");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -224,28 +307,39 @@ export default function Product() {
                   onChange={(e) =>
                     handleProductChange(index, "name", e.target.value)
                   }
+                  error={!!fieldErrors[index]?.name}
+                  helperText={fieldErrors[index]?.name}
                   sx={{ mt: 2 }}
+                  required
                 />
 
-                <FormControl fullWidth sx={{ mt: 2 }}>
+                <FormControl 
+                  fullWidth 
+                  sx={{ mt: 2 }}
+                  error={!!fieldErrors[index]?.category}
+                >
                   <Select
-                    displayEmpty // Makes the first item look like a placeholder
+                    displayEmpty
                     value={product.category}
                     onChange={(e) =>
                       handleProductChange(index, "category", e.target.value)
                     }
-                    sx={{ color: product.category ? "inherit" : "gray" }} // Placeholder text color
+                    sx={{ color: product.category ? "inherit" : "gray" }}
                   >
                     <MenuItem value="" disabled>
-                      Select a Category
-                    </MenuItem>{" "}
-                    {/* Disabled so it can't be selected */}
+                      Select a Category *
+                    </MenuItem>
                     {productCategories.map((cat) => (
                       <MenuItem key={cat.value} value={cat.value}>
                         {cat.label}
                       </MenuItem>
                     ))}
                   </Select>
+                  {fieldErrors[index]?.category && (
+                    <Typography color="error" variant="caption" sx={{ mt: 0.5, ml: 1.5 }}>
+                      {fieldErrors[index]?.category}
+                    </Typography>
+                  )}
                 </FormControl>
 
                 <TextField
@@ -257,12 +351,25 @@ export default function Product() {
                   onChange={(e) =>
                     handleProductChange(index, "price", e.target.value)
                   }
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">€</InputAdornment>,
+                    inputProps: { min: 0.01, step: 0.01 }
+                  }}
+                  error={!!fieldErrors[index]?.price}
+                  helperText={fieldErrors[index]?.price}
                   sx={{ mt: 2 }}
+                  required
                 />
 
                 <Typography variant="h6" sx={{ mt: 2 }}>
-                  Payment Options
+                  Payment Options *
                 </Typography>
+
+                {fieldErrors[index]?.selectedPlans && (
+                  <Typography color="error" variant="caption" sx={{ display: "block", mb: 1 }}>
+                    {fieldErrors[index]?.selectedPlans}
+                  </Typography>
+                )}
 
                 <FormControlLabel
                   control={
@@ -294,7 +401,7 @@ export default function Product() {
 
                 <Button
                   startIcon={<RemoveCircleOutlineIcon />}
-                  onClick={() => removeProduct(index)}
+                  onClick={() => confirmRemoveProduct(index)}
                   sx={{ mt: 2, color: theme.palette.error.main }}
                 >
                   Remove Product
@@ -315,17 +422,20 @@ export default function Product() {
             variant="contained"
             fullWidth
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={submitting}
             sx={{
               py: 1.5,
               fontSize: "1.1rem",
             }}
           >
-            {loading ? (
-              "Saving..."
+            {submitting ? (
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <CircularProgress size={20} sx={{ mr: 1 }} color="inherit" />
+                Saving Products...
+              </Box>
             ) : (
               <>
-                <Euro /> Save Products
+                <Euro sx={{ mr: 1 }} /> Save Products
               </>
             )}
           </Button>
@@ -354,7 +464,7 @@ export default function Product() {
               <TableHead sx={{ backgroundColor: "primary.main" }}>
                 <TableRow>
                   <TableCell sx={{ fontWeight: "bold", color: "white" }}>
-                    Product Name
+                    Product ID
                   </TableCell>
                   <TableCell sx={{ fontWeight: "bold", color: "white" }}>
                     Price (€)
@@ -379,7 +489,7 @@ export default function Product() {
                   return (
                     <TableRow key={product.id}>
                       <TableCell>{product.id}</TableCell>
-                      <TableCell>{product.price.toFixed(2)}</TableCell>
+                      <TableCell>{product.price.toFixed(2)} €</TableCell>
                       <TableCell>
                         {pricePerMonth ? `${pricePerMonth} € / month` : "-"}
                       </TableCell>
@@ -397,6 +507,38 @@ export default function Product() {
           </TableContainer>
         )}
       </Box>
+
+      {/* Confirmation Dialog for Product Removal */}
+      <Dialog
+        open={productToRemove !== null}
+        onClose={() => setProductToRemove(null)}
+      >
+        <DialogTitle>Remove Product</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to remove this product?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setProductToRemove(null)}>Cancel</Button>
+          <Button 
+            onClick={() => productToRemove !== null && removeProduct(productToRemove)} 
+            color="error" 
+            autoFocus
+          >
+            Remove
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Success message */}
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={4000}
+        onClose={() => setSuccessMessage(null)}
+        message={successMessage}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Layout>
   );
 }

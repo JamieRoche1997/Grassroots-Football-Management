@@ -6,6 +6,8 @@ import Typography from "@mui/material/Typography";
 import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
 import StarIcon from "@mui/icons-material/Star";
 import StyleIcon from "@mui/icons-material/Style";
+import PersonIcon from "@mui/icons-material/Person";
+import Avatar from "@mui/material/Avatar";
 
 const GlassCard = styled(Card)(({ theme }) => ({
   height: "100%",
@@ -38,23 +40,40 @@ const StatBadge = styled(Stack)(({ theme }) => ({
 
 export interface PlayerStatCardProps {
   playerName: string;
-  goals: number;
-  assists: number;
-  yellowCards: number;
-  redCards: number;
+  goals?: number;
+  assists?: number;
+  yellowCards?: number;
+  redCards?: number;
   position?: string;
   avatar?: string;
 }
 
 export default function PlayerStatCard({
   playerName,
-  goals,
-  assists,
-  yellowCards,
-  redCards,
+  goals = 0,
+  assists = 0,
+  yellowCards = 0,
+  redCards = 0,
   position,
   avatar,
 }: PlayerStatCardProps) {
+  // Validate that player name exists
+  if (!playerName) {
+    return (
+      <GlassCard variant="outlined">
+        <CardContent sx={{ p: 3, display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <Typography color="error">Missing player name</Typography>
+        </CardContent>
+      </GlassCard>
+    );
+  }
+
+  // Sanitize numeric values to ensure they're valid numbers
+  const safeGoals = isNaN(Number(goals)) ? 0 : Number(goals);
+  const safeAssists = isNaN(Number(assists)) ? 0 : Number(assists);
+  const safeYellowCards = isNaN(Number(yellowCards)) ? 0 : Number(yellowCards);
+  const safeRedCards = isNaN(Number(redCards)) ? 0 : Number(redCards);
+
   return (
     <GlassCard variant="outlined">
       <CardContent
@@ -68,10 +87,15 @@ export default function PlayerStatCard({
         <Stack spacing={2} sx={{ flex: 1 }}>
           {/* Player Header */}
           <Stack direction="row" spacing={2} alignItems="center">
-            {avatar && (
+            {avatar ? (
               <img
                 src={avatar}
                 alt={playerName}
+                onError={(e) => {
+                  // Replace broken image with fallback icon
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.onerror = null;
+                }}
                 style={{
                   width: 48,
                   height: 48,
@@ -81,12 +105,22 @@ export default function PlayerStatCard({
                   borderColor: alpha("#2BD575", 0.3),
                 }}
               />
+            ) : (
+              <Avatar sx={{ 
+                width: 48, 
+                height: 48,
+                bgcolor: alpha("#2BD575", 0.2),
+                color: "#2BD575"
+              }}>
+                <PersonIcon />
+              </Avatar>
             )}
             <Stack>
               <Typography
                 variant="h6"
                 fontWeight={600}
                 noWrap // Prevent text wrapping
+                title={playerName} // Add tooltip for truncated names
               >
                 {playerName}
               </Typography>
@@ -111,7 +145,7 @@ export default function PlayerStatCard({
             <StatBadge>
               <SportsSoccerIcon color="primary" />
               <Typography variant="subtitle2" fontWeight={600}>
-                {goals}
+                {safeGoals}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Goals
@@ -121,7 +155,7 @@ export default function PlayerStatCard({
             <StatBadge>
               <StarIcon color="primary" />
               <Typography variant="subtitle2" fontWeight={600}>
-                {assists}
+                {safeAssists}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Assists
@@ -131,7 +165,7 @@ export default function PlayerStatCard({
             <StatBadge sx={{ backgroundColor: alpha("#FFD700", 0.1) }}>
               <StyleIcon sx={{ color: "#FFD700" }} />
               <Typography variant="subtitle2" fontWeight={600}>
-                {yellowCards}
+                {safeYellowCards}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Yellows
@@ -141,7 +175,7 @@ export default function PlayerStatCard({
             <StatBadge sx={{ backgroundColor: alpha("#FF5C5C", 0.1) }}>
               <StyleIcon sx={{ color: "#FF5C5C" }} />
               <Typography variant="subtitle2" fontWeight={600}>
-                {redCards}
+                {safeRedCards}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Reds

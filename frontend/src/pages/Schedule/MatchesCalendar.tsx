@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay } from "date-fns";
+import { format, parse, startOfWeek, getDay, parseISO } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { useEffect, useState } from "react";
@@ -20,6 +20,8 @@ import {
   TextField,
   Stack,
   DialogTitle,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import { SportsSoccer, Add } from "@mui/icons-material";
 import { styled, alpha, useTheme } from "@mui/material/styles";
@@ -78,7 +80,23 @@ export default function MatchesCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date()); // Track the displayed month
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<{
+    homeTeam?: string;
+    awayTeam?: string;
+    date?: string;
+    createdBy?: string;
+  }>({});
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
   const [newFixture, setNewFixture] = useState({
     matchId: "",
     homeTeam: "",
@@ -97,11 +115,12 @@ export default function MatchesCalendar() {
       if (authLoading) return;
 
       if (!clubName || !ageGroup || !division) {
-        setError("Age group or division is missing.");
+        setError("Age group or division is missing. Please check your profile settings.");
         setLoading(false);
         return;
       }
       try {
+        setLoading(true);
         const formattedMonth = format(month, "yyyy-MM");
         const matches = await fetchFixturesByMonth(
           formattedMonth,
@@ -145,10 +164,61 @@ export default function MatchesCalendar() {
     setCurrentDate(newDate);
   };
 
+  const validateForm = () => {
+    const errors: {
+      homeTeam?: string;
+      awayTeam?: string;
+      date?: string;
+      createdBy?: string;
+    } = {};
+    let formIsValid = true;
+
+    if (!newFixture.homeTeam.trim()) {
+      errors.homeTeam = "Home team is required";
+      formIsValid = false;
+    }
+
+    if (!newFixture.awayTeam.trim()) {
+      errors.awayTeam = "Away team is required";
+      formIsValid = false;
+    } else if (newFixture.homeTeam === newFixture.awayTeam) {
+      errors.awayTeam = "Home and away teams cannot be the same";
+      formIsValid = false;
+    }
+
+    if (!newFixture.date) {
+      errors.date = "Date and time are required";
+      formIsValid = false;
+    } else {
+      const dateObj = parseISO(newFixture.date);
+      if (dateObj.toString() === "Invalid Date") {
+        errors.date = "Please provide a valid date";
+        formIsValid = false;
+      }
+    }
+
+    if (!newFixture.createdBy.trim()) {
+      errors.createdBy = "Creator name is required";
+      formIsValid = false;
+    }
+
+    setFormErrors(errors);
+    return formIsValid;
+  };
+
   const handleAddFixture = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
     try {
+      setSubmitting(true);
       if (!ageGroup || !division) {
-        console.error("Age group or division is null");
+        setSnackbar({
+          open: true,
+          message: "Age group or division information is missing",
+          severity: "error",
+        });
         return;
       }
 
@@ -156,24 +226,53 @@ export default function MatchesCalendar() {
         ...newFixture,
         ageGroup,
         division,
+        matchId: new Date().toISOString(),
       };
 
       if (clubName && ageGroup && division) {
         await addFixture(
-          { ...updatedFixture, matchId: new Date().toISOString() },
+          updatedFixture,
           clubName,
           ageGroup,
           division
         );
+        setSnackbar({
+          open: true,
+          message: "Fixture added successfully!",
+          severity: "success",
+        });
+        fetchMatchData(currentDate);
+        setOpenAddDialog(false);
+        setNewFixture({
+          matchId: "",
+          homeTeam: "",
+          awayTeam: "",
+          date: "",
+          ageGroup: "",
+          division: "",
+          createdBy: "",
+        });
       } else {
-        console.error("Club name, age group, or division is null");
+        setSnackbar({
+          open: true,
+          message: "Missing club information. Please check your profile.",
+          severity: "error",
+        });
       }
-      alert("Fixture added successfully!");
-      fetchMatchData(currentDate);
-      setOpenAddDialog(false);
     } catch (error) {
       console.error("Error adding fixture:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to add fixture. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
   if (authLoading || loading) {
@@ -199,9 +298,16 @@ export default function MatchesCalendar() {
       <Layout>
         <Header />
         <Box sx={{ p: 3 }}>
-          <Typography color="error" variant="h6">
+          <Alert severity="error" sx={{ mb: 2 }}>
             {error}
-          </Typography>
+          </Alert>
+          <Button 
+            variant="outlined" 
+            onClick={() => fetchMatchData(currentDate)}
+            sx={{ mt: 2 }}
+          >
+            Try Again
+          </Button>
         </Box>
       </Layout>
     );
@@ -283,7 +389,7 @@ export default function MatchesCalendar() {
         {/* Add Fixture Dialog */}
         <Dialog
           open={openAddDialog}
-          onClose={() => setOpenAddDialog(false)}
+          onClose={() => !submitting && setOpenAddDialog(false)}
           maxWidth="sm"
           fullWidth
           slotProps={{
@@ -314,6 +420,10 @@ export default function MatchesCalendar() {
                 onChange={(e) =>
                   setNewFixture({ ...newFixture, homeTeam: e.target.value })
                 }
+                error={!!formErrors.homeTeam}
+                helperText={formErrors.homeTeam}
+                disabled={submitting}
+                required
               />
               <TextField
                 label="Away Team"
@@ -322,14 +432,24 @@ export default function MatchesCalendar() {
                 onChange={(e) =>
                   setNewFixture({ ...newFixture, awayTeam: e.target.value })
                 }
+                error={!!formErrors.awayTeam}
+                helperText={formErrors.awayTeam}
+                disabled={submitting}
+                required
               />
               <TextField
+                label="Match Date & Time"
                 type="datetime-local"
                 fullWidth
                 value={newFixture.date}
                 onChange={(e) =>
                   setNewFixture({ ...newFixture, date: e.target.value })
                 }
+                error={!!formErrors.date}
+                helperText={formErrors.date}
+                disabled={submitting}
+                required
+                InputLabelProps={{ shrink: true }}
               />
               <TextField
                 label="Created By"
@@ -338,22 +458,50 @@ export default function MatchesCalendar() {
                 onChange={(e) =>
                   setNewFixture({ ...newFixture, createdBy: e.target.value })
                 }
+                error={!!formErrors.createdBy}
+                helperText={formErrors.createdBy}
+                disabled={submitting}
+                required
               />
+              {!ageGroup || !division ? (
+                <Alert severity="warning">
+                  Age group or division information is missing. Please update your profile settings.
+                </Alert>
+              ) : null}
             </Stack>
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
-            <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
+            <Button 
+              onClick={() => setOpenAddDialog(false)}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
             <Button
               variant="contained"
               onClick={handleAddFixture}
-              disabled={
-                !newFixture.homeTeam || !newFixture.awayTeam || !newFixture.date
-              }
+              disabled={submitting}
             >
-              Add Fixture
+              {submitting ? "Adding..." : "Add Fixture"}
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Success/Error Snackbar */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </Layout>
   );

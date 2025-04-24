@@ -25,6 +25,7 @@ export default function MainGrid() {
       }
 
       try {
+        console.log(`MainGrid: Loading data for ${clubName}/${ageGroup}/${division}`);
         setLoading(true);
 
         // Fetch Pending Join Requests and Player Stats

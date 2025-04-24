@@ -26,6 +26,27 @@ export const signUp = async (
   role: string
 ): Promise<void> => {
   try {
+    // Input validation
+    if (!email || !password || !name || !role) {
+      throw new Error("All fields are required");
+    }
+    
+    // Validate email format
+    if (!email.includes('@') || email.trim().length < 5) {
+      throw new Error("Invalid email format");
+    }
+    
+    // Validate password strength
+    if (password.length < 8) {
+      throw new Error("Password must be at least 8 characters long");
+    }
+    
+    // Validate role
+    const validRoles = ["player", "coach", "parent", "admin"];
+    if (!validRoles.includes(role.toLowerCase())) {
+      throw new Error("Invalid role selected");
+    }
+
     // Step 1: Check if the user exists
     const userExists = await checkUserExists(email);
     if (userExists) {

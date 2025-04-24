@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { fetchTransactions } from "../services/payments";
 import { useAuth } from "./useAuth";
 
@@ -29,38 +29,66 @@ export function useTransactions(userEmail: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!userEmail) return;
+  const getTransactions = useCallback(async () => {
+    // Validate required parameters
+    if (!userEmail) {
+      setError("User email is required to fetch transactions");
+      setLoading(false);
+      return;
+    }
 
-    const getTransactions = async () => {
-      setLoading(true);
-      try {
-        if (clubName && ageGroup && division) {
-          const data = await fetchTransactions(
-            userEmail,
-            clubName,
-            ageGroup,
-            division
-          );
+    if (!clubName) {
+      setError("Club name is required to fetch transactions");
+      setLoading(false);
+      return;
+    }
 
-          if (!data.transactions) {
-            throw new Error("Invalid response format");
-          }
+    if (!ageGroup) {
+      setError("Age group is required to fetch transactions");
+      setLoading(false);
+      return;
+    }
 
-          setTransactions(data.transactions);
-        } else {
-          throw new Error("Missing required user information");
-        }
-      } catch (err) {
-        setError("Failed to load transactions.");
-        console.error("Error fetching transactions:", err);
-      } finally {
-        setLoading(false);
+    if (!division) {
+      setError("Division is required to fetch transactions");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await fetchTransactions(
+        userEmail,
+        clubName,
+        ageGroup,
+        division
+      );
+
+      // Validate response structure
+      if (!data || !Array.isArray(data.transactions)) {
+        throw new Error("Invalid response format from server");
       }
-    };
 
-    getTransactions();
+      setTransactions(data.transactions);
+    } catch (err) {
+      // More detailed error handling
+      if (err instanceof Error) {
+        setError(`Failed to load transactions: ${err.message}`);
+      } else {
+        setError("Failed to load transactions. Please try again later.");
+      }
+      console.error("Error fetching transactions:", err);
+      setTransactions([]); // Reset transactions on error
+    } finally {
+      setLoading(false);
+    }
   }, [userEmail, clubName, ageGroup, division]);
+
+  useEffect(() => {
+    getTransactions();
+  }, [getTransactions]);
 
   return { transactions, loading, error };
 }

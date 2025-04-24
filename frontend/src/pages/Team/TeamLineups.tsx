@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -22,11 +22,11 @@ import {
   ListItemText,
   IconButton,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
 import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
 import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
 import SaveIcon from "@mui/icons-material/Save";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import WarningIcon from "@mui/icons-material/Warning";
 import { getMembershipsForTeam } from "../../services/membership";
 import { format } from "date-fns";
 import Layout from "../../components/Layout";
@@ -175,6 +175,23 @@ const formations = {
   ], // Total: 10 outfield players
 };
 
+// Paper style with better performance
+const paperSx = {
+  p: 3,
+  mb: 4,
+  borderRadius: 2,
+  backgroundColor: "rgba(255, 255, 255, 0.8)",
+  backdropFilter: "blur(12px)",
+  border: "1px solid",
+  borderColor: "rgba(0, 0, 0, 0.05)",
+  transition: "box-shadow 0.3s ease, transform 0.3s ease",
+  willChange: "transform, box-shadow",
+  "&:hover": {
+    transform: "translateY(-4px)",
+    boxShadow: 6,
+  },
+};
+
 export default function TeamLineups() {
   const { clubName, ageGroup, division, loading: authLoading } = useAuth();
   const positionOrder = ["Goalkeeper", "Defender", "Midfielder", "Forward"];
@@ -191,12 +208,25 @@ export default function TeamLineups() {
   const [strategyNotes, setStrategyNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  
+  // Calculate these values once per render to avoid recalculations
   const assignedPlayerEmails = new Set(Object.values(assignedPlayers));
   const availableSubstitutes = players.filter(
     (player) => !assignedPlayerEmails.has(player.email)
   );
+  
+  // Count total positions in formation
+  const totalPositions = formations[selectedFormation].flat().length;
+  const filledPositions = Object.keys(assignedPlayers).length;
+
+  // Memoize the player lookup function for better performance
+  const getPlayerName = useCallback((playerEmail: string): string => {
+    const player = players.find((p) => p.email === playerEmail);
+    return player ? player.name : "Unknown Player";
+  }, [players]);
 
   useEffect(() => {
     const fetchAllMatchesForYear = async () => {
@@ -256,16 +286,50 @@ export default function TeamLineups() {
 
   const handleFormationChange = (event: SelectChangeEvent) => {
     const newFormation = event.target.value as keyof typeof formations;
-    setSelectedFormation(newFormation);
+    
+    // Confirm before changing formation if players are already assigned
+    if (Object.keys(assignedPlayers).length > 0) {
+      if (window.confirm("Changing formation will clear your current lineup. Continue?")) {
+        setSelectedFormation(newFormation);
+        setAssignedPlayers({});
+      }
+    } else {
+      setSelectedFormation(newFormation);
+    }
   };
 
   const handlePlayerAssign = (position: string, playerEmail: string) => {
-    setAssignedPlayers((prev) => ({ ...prev, [position]: playerEmail }));
+    // Check if player is already assigned to another position
+    const alreadyAssignedPosition = Object.entries(assignedPlayers).find(
+      ([pos, email]) => email === playerEmail && pos !== position
+    );
+    
+    // If already assigned, remove from previous position
+    if (alreadyAssignedPosition && playerEmail) {
+      const [prevPosition] = alreadyAssignedPosition;
+      const updatedAssignments = { ...assignedPlayers };
+      delete updatedAssignments[prevPosition];
+      updatedAssignments[position] = playerEmail;
+      setAssignedPlayers(updatedAssignments);
+    } else if (!playerEmail) {
+      // If clearing a position
+      const updatedAssignments = { ...assignedPlayers };
+      delete updatedAssignments[position];
+      setAssignedPlayers(updatedAssignments);
+    } else {
+      // Normal assignment
+      setAssignedPlayers((prev) => ({ ...prev, [position]: playerEmail }));
+    }
+    
+    // Clear validation errors when changes are made
+    setValidationErrors([]);
   };
 
   const handleAddSubstitute = (playerEmail: string) => {
     if (!substitutes.includes(playerEmail) && substitutes.length < 10) {
       setSubstitutes([...substitutes, playerEmail]);
+    } else if (substitutes.length >= 10) {
+      alert("Maximum 10 substitutes allowed");
     }
   };
 
@@ -273,9 +337,26 @@ export default function TeamLineups() {
     setSubstitutes(substitutes.filter((sub) => sub !== playerEmail));
   };
 
+  const validateLineup = () => {
+    const errors = [];
+    
+    // Check if sufficient positions are filled
+    if (filledPositions < totalPositions) {
+      errors.push(`${totalPositions - filledPositions} positions still need to be filled`);
+    }
+    
+    setValidationErrors(errors);
+    return errors.length === 0;
+  };
+
   const handleSaveMatchData = async () => {
     if (!selectedMatch) {
       alert("Please select a match before saving.");
+      return;
+    }
+
+    // Validate lineup before saving
+    if (!validateLineup()) {
       return;
     }
 
@@ -318,6 +399,7 @@ export default function TeamLineups() {
 
       alert("Lineup saved successfully!");
       setSaveSuccess(true);
+      setValidationErrors([]);
     } catch (error) {
       console.error("Error saving lineup:", error);
       alert("Failed to save lineup. Please try again.");
@@ -341,19 +423,28 @@ export default function TeamLineups() {
           <Typography color="error" variant="h6">
             {error}
           </Typography>
+          <Button 
+            variant="outlined" 
+            sx={{ mt: 2 }}
+            onClick={() => setError(null)}
+          >
+            Try Again
+          </Button>
         </Box>
       </Layout>
     );
   }
-
-  function getPlayerName(playerEmail: string): string {
-    const player = players.find((p) => p.email === playerEmail);
-    return player ? player.name : "Unknown Player";
-  }
+  
   return (
     <Layout>
       <Header />
-      <Box sx={{ px: { xs: 2, md: 4 }, py: 3, maxWidth: 1200, mx: "auto" }}>
+      <Box sx={{ 
+        px: { xs: 2, md: 4 }, 
+        py: 3, 
+        maxWidth: 1200, 
+        mx: "auto",
+        containIntrinsic: "size layout style paint", // Optimize rendering (modern browsers)
+      }}>
         <Typography
           variant="h4"
           component="h1"
@@ -382,20 +473,7 @@ export default function TeamLineups() {
 
         <Paper
           elevation={2}
-          sx={{
-            p: 3,
-            mb: 4,
-            borderRadius: 2,
-            backgroundColor: alpha(theme.palette.background.paper, 0.8),
-            backdropFilter: "blur(12px)",
-            border: "1px solid",
-            borderColor: alpha(theme.palette.divider, 0.1),
-            transition: "all 0.3s ease",
-            "&:hover": {
-              transform: "translateY(-4px)",
-              boxShadow: theme.shadows[6],
-            },
-          }}
+          sx={paperSx}
         >
           <Typography variant="h6" fontWeight={500} sx={{ mb: 2 }}>
             Match Details
@@ -452,24 +530,26 @@ export default function TeamLineups() {
               </MenuItem>
             ))}
           </Select>
+          
+          {validationErrors.length > 0 && (
+            <Alert 
+              severity="warning" 
+              icon={<WarningIcon />}
+              sx={{ mt: 2 }}
+            >
+              {validationErrors.map((error, index) => (
+                <Typography key={index} variant="body2">{error}</Typography>
+              ))}
+            </Alert>
+          )}
         </Paper>
 
         {/* Field and lineup visualisation */}
         <Paper
           elevation={3}
           sx={{
-            mb: 4,
+            ...paperSx,
             overflow: "hidden",
-            borderRadius: 2,
-            backgroundColor: alpha(theme.palette.background.paper, 0.8),
-            backdropFilter: "blur(12px)",
-            border: "1px solid",
-            borderColor: alpha(theme.palette.divider, 0.1),
-            transition: "all 0.3s ease",
-            "&:hover": {
-              transform: "translateY(-4px)",
-              boxShadow: theme.shadows[6],
-            },
           }}
         >
           <Box
@@ -480,19 +560,9 @@ export default function TeamLineups() {
               justifyContent: "center",
               width: "100%",
               minHeight: "60vh",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
               p: 3,
               position: "relative",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                zIndex: 0,
-              },
+              contain: "content", // Optimize rendering
             }}
           >
             {formations[selectedFormation].map((row, rowIndex) => (
@@ -524,9 +594,11 @@ export default function TeamLineups() {
                           alignItems: "center",
                           borderRadius: 2,
                           boxShadow: 3,
-                          transition: "transform 0.2s, box-shadow 0.2s",
+                          willChange: "transform, box-shadow", // Hint for browser optimization
+                          transform: "translateZ(0)", // Force GPU acceleration
+                          transition: "transform 0.2s ease, box-shadow 0.2s ease",
                           "&:hover": {
-                            transform: "translateY(-4px)",
+                            transform: "translateY(-4px) translateZ(0)",
                             boxShadow: 6,
                           },
                         }}
@@ -581,14 +653,19 @@ export default function TeamLineups() {
                               <ListSubheader key={`header-${posCategory}`}>
                                 {posCategory}
                               </ListSubheader>,
-                              ...groupedPlayers.map((player) => (
-                                <MenuItem
-                                  key={player.email}
-                                  value={player.email}
-                                >
-                                  {player.name}
-                                </MenuItem>
-                              )),
+                              ...groupedPlayers.map((player) => {
+                                const isAlreadyAssigned = assignedPlayerEmails.has(player.email) && assignedPlayers[positionKey] !== player.email;
+                                return (
+                                  <MenuItem
+                                    key={player.email}
+                                    value={player.email}
+                                    disabled={isAlreadyAssigned}
+                                  >
+                                    {player.name}
+                                    {isAlreadyAssigned && " (already assigned)"}
+                                  </MenuItem>
+                                );
+                              }),
                             ];
                           })}
                         </Select>
@@ -604,20 +681,7 @@ export default function TeamLineups() {
         {/* Substitutes Selection */}
         <Paper
           elevation={2}
-          sx={{
-            p: 3,
-            mb: 4,
-            borderRadius: 2,
-            backgroundColor: alpha(theme.palette.background.paper, 0.8),
-            backdropFilter: "blur(12px)",
-            border: "1px solid",
-            borderColor: alpha(theme.palette.divider, 0.1),
-            transition: "all 0.3s ease",
-            "&:hover": {
-              transform: "translateY(-4px)",
-              boxShadow: theme.shadows[6],
-            },
-          }}
+          sx={paperSx}
         >
           <Typography
             variant="h6"
@@ -648,7 +712,10 @@ export default function TeamLineups() {
                       </IconButton>
                     }
                   >
-                    <ListItemText primary={getPlayerName(playerEmail)} />
+                    <ListItemText 
+                      primary={getPlayerName(playerEmail)} 
+                      secondary={players.find(p => p.email === playerEmail)?.position}
+                    />
                   </ListItem>
                 ))}
               </List>
@@ -681,7 +748,10 @@ export default function TeamLineups() {
                       </IconButton>
                     }
                   >
-                    <ListItemText primary={player.name} />
+                    <ListItemText 
+                      primary={player.name} 
+                      secondary={player.position}
+                    />
                   </ListItem>
                 ))}
               </List>
@@ -692,19 +762,7 @@ export default function TeamLineups() {
         {/* Strategy Notes */}
         <Paper
           elevation={2}
-          sx={{
-            p: 3,
-            borderRadius: 2,
-            backgroundColor: alpha(theme.palette.background.paper, 0.8),
-            backdropFilter: "blur(12px)",
-            border: "1px solid",
-            borderColor: alpha(theme.palette.divider, 0.1),
-            transition: "all 0.3s ease",
-            "&:hover": {
-              transform: "translateY(-4px)",
-              boxShadow: theme.shadows[6],
-            },
-          }}
+          sx={paperSx}
         >
           <Typography variant="h6" fontWeight={500} sx={{ mb: 2 }}>
             Strategy Notes

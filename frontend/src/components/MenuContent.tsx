@@ -162,6 +162,8 @@ export default function MenuContent() {
     [key: string]: boolean;
   }>({});
 
+  console.log("MenuContent: User role:", role);
+
   // Capitalize words function
   const capitalizeWords = (text: string) => {
     return text.replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalise first letter of each word
@@ -169,8 +171,13 @@ export default function MenuContent() {
 
   // Function to filter menu items based on user role
   const getFilteredMenuItems = () => {
-    if (!role) return [];
-    return allMenuItems
+    // Show all items if role is not available yet (prevents blank menu)
+    if (!role) {
+      console.log("MenuContent: No role available, showing all menu items");
+      return allMenuItems;
+    }
+    
+    const filtered = allMenuItems
       .filter((item) => item.roles.includes(role)) // Filter top-level items
       .map((item) => ({
         ...item,
@@ -178,6 +185,9 @@ export default function MenuContent() {
           subItem.roles.includes(role)
         ), // Filter sub-items
       }));
+      
+    console.log("MenuContent: Filtered menu items for role", role, filtered.length);
+    return filtered;
   };
 
   const filteredMenuItems = getFilteredMenuItems();

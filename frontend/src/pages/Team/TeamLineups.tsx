@@ -389,7 +389,6 @@ export default function TeamLineups() {
         
         // Record game participation for all starter players
         await recordPlayerParticipation(
-          selectedMatch.matchId,
           clubName,
           ageGroup,
           division,
@@ -408,7 +407,6 @@ export default function TeamLineups() {
         
         // Record game participation for all starter players
         await recordPlayerParticipation(
-          selectedMatch.matchId,
           clubName,
           ageGroup,
           division,

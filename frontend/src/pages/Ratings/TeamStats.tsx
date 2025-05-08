@@ -57,6 +57,7 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
 type SortDirection = "asc" | "desc";
 type StatType = "goals" | "assists" | "yellowCards" | "redCards";
 type GameLocation = "all" | "home" | "away";
+type SortColumn = StatType | "gamesPlayed";
 
 export default function TeamStats() {
   const theme = useTheme();
@@ -70,6 +71,7 @@ export default function TeamStats() {
   const [statType, setStatType] = useState<StatType>("goals");
   const [gameLocation, setGameLocation] = useState<GameLocation>("all");
   const [sortOrder, setSortOrder] = useState<SortDirection>("desc");
+  const [sortColumn, setSortColumn] = useState<SortColumn>("goals");
   
   // Fetch team stats and player UIDs on component mount
   useEffect(() => {
@@ -145,8 +147,13 @@ export default function TeamStats() {
   };
   
   // Handle sort direction toggle
-  const handleSortDirectionChange = () => {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+  const handleSortDirectionChange = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortOrder("desc");
+    }
   };
   
   // Get the appropriate stat value based on game location
@@ -169,21 +176,26 @@ export default function TeamStats() {
     return player.gamesPlayed || 0;
   };
   
-  // Sort players by selected stat type
+  // Sort players by selected stat type or games played
   const sortedPlayers = [...players].sort((a, b) => {
     let valueA = 0;
     let valueB = 0;
     
-    // Get the appropriate stats based on game location filter
-    if (gameLocation === "home") {
-      valueA = a.homeStats ? a.homeStats[statType] || 0 : 0;
-      valueB = b.homeStats ? b.homeStats[statType] || 0 : 0;
-    } else if (gameLocation === "away") {
-      valueA = a.awayStats ? a.awayStats[statType] || 0 : 0;
-      valueB = b.awayStats ? b.awayStats[statType] || 0 : 0;
+    if (sortColumn === "gamesPlayed") {
+      valueA = getGamesPlayed(a);
+      valueB = getGamesPlayed(b);
     } else {
-      valueA = a[statType] || 0;
-      valueB = b[statType] || 0;
+      // Get the appropriate stats based on game location filter
+      if (gameLocation === "home") {
+        valueA = a.homeStats ? a.homeStats[sortColumn] || 0 : 0;
+        valueB = b.homeStats ? b.homeStats[sortColumn] || 0 : 0;
+      } else if (gameLocation === "away") {
+        valueA = a.awayStats ? a.awayStats[sortColumn] || 0 : 0;
+        valueB = b.awayStats ? b.awayStats[sortColumn] || 0 : 0;
+      } else {
+        valueA = a[sortColumn] || 0;
+        valueB = b[sortColumn] || 0;
+      }
     }
     
     return sortOrder === "asc" ? valueA - valueB : valueB - valueA;
@@ -314,9 +326,9 @@ export default function TeamStats() {
                     </TableCell>
                     <TableCell align="right">
                       <TableSortLabel
-                        active={true}
-                        direction={sortOrder}
-                        onClick={handleSortDirectionChange}
+                        active={sortColumn === statType}
+                        direction={sortColumn === statType ? sortOrder : "desc"}
+                        onClick={() => handleSortDirectionChange(statType)}
                       >
                         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 0.5 }}>
                           <Typography variant="subtitle2" fontWeight="bold" sx={{ color: getStatColor() }}>
@@ -330,7 +342,13 @@ export default function TeamStats() {
                       </TableSortLabel>
                     </TableCell>
                     <TableCell align="right">
-                      <Typography variant="subtitle2" fontWeight="bold">Games Played</Typography>
+                      <TableSortLabel
+                        active={sortColumn === "gamesPlayed"}
+                        direction={sortColumn === "gamesPlayed" ? sortOrder : "desc"}
+                        onClick={() => handleSortDirectionChange("gamesPlayed")}
+                      >
+                        <Typography variant="subtitle2" fontWeight="bold">Games Played</Typography>
+                      </TableSortLabel>
                     </TableCell>
                   </TableRow>
                 </TableHead>

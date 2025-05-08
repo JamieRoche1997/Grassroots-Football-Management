@@ -1,4 +1,6 @@
 import { getAuthHeaders } from "./getAuthHeaders";
+import { updatePlayerStats } from "./player_stats";
+import { getMembershipsForTeam } from "./membership";
 
 const ratingsUrl = "https://grassroots-gateway-2au66zeb.nw.gateway.dev";
 
@@ -368,5 +370,49 @@ export const deletePlayerRating = async (
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Failed to delete player rating: ${errorText}`);
+  }
+};
+
+/** ========== PLAYER PARTICIPATION ========== */
+export const recordPlayerParticipation = async (
+  matchId: string,
+  clubName: string,
+  ageGroup: string,
+  division: string,
+  lineup: {[position: string]: string},
+  isHomeGame: boolean
+): Promise<void> => {
+  try {
+    // Get all team members to get names
+    const memberships = await getMembershipsForTeam(clubName, ageGroup, division);
+    const playerMap = memberships.reduce((map: {[email: string]: string}, player: {email: string, name: string}) => {
+      if (player.email && player.name) {
+        map[player.email] = player.name;
+      }
+      return map;
+    }, {});
+    
+    // Process each player in the lineup
+    const playersPromises = Object.values(lineup).map(async (playerEmail) => {
+      if (!playerEmail) return;
+      
+      const playerName = playerMap[playerEmail] || playerEmail;
+      
+      // Update games played stat for each player in the lineup
+      await updatePlayerStats(
+        clubName,
+        ageGroup,
+        division,
+        playerEmail,
+        playerName,
+        "gamesPlayed",
+        isHomeGame
+      );
+    });
+    
+    await Promise.all(playersPromises);
+  } catch (error) {
+    console.error("Error recording player participation:", error);
+    throw new Error("Failed to record player participation");
   }
 };

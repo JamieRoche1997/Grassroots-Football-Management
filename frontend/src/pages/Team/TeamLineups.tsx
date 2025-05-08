@@ -34,7 +34,7 @@ import Header from "../../components/Header";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { useAuth } from "../../hooks/useAuth";
 import { fetchAllFixtures } from "../../services/schedule_management";
-import { saveLineups } from "../../services/match_management";
+import { saveLineups, recordPlayerParticipation } from "../../services/match_management";
 
 interface Player {
   email: string;
@@ -386,6 +386,16 @@ export default function TeamLineups() {
           lineup,
           {}
         );
+        
+        // Record game participation for all starter players
+        await recordPlayerParticipation(
+          selectedMatch.matchId,
+          clubName,
+          ageGroup,
+          division,
+          assignedPlayers, // Only starters, not substitutes
+          true // Home game
+        );
       } else if (isAwayTeam && clubName && ageGroup && division) {
         await saveLineups(
           selectedMatch.matchId,
@@ -394,6 +404,16 @@ export default function TeamLineups() {
           division,
           {},
           lineup
+        );
+        
+        // Record game participation for all starter players
+        await recordPlayerParticipation(
+          selectedMatch.matchId,
+          clubName,
+          ageGroup,
+          division,
+          assignedPlayers, // Only starters, not substitutes
+          false // Away game
         );
       }
 

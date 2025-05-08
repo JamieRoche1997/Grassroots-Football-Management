@@ -348,8 +348,6 @@ export default function ResultProfile() {
 
       if (newEvent.playerEmail) {
         const isHomeGame = match.homeTeam.includes(clubName);
-
-        console.log(isHomeGame);
         
         await updatePlayerStats(
           clubName,
@@ -360,6 +358,19 @@ export default function ResultProfile() {
           newEvent.type as "goal" | "assist" | "yellowCard" | "redCard",
           isHomeGame
         );
+        
+        // If this is a substitution, also update the games played stat for the player coming in
+        if (newEvent.type === "substitution" && newEvent.subbedInEmail) {
+          await updatePlayerStats(
+            clubName,
+            ageGroup,
+            division,
+            newEvent.subbedInEmail,
+            playersMap[newEvent.subbedInEmail]?.name || "Unknown Player",
+            "gamesPlayed",
+            isHomeGame
+          );
+        }
       }
 
       const updatedEvents = await getEvents(

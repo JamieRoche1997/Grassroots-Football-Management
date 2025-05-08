@@ -10,6 +10,20 @@ export interface PlayerStats {
   yellowCards: number;
   redCards: number;
   gamesPlayed: number;
+  homeStats?: {
+    goals: number;
+    assists: number;
+    yellowCards: number;
+    redCards: number;
+    gamesPlayed: number;
+  };
+  awayStats?: {
+    goals: number;
+    assists: number;
+    yellowCards: number;
+    redCards: number;
+    gamesPlayed: number;
+  };
 }
 
 /** ========== UPDATE PLAYER STATS ========== */
@@ -22,7 +36,8 @@ export const updatePlayerStats = async (
   division: string,
   playerEmail: string,
   playerName: string,
-  eventType: "goal" | "assist" | "yellowCard" | "redCard" | "gamesPlayed"
+  eventType: "goal" | "assist" | "yellowCard" | "redCard" | "gamesPlayed",
+  isHomeGame: boolean = true
 ): Promise<void> => {
   const headers = await getAuthHeaders();
   const response = await fetch(`${playerStatsUrl}/stats/update`, {
@@ -35,6 +50,7 @@ export const updatePlayerStats = async (
       playerEmail,
       playerName,
       eventType,
+      isHomeGame,
     }),
   });
 

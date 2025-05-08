@@ -18,6 +18,7 @@ import CarpoolOverview from "./pages/Carpool/Carpool";
 import Drivers from "./pages/Carpool/Drivers";
 import PlayerRatings from "./pages/Ratings/PlayerRatings";
 import PlayerStats from "./pages/Ratings/PlayerStats";
+import TeamStats from "./pages/Ratings/TeamStats";
 import TeamRequests from "./pages/Team/TeamRequests";
 import TeamResults from "./pages/Team/TeamResults";
 import ResultProfile from "./pages/Team/ResultProfile";
@@ -235,6 +236,14 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute>
             <PlayerStats />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ratings/stats"
+        element={
+          <ProtectedRoute>
+            <TeamStats />
           </ProtectedRoute>
         }
       />

@@ -263,16 +263,26 @@ export default function PlayerRatingsDisplay() {
               </Typography>
             </Box>
           </Stack>
-          {!loading && players.length > 0 && (
+          <Stack direction="row" spacing={1}>
             <Button 
-              startIcon={<Refresh />} 
-              onClick={fetchData} 
-              variant="outlined"
+              onClick={() => navigate('/ratings/stats')}
+              variant="contained" 
+              color="primary"
               size="small"
             >
-              Refresh
+              Team Stats
             </Button>
-          )}
+            {!loading && players.length > 0 && (
+              <Button 
+                startIcon={<Refresh />} 
+                onClick={fetchData} 
+                variant="outlined"
+                size="small"
+              >
+                Refresh
+              </Button>
+            )}
+          </Stack>
         </Stack>
 
         {error && (

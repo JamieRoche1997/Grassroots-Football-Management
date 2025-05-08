@@ -347,13 +347,18 @@ export default function ResultProfile() {
       await addEvent(match.matchId, clubName, ageGroup, division, newEvent);
 
       if (newEvent.playerEmail) {
+        const isHomeGame = match.homeTeam.includes(clubName);
+
+        console.log(isHomeGame);
+        
         await updatePlayerStats(
           clubName,
           ageGroup,
           division,
           newEvent.playerEmail,
           playersMap[newEvent.playerEmail]?.name || "Unknown Player",
-          newEvent.type as "goal" | "assist" | "yellowCard" | "redCard"
+          newEvent.type as "goal" | "assist" | "yellowCard" | "redCard",
+          isHomeGame
         );
       }
 

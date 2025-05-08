@@ -375,7 +375,6 @@ export const deletePlayerRating = async (
 
 /** ========== PLAYER PARTICIPATION ========== */
 export const recordPlayerParticipation = async (
-  matchId: string,
   clubName: string,
   ageGroup: string,
   division: string,

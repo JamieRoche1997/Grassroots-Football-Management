@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay, parseISO } from "date-fns";
+import { format, parse, startOfWeek, getDay, parseISO, addMonths } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { useEffect, useState } from "react";
@@ -111,7 +111,7 @@ export default function MatchesCalendar() {
   const isCoach = role === "coach";
 
   const fetchMatchData = useCallback(
-    async (month: Date) => {
+    async (baseDate: Date) => {
       if (authLoading) return;
 
       if (!clubName || !ageGroup || !division) {
@@ -120,16 +120,20 @@ export default function MatchesCalendar() {
         return;
       }
       try {
-        setLoading(true);
-        const formattedMonth = format(month, "yyyy-MM");
-        const matches = await fetchFixturesByMonth(
-          formattedMonth,
-          clubName,
-          ageGroup,
-          division
+        // Fetch data for previous, current, and next month
+        const months = [
+          format(addMonths(baseDate, -1), "yyyy-MM"),
+          format(baseDate, "yyyy-MM"),
+          format(addMonths(baseDate, 1), "yyyy-MM"),
+        ];
+
+        const allMatches = await Promise.all(
+          months.map((month) =>
+            fetchFixturesByMonth(month, clubName, ageGroup, division)
+          )
         );
-        console.log("matches:", matches);
-        const formattedEvents = matches.map((match) => ({
+
+        const formattedEvents = allMatches.flat().map((match) => ({
           title:
             match.homeTeam === clubName
               ? `${match.awayTeam} (H)`
@@ -141,6 +145,7 @@ export default function MatchesCalendar() {
           awayTeam: match.awayTeam,
           isHomeGame: match.homeTeam === clubName,
         }));
+        
         setEvents(formattedEvents);
         setError(null);
       } catch (error) {
@@ -153,12 +158,17 @@ export default function MatchesCalendar() {
     [authLoading, clubName, ageGroup, division]
   );
 
-  // Fetch matches when the component mounts and when the month changes
+  // Set loading to true only initially and when changing months
   useEffect(() => {
     if (!authLoading) {
+      // Only set loading on initial load or explicit month changes
+      // This prevents flashing during month navigation
+      if (events.length === 0) {
+        setLoading(true);
+      }
       fetchMatchData(currentDate);
     }
-  }, [currentDate, fetchMatchData, authLoading]);
+  }, [currentDate, fetchMatchData, authLoading, events.length]);
 
   const handleNavigate = (newDate: Date) => {
     setCurrentDate(newDate);

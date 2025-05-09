@@ -85,7 +85,7 @@ interface Ride {
 
 export default function CarpoolOverview() {
   const theme = useTheme();
-  const { user, clubName, ageGroup, division } = useAuth();
+  const { user, clubName, ageGroup, division, name } = useAuth();
   const [isDriver, setIsDriver] = useState(false);
   const [offerRideOpen, setOfferRideOpen] = useState(false);
   const [seatsAvailable, setSeatsAvailable] = useState(3);
@@ -211,7 +211,7 @@ export default function CarpoolOverview() {
   };
 
   const handleRequestRide = async (rideId: string) => {
-    if (!user?.displayName) {
+    if (!name) {
       setSnackbar({
         open: true,
         message: "You must be logged in to request a ride",
@@ -233,7 +233,7 @@ export default function CarpoolOverview() {
         return;
       }
 
-      if (user.displayName === ride.driverName) {
+      if (name === ride.driverName) {
         setSnackbar({
           open: true,
           message: "You cannot request a ride from yourself!",
@@ -242,7 +242,7 @@ export default function CarpoolOverview() {
         return;
       }
 
-      if (ride.passengers && ride.passengers.includes(user.displayName)) {
+      if (ride.passengers && ride.passengers.includes(name)) {
         setSnackbar({
           open: true,
           message: "You've already requested this ride!",
@@ -263,7 +263,7 @@ export default function CarpoolOverview() {
 
       await requestRide(
         {
-          userName: user.displayName,
+          userName: name,
           ride_id: rideId,
         },
         clubName!,
@@ -332,7 +332,7 @@ export default function CarpoolOverview() {
         division: division || "",
         id: Date.now().toString(),
         matchId: selectedMatch,
-        driverName: user?.displayName || "Unknown Driver",
+        driverName: name || "Unknown Driver",
         driverEmail: user?.email || "",
         driverPhone: user?.phoneNumber || "",
         seats: seatsAvailable,
@@ -668,14 +668,14 @@ export default function CarpoolOverview() {
                       fullWidth
                       variant="contained"
                       onClick={() => handleRequestRide(ride.id)}
-                      disabled={loading || ride.seats <= (ride.passengers?.length || 0) || Boolean(user?.displayName && ride.passengers?.includes(user.displayName))}
+                      disabled={loading || ride.seats <= (ride.passengers?.length || 0) || Boolean(name && ride.passengers?.includes(name))}
                       sx={{ mt: 2 }}
                     >
                       {loading ? (
                         <CircularProgress size={24} color="inherit" />
                       ) : ride.seats <= (ride.passengers?.length || 0) ? (
                         "No seats available"
-                      ) : user?.displayName && ride.passengers?.includes(user.displayName) ? (
+                      ) : name && ride.passengers?.includes(name) ? (
                         "Ride Requested"
                       ) : (
                         "Request Ride"

@@ -11,6 +11,7 @@ import {
 } from "../services/notifications";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { fetchAllFixtures, fetchAllTrainings } from "../services/schedule_management";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -96,9 +97,78 @@ export default function Header() {
       );
 
       if (type === "match" && relatedId) {
-        navigate(`/schedule/matches/${relatedId}`);
+        try {
+          // Fetch all matches
+          const allMatches = await fetchAllFixtures(
+            clubName,
+            ageGroup,
+            division
+          );
+          
+          // Find the specific match that matches the relatedId
+          const matchData = allMatches.find(match => match.matchId === relatedId);
+          
+          if (matchData) {
+            // Format the match data to match the expected structure
+            const formattedMatch = {
+              matchId: matchData.matchId,
+              homeTeam: matchData.homeTeam,
+              awayTeam: matchData.awayTeam,
+              start: new Date(matchData.date),
+              end: new Date(matchData.date)
+            };
+            
+            // Navigate with the match data in state
+            navigate(`/schedule/matches/${relatedId}`, {
+              state: { match: formattedMatch }
+            });
+          } else {
+            // Fallback to direct navigation if match not found
+            console.error("Match not found in the list:", relatedId);
+            navigate(`/schedule/matches/${relatedId}`);
+          }
+        } catch (error) {
+          console.error("Failed to fetch matches:", error);
+          // Fallback to direct navigation if fetch fails
+          navigate(`/schedule/matches/${relatedId}`);
+        }
       } else if (type === "training" && relatedId) {
-        navigate(`/schedule/training/${relatedId}`);
+        try {
+          // Fetch all trainings
+          const allTrainings = await fetchAllTrainings(
+            clubName,
+            ageGroup,
+            division
+          );
+          
+          // Find the specific training that matches the relatedId
+          const trainingData = allTrainings.find(training => training.trainingId === relatedId);
+          
+          if (trainingData) {
+            console.log("Training data:", trainingData);
+            
+            // Format the training data
+            const formattedTraining = {
+              trainingId: trainingData.trainingId,
+              title: trainingData.location || "Training Session",
+              start: new Date(trainingData.date),
+              end: new Date(trainingData.date)
+            };
+            
+            // Navigate with the training data in state
+            navigate(`/schedule/training/${relatedId}`, {
+              state: { training: formattedTraining }
+            });
+          } else {
+            // Fallback to direct navigation if training not found
+            console.error("Training not found in the list:", relatedId);
+            navigate(`/schedule/training/${relatedId}`);
+          }
+        } catch (error) {
+          console.error("Failed to fetch trainings:", error);
+          // Fallback to direct navigation if fetch fails
+          navigate(`/schedule/training/${relatedId}`);
+        }
       }
     } catch (error) {
       console.error("Failed to mark notification as read:", error);

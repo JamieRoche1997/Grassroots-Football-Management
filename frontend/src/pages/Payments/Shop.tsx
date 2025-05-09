@@ -213,7 +213,7 @@ export default function Shop() {
           <DialogTitle>Confirm Checkout</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              You are about to complete your purchase of {getTotalItems()} item(s) for a total of £{getTotalPrice()}.
+              You are about to complete your purchase of {getTotalItems()} item(s) for a total of €{getTotalPrice()}.
             </DialogContentText>
           </DialogContent>
           <DialogActions>
